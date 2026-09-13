@@ -1,0 +1,44 @@
+{
+  "ledger_path": "FOLD_LEDGER.jsonl",
+  "bad_lines_skipped": 0,
+  "bad_lines": [],
+  "total_folds": 4,
+  "active_count": 3,
+  "superseded_count": 1,
+  "active_ids": [
+    "MEAS-A2",
+    "MEAS-B1",
+    "MEAS-C1"
+  ],
+  "superseded_ids": [
+    "MEAS-A1"
+  ],
+  "supersede_chains": [
+    [
+      "MEAS-A1",
+      "MEAS-A2"
+    ]
+  ],
+  "refined_by": {
+    "MEAS-B1": [
+      "MEAS-C1"
+    ]
+  },
+  "unresolved_supersedes": [],
+  "unresolved_refines": [],
+  "ignored_forward_edges": [],
+  "consistency": {
+    "total_folds": 4,
+    "unique_ids": 4,
+    "duplicate_ids": [],
+    "issue_count": 0,
+    "issues": [],
+    "ts_schema_note": "153/157 rows carry a full YYYY-MM-DD date; 4 tail rows carry bare HH:MM:SS with no date. Line order (append-only ledger) is used as the authoritative chronological order for all checks; ts date is a secondary sanity check only, not the ordering ground truth."
+  },
+  "stale_consumers": {
+    "stale_fold_consumers": [],
+    "stale_fold_consumer_count": 0,
+    "stale_node_consumers": [],
+    "stale_node_consumer_count": 0
+  }
+}

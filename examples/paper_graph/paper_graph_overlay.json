@@ -1,0 +1,1546 @@
+{
+ "directed": true,
+ "multigraph": false,
+ "graph": {},
+ "nodes": [
+  {
+   "kind": "paper",
+   "concepts": [
+    "surface",
+    "pattern",
+    "implicit",
+    "defined",
+    "flow",
+    "flows",
+    "implemented",
+    "evolution",
+    "pde",
+    "variable",
+    "optimization approach",
+    "used",
+    "math.OC",
+    "math.NA",
+    "physics.flu-dyn"
+   ],
+   "citation_count": 0,
+   "title": "Fiber bundle topology optimization for surface flows",
+   "year": 2022,
+   "categories": [
+    "math.OC",
+    "math.NA",
+    "physics.flu-dyn"
+   ],
+   "id": "arxiv:2207.13852"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "time",
+    "shapes",
+    "discrete",
+    "limit",
+    "phase field",
+    "phase",
+    "field",
+    "elastoplasticity",
+    "concerned",
+    "functionals",
+    "elastoplastic",
+    "hardening",
+    "math.AP",
+    "math.OC"
+   ],
+   "citation_count": 0,
+   "title": "Topology optimization for quasistatic elastoplasticity",
+   "year": 2020,
+   "categories": [
+    "math.AP",
+    "math.OC"
+   ],
+   "id": "arxiv:2012.03764"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "code",
+    "matlab",
+    "appendix",
+    "variational",
+    "dimensional",
+    "compliance",
+    "authors",
+    "fem",
+    "includes",
+    "heat",
+    "extend",
+    "students",
+    "cs.CE",
+    "cs.MS"
+   ],
+   "citation_count": 0,
+   "title": "Topology optimization using the unsmooth variational topology optimization (UNVARTOP) method. An educational implementation in Matlab",
+   "year": 2021,
+   "categories": [
+    "cs.CE",
+    "cs.MS"
+   ],
+   "id": "arxiv:2107.07763"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "cdt",
+    "canonical duality",
+    "canonical",
+    "duality",
+    "global",
+    "cdt method",
+    "general",
+    "np",
+    "knapsack problem",
+    "knapsack",
+    "duality theory",
+    "theory",
+    "math.OC",
+    "cs.CG"
+   ],
+   "citation_count": 0,
+   "title": "On Topology Optimization and Canonical Duality Method",
+   "year": 2017,
+   "categories": [
+    "math.OC",
+    "cs.CG"
+   ],
+   "id": "arxiv:1712.02919"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "wasserstein",
+    "proposed framework",
+    "effective",
+    "operator",
+    "distance",
+    "probability",
+    "designs",
+    "features",
+    "high",
+    "framework",
+    "low",
+    "dimensional",
+    "math.OC"
+   ],
+   "citation_count": 0,
+   "title": "Wasserstein crossover for evolutionary algorithm-based topology optimization",
+   "year": 2025,
+   "categories": [
+    "math.OC"
+   ],
+   "id": "arxiv:2510.02870"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "elastoplastic",
+    "incremental",
+    "problem",
+    "optimization problem",
+    "elastoplasticity",
+    "respect given",
+    "given target",
+    "elastoplastic medium",
+    "field approach",
+    "optimality conditions",
+    "functional",
+    "prove",
+    "math.OC",
+    "math.AP"
+   ],
+   "citation_count": 0,
+   "title": "Topology optimization for incremental elastoplasticity: a phase-field approach",
+   "year": 2020,
+   "categories": [
+    "math.OC",
+    "math.AP"
+   ],
+   "id": "arxiv:2004.06330"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "mechanical",
+    "loads",
+    "temperature",
+    "large deformations",
+    "deformations",
+    "level set",
+    "set",
+    "stress",
+    "level",
+    "large",
+    "nonlinear",
+    "state",
+    "cs.CE",
+    "math.OC"
+   ],
+   "citation_count": 0,
+   "title": "Level-set topology optimization considering nonlinear thermoelasticity",
+   "year": 2019,
+   "categories": [
+    "cs.CE",
+    "math.OC"
+   ],
+   "id": "arxiv:1909.11185"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "region",
+    "convergent",
+    "globally convergent",
+    "globally",
+    "point",
+    "optimization methods",
+    "reduced",
+    "magnitude",
+    "critical",
+    "original",
+    "guarantee",
+    "convergent method",
+    "math.NA",
+    "math.OC"
+   ],
+   "citation_count": 0,
+   "title": "A globally convergent method to accelerate topology optimization using on-the-fly model reduction",
+   "year": 2020,
+   "categories": [
+    "math.NA",
+    "math.OC"
+   ],
+   "id": "arxiv:2004.05756"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "flow",
+    "field",
+    "transfer",
+    "effect",
+    "batteries",
+    "electrode",
+    "mass",
+    "optimized",
+    "fields",
+    "power",
+    "novel",
+    "problem",
+    "math.OC"
+   ],
+   "citation_count": 0,
+   "title": "Novel flow field design for vanadium redox flow batteries via topology optimization",
+   "year": 2018,
+   "categories": [
+    "math.OC"
+   ],
+   "id": "arxiv:1807.07764"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "phase field",
+    "phase",
+    "field topology",
+    "material design",
+    "field",
+    "variable",
+    "material",
+    "different",
+    "perform",
+    "freedom",
+    "additive",
+    "manufacturing",
+    "math.OC"
+   ],
+   "citation_count": 0,
+   "title": "Graded-material Design based on Phase-field and Topology Optimization",
+   "year": 2018,
+   "categories": [
+    "math.OC"
+   ],
+   "id": "arxiv:1811.07205"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "beam",
+    "design variables",
+    "node",
+    "variables",
+    "explicit",
+    "moving",
+    "shape",
+    "new",
+    "elements",
+    "number",
+    "approach",
+    "design",
+    "math.OC",
+    "cs.CE"
+   ],
+   "citation_count": 0,
+   "title": "Explicit topology optimization through moving node approach: beam elements recognition",
+   "year": 2021,
+   "categories": [
+    "math.OC",
+    "cs.CE"
+   ],
+   "id": "arxiv:2103.08347"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "algorithms",
+    "mesh",
+    "tools",
+    "space",
+    "variable",
+    "convergence",
+    "functional",
+    "converge",
+    "starting",
+    "programming",
+    "research",
+    "real",
+    "math.OC",
+    "math.NA"
+   ],
+   "citation_count": 0,
+   "title": "Another source of mesh dependence in topology optimization",
+   "year": 2021,
+   "categories": [
+    "math.OC",
+    "math.NA"
+   ],
+   "id": "arxiv:2106.12098"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "uncertainties",
+    "robust",
+    "uncertain",
+    "optimization framework",
+    "designs",
+    "deformations",
+    "robust topology",
+    "random",
+    "framework",
+    "finite",
+    "included",
+    "incorporating",
+    "cs.CE",
+    "math.OC"
+   ],
+   "citation_count": 0,
+   "title": "Finite Strain Robust Topology Optimization Considering Multiple Uncertainties",
+   "year": 2025,
+   "categories": [
+    "cs.CE",
+    "math.OC"
+   ],
+   "id": "arxiv:2501.15337"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "features",
+    "physical",
+    "geometric",
+    "features proposed",
+    "temperature",
+    "considering",
+    "optimization considering",
+    "proposed method",
+    "model",
+    "concept",
+    "minimum mean",
+    "idea",
+    "math.OC"
+   ],
+   "citation_count": 0,
+   "title": "Topology Optimization considering Shielding and Penetrating Features based on Fictitious Physical Model",
+   "year": 2025,
+   "categories": [
+    "math.OC"
+   ],
+   "id": "arxiv:2502.05899"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "diffusion",
+    "level set",
+    "set",
+    "equations",
+    "functionals",
+    "determine",
+    "configurations",
+    "method using",
+    "level",
+    "applied",
+    "proposed method",
+    "nonlinear",
+    "math.OC"
+   ],
+   "citation_count": 0,
+   "title": "Topology optimization method with nonlinear diffusion",
+   "year": 2023,
+   "categories": [
+    "math.OC"
+   ],
+   "id": "arxiv:2302.13310"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "data",
+    "data driven",
+    "driven topology",
+    "driven",
+    "materials",
+    "structures finite",
+    "dimensional",
+    "models",
+    "deformation",
+    "structures",
+    "optimal design",
+    "framework",
+    "math.OC"
+   ],
+   "citation_count": 0,
+   "title": "Data-driven Topology Optimization (DDTO) for Three-dimensional Continuum Structures",
+   "year": 2022,
+   "categories": [
+    "math.OC"
+   ],
+   "id": "arxiv:2211.05370"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "electrode",
+    "corresponding",
+    "energy",
+    "resulting",
+    "model",
+    "density",
+    "suffer",
+    "batteries",
+    "maximization",
+    "performed",
+    "variation",
+    "steady",
+    "math.OC"
+   ],
+   "citation_count": 0,
+   "title": "Maximization of Supercapacitor Storage via Topology Optimization of Electrode Structures",
+   "year": 2025,
+   "categories": [
+    "math.OC"
+   ],
+   "id": "arxiv:2511.20969"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "functions",
+    "shape",
+    "elements",
+    "domains",
+    "arbitrary",
+    "evaluation",
+    "meshes",
+    "geometric",
+    "mesh",
+    "element",
+    "finite",
+    "map",
+    "math.OC",
+    "math.NA"
+   ],
+   "citation_count": 0,
+   "title": "Topology Optimization Using Polytopes",
+   "year": 2013,
+   "categories": [
+    "math.OC",
+    "math.NA"
+   ],
+   "id": "arxiv:1312.7016"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "bipolar",
+    "optimization bipolar",
+    "local",
+    "multiple",
+    "electrolysis",
+    "multiple local",
+    "local minimizers",
+    "minimizers topology",
+    "bipolar plates",
+    "minimizers",
+    "plates",
+    "solutions",
+    "math.OC"
+   ],
+   "citation_count": 0,
+   "title": "Computing Multiple Local Minimizers for the Topology Optimization of Bipolar Plates in Electrolysis Cells",
+   "year": 2024,
+   "categories": [
+    "math.OC"
+   ],
+   "id": "arxiv:2401.09230"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "contact",
+    "self",
+    "aware",
+    "robustness",
+    "accuracy",
+    "incremental",
+    "investigated",
+    "internal",
+    "recently",
+    "barrier",
+    "contacting",
+    "accuracy applicability",
+    "math.OC"
+   ],
+   "citation_count": 0,
+   "title": "Topology Optimization with Frictional Self-Contact",
+   "year": 2022,
+   "categories": [
+    "math.OC"
+   ],
+   "id": "arxiv:2208.04844"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "canonical",
+    "duality",
+    "global",
+    "canonical duality",
+    "powerful",
+    "duality theory",
+    "theory",
+    "solving",
+    "time",
+    "artificial",
+    "beso",
+    "mistakes",
+    "math.OC"
+   ],
+   "citation_count": 0,
+   "title": "A Novel Canonical Duality Theory for Solving 3-D Topology Optimization Problems",
+   "year": 2018,
+   "categories": [
+    "math.OC"
+   ],
+   "id": "arxiv:1803.02615"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "amr",
+    "requirements",
+    "adaptive mesh",
+    "adaptive",
+    "refinement",
+    "mesh refinement",
+    "designs",
+    "amr strategy",
+    "mesh",
+    "computation",
+    "significantly",
+    "strategy",
+    "math.NA",
+    "cs.CE"
+   ],
+   "citation_count": 0,
+   "title": "Dynamic Adaptive Mesh Refinement for Topology Optimization",
+   "year": 2010,
+   "categories": [
+    "math.NA",
+    "cs.CE"
+   ],
+   "id": "arxiv:1009.4975"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "interior",
+    "interior point",
+    "point",
+    "gradient",
+    "method",
+    "linear",
+    "dual",
+    "arising",
+    "iterative",
+    "linear systems",
+    "technique topology",
+    "studied",
+    "math.OC",
+    "math.NA"
+   ],
+   "citation_count": 0,
+   "title": "Primal-dual interior-point multigrid method for topology optimization",
+   "year": 2016,
+   "categories": [
+    "math.OC",
+    "math.NA"
+   ],
+   "id": "arxiv:1606.06201"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "neural",
+    "high",
+    "resolution",
+    "3d",
+    "high resolution",
+    "neural network",
+    "neural networks",
+    "network",
+    "networks",
+    "combined",
+    "optimization design",
+    "3d topology",
+    "math.OC"
+   ],
+   "citation_count": 0,
+   "title": "An efficient and high-resolution topology optimization method based on convolutional neural networks",
+   "year": 2019,
+   "categories": [
+    "math.OC"
+   ],
+   "id": "arxiv:2001.04350"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "newton",
+    "methods",
+    "set method",
+    "using level",
+    "methods topology",
+    "level set",
+    "solution",
+    "set",
+    "level",
+    "algorithms",
+    "new",
+    "constrained",
+    "math.OC"
+   ],
+   "citation_count": 0,
+   "title": "Quasi-Newton Methods for Topology Optimization Using a Level-Set Method",
+   "year": 2023,
+   "categories": [
+    "math.OC"
+   ],
+   "id": "arxiv:2303.15070"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "neural",
+    "neural network",
+    "network",
+    "data driven",
+    "fluid",
+    "iterative",
+    "stokes flow",
+    "flow",
+    "stokes",
+    "data",
+    "driven",
+    "computing",
+    "physics.comp-ph"
+   ],
+   "citation_count": 0,
+   "title": "Data-driven Topology Optimization of Channel Flow Problems",
+   "year": 2023,
+   "categories": [
+    "physics.comp-ph"
+   ],
+   "id": "arxiv:2309.00278"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "selection",
+    "properties",
+    "useful",
+    "tested",
+    "precise",
+    "volume fraction",
+    "fraction",
+    "volume",
+    "material",
+    "compliance",
+    "model constructed",
+    "construct",
+    "math.OC"
+   ],
+   "citation_count": 0,
+   "title": "On some properties of the compliance-volume fraction Pareto front in topology optimization useful for material selection",
+   "year": 2022,
+   "categories": [
+    "math.OC"
+   ],
+   "id": "arxiv:2211.15358"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "contact",
+    "internal",
+    "optimized designs",
+    "designs",
+    "medium",
+    "classical",
+    "objective",
+    "optimized",
+    "large",
+    "design objective",
+    "includes",
+    "incorporates",
+    "cs.CE"
+   ],
+   "citation_count": 0,
+   "title": "Topology Optimization of self-contacting structures",
+   "year": 2023,
+   "categories": [
+    "cs.CE"
+   ],
+   "id": "arxiv:2305.06750"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "learning",
+    "current",
+    "3d",
+    "total",
+    "deep",
+    "mainly",
+    "deep learning",
+    "reduction",
+    "component",
+    "training",
+    "optimization methods",
+    "multiple",
+    "cs.LG"
+   ],
+   "citation_count": 0,
+   "title": "Algorithmically-Consistent Deep Learning Frameworks for Structural Topology Optimization",
+   "year": 2020,
+   "categories": [
+    "cs.LG"
+   ],
+   "id": "arxiv:2012.05359"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "hardening",
+    "behavior",
+    "structure",
+    "important",
+    "material",
+    "model",
+    "linear",
+    "strain",
+    "loading",
+    "arbitrary",
+    "components",
+    "law",
+    "cs.CE"
+   ],
+   "citation_count": 0,
+   "title": "Thermodynamic topology optimization for hardening materials",
+   "year": 2021,
+   "categories": [
+    "cs.CE"
+   ],
+   "id": "arxiv:2103.03567"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "failure",
+    "reliability",
+    "rbto",
+    "beam",
+    "deviation",
+    "reliability based",
+    "2d",
+    "uncertainty",
+    "gradient",
+    "iteration",
+    "computationally",
+    "large",
+    "math.OC"
+   ],
+   "citation_count": 0,
+   "title": "Reliability-based Topology Optimization using Large Deviation Theory",
+   "year": 2026,
+   "categories": [
+    "math.OC"
+   ],
+   "id": "arxiv:2604.27208"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "gradients",
+    "uncertainty",
+    "configurations",
+    "predicted",
+    "independent",
+    "moments",
+    "cost",
+    "uncertain",
+    "properties",
+    "random",
+    "stochastic",
+    "structural",
+    "math.OC"
+   ],
+   "citation_count": 0,
+   "title": "Topology Optimization under Microscale Uncertainty using Stochastic Gradients",
+   "year": 2021,
+   "categories": [
+    "math.OC"
+   ],
+   "id": "arxiv:2110.13358"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "xfem",
+    "structural response",
+    "solid",
+    "response",
+    "manufacturing",
+    "level set",
+    "geometry",
+    "set",
+    "directly",
+    "level",
+    "structural",
+    "structures",
+    "math.OC"
+   ],
+   "citation_count": 0,
+   "title": "Density and Level Set-XFEM Schemes for Topology Optimization of 3-D Structures",
+   "year": 2014,
+   "categories": [
+    "math.OC"
+   ],
+   "id": "arxiv:1401.6475"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "power",
+    "sensitive",
+    "analysis topology",
+    "splitting",
+    "generalized",
+    "distribution",
+    "computationally",
+    "flow",
+    "analysis",
+    "flows",
+    "approximations",
+    "matrix",
+    "math.OC",
+    "eess.SY"
+   ],
+   "citation_count": 0,
+   "title": "Voltage-sensitive distribution factors for contingency analysis and topology optimization",
+   "year": 2025,
+   "categories": [
+    "math.OC",
+    "eess.SY"
+   ],
+   "id": "arxiv:2509.19976"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "code",
+    "matlab",
+    "matlab code",
+    "designs",
+    "presented",
+    "efficient",
+    "students",
+    "newcomers",
+    "downloaded",
+    "https",
+    "github",
+    "com",
+    "math.OC"
+   ],
+   "citation_count": 0,
+   "title": "Topology Optimization with Bilevel Knapsack: An Efficient 51 Lines MATLAB Code",
+   "year": 2019,
+   "categories": [
+    "math.OC"
+   ],
+   "id": "arxiv:1902.00877"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "probability",
+    "failure",
+    "parameters",
+    "rbto",
+    "stochastic gradient",
+    "sampling",
+    "using stochastic",
+    "density function",
+    "function",
+    "stochastic",
+    "illustrate",
+    "reliability",
+    "math.OC"
+   ],
+   "citation_count": 0,
+   "title": "Reliability-based Topology Optimization using Stochastic Gradients",
+   "year": 2021,
+   "categories": [
+    "math.OC"
+   ],
+   "id": "arxiv:2103.08830"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "components",
+    "mesh",
+    "refinement",
+    "geometric",
+    "projection",
+    "amr",
+    "adaptive mesh",
+    "bars",
+    "volume",
+    "discrete",
+    "adaptive",
+    "mesh refinement",
+    "math.OC",
+    "math.NA"
+   ],
+   "citation_count": 0,
+   "title": "Adaptive Mesh Refinement for Topology Optimization with Discrete Geometric Components",
+   "year": 2019,
+   "categories": [
+    "math.OC",
+    "math.NA"
+   ],
+   "id": "arxiv:1910.05585"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "probability",
+    "shape",
+    "wasserstein",
+    "law",
+    "shape topology",
+    "robust",
+    "theory",
+    "field",
+    "regularization",
+    "brief",
+    "distance",
+    "transport",
+    "math.OC",
+    "math.NA"
+   ],
+   "citation_count": 0,
+   "title": "Entropy-regularized Wasserstein distributionally robust shape and topology optimization",
+   "year": 2022,
+   "categories": [
+    "math.OC",
+    "math.NA"
+   ],
+   "id": "arxiv:2209.01500"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "density function",
+    "problems approach",
+    "solution",
+    "density",
+    "initial",
+    "function",
+    "constrained",
+    "approach",
+    "solve",
+    "problem",
+    "order",
+    "preserving",
+    "math.OC"
+   ],
+   "citation_count": 0,
+   "title": "Continuation methods for higher-order topology optimization",
+   "year": 2026,
+   "categories": [
+    "math.OC"
+   ],
+   "id": "arxiv:2601.04003"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "moments",
+    "density",
+    "presented",
+    "realized",
+    "operator",
+    "necessary",
+    "interpolation scheme",
+    "designs compared",
+    "performance proposed",
+    "filtering",
+    "optimized designs",
+    "bound",
+    "math.OC",
+    "cs.CE"
+   ],
+   "citation_count": 0,
+   "title": "Density-Based Topology Optimization in Method of Moments: Q-factor Minimization",
+   "year": 2023,
+   "categories": [
+    "math.OC",
+    "cs.CE"
+   ],
+   "id": "arxiv:2303.15290"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "bus",
+    "splitting",
+    "grid",
+    "operations",
+    "systems",
+    "power",
+    "level",
+    "linear",
+    "real",
+    "resultant",
+    "needs",
+    "congestion",
+    "math.OC"
+   ],
+   "citation_count": 0,
+   "title": "Substation-Level Grid Topology Optimization Using Bus Splitting",
+   "year": 2020,
+   "categories": [
+    "math.OC"
+   ],
+   "id": "arxiv:2009.14418"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "uncertainties",
+    "chaos",
+    "polynomial chaos",
+    "polynomial",
+    "random",
+    "load",
+    "mechanical",
+    "non",
+    "order",
+    "effective",
+    "magnitude",
+    "procedure",
+    "cs.CE",
+    "math.NA",
+    "math.OC",
+    "stat.CO",
+    "stat.ME"
+   ],
+   "citation_count": 0,
+   "title": "Non-intrusive polynomial chaos expansion for topology optimization using polygonal meshes",
+   "year": 2021,
+   "categories": [
+    "cs.CE",
+    "math.NA",
+    "math.OC",
+    "stat.CO",
+    "stat.ME"
+   ],
+   "id": "arxiv:2108.01616"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "canonical",
+    "canonical duality",
+    "duality",
+    "nonlinear",
+    "programming",
+    "general",
+    "cdt",
+    "elastic structures",
+    "problem",
+    "duality theory",
+    "elastic",
+    "typical",
+    "cs.DM",
+    "math.OC"
+   ],
+   "citation_count": 0,
+   "title": "Canonical Duality Theory for Topology Optimization",
+   "year": 2016,
+   "categories": [
+    "cs.DM",
+    "math.OC"
+   ],
+   "id": "arxiv:1612.05684"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "adversarial",
+    "neural",
+    "neural network",
+    "neural networks",
+    "network",
+    "networks",
+    "algorithms",
+    "solve",
+    "order",
+    "finite",
+    "operators",
+    "study",
+    "math.OC"
+   ],
+   "citation_count": 0,
+   "title": "Adversarial neural network methods for topology optimization of eigenvalue problems",
+   "year": 2024,
+   "categories": [
+    "math.OC"
+   ],
+   "id": "arxiv:2405.06248"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "bound",
+    "switching",
+    "variables",
+    "strategy",
+    "computational",
+    "determine",
+    "extensive",
+    "propose topology",
+    "nature",
+    "regions",
+    "emerged",
+    "optimization emerged",
+    "math.OC"
+   ],
+   "citation_count": 0,
+   "title": "The Sweet Spot of Bound Tightening for Topology Optimization",
+   "year": 2025,
+   "categories": [
+    "math.OC"
+   ],
+   "id": "arxiv:2507.16496"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "topological",
+    "topological derivatives",
+    "basis functions",
+    "basis",
+    "derivatives",
+    "degree",
+    "representation",
+    "level set",
+    "functions",
+    "set",
+    "higher",
+    "level",
+    "math.NA",
+    "cs.CE",
+    "math.OC"
+   ],
+   "citation_count": 0,
+   "title": "Isogeometric Topology Optimization Based on Topological Derivatives",
+   "year": 2025,
+   "categories": [
+    "math.NA",
+    "cs.CE",
+    "math.OC"
+   ],
+   "id": "arxiv:2509.09236"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "interface",
+    "domain",
+    "size",
+    "systems",
+    "nonlinearity",
+    "interior",
+    "arising",
+    "interior point",
+    "linear systems",
+    "choice",
+    "contribution",
+    "existing",
+    "math.OC",
+    "math.NA"
+   ],
+   "citation_count": 0,
+   "title": "Constraint interface preconditioning for topology optimization problems",
+   "year": 2015,
+   "categories": [
+    "math.OC",
+    "math.NA"
+   ],
+   "id": "arxiv:1510.04568"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "values",
+    "variables",
+    "intermediate",
+    "penalized",
+    "associated",
+    "design variables",
+    "proposed approach",
+    "variable",
+    "minimum",
+    "density",
+    "problem",
+    "optimization problem",
+    "cs.CE",
+    "math.OC"
+   ],
+   "citation_count": 0,
+   "title": "Topology optimization of wind farm layouts",
+   "year": 2022,
+   "categories": [
+    "cs.CE",
+    "math.OC"
+   ],
+   "id": "arxiv:2203.13525"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "local",
+    "local minimizers",
+    "minimizers",
+    "deflation",
+    "multiple local",
+    "deflation approach",
+    "plates",
+    "multiple",
+    "bipolar",
+    "electrolysis",
+    "cells",
+    "optimization bipolar",
+    "math.OC"
+   ],
+   "citation_count": 0,
+   "title": "A Novel Deflation Approach for Topology Optimization and Application for Optimization of Bipolar Plates of Electrolysis Cells",
+   "year": 2024,
+   "categories": [
+    "math.OC"
+   ],
+   "id": "arxiv:2406.17491"
+  },
+  {
+   "kind": "paper",
+   "concepts": [
+    "stochastic",
+    "asymptotes",
+    "method moving",
+    "moving asymptotes",
+    "moving",
+    "uncertainty",
+    "gradient",
+    "efficiency",
+    "traditional",
+    "difficulty",
+    "face",
+    "correct",
+    "math.OC"
+   ],
+   "citation_count": 0,
+   "title": "A stochastic method of moving asymptotes for topology optimization under uncertainty",
+   "year": 2024,
+   "categories": [
+    "math.OC"
+   ],
+   "id": "arxiv:2410.19428"
+  },
+  {
+   "kind": "knowledge",
+   "concepts": [
+    "cs.CE",
+    "deformations",
+    "density",
+    "design variables",
+    "designs",
+    "includes",
+    "large",
+    "level",
+    "level set",
+    "math.NA",
+    "math.OC",
+    "mechanical",
+    "optimized designs",
+    "random",
+    "set",
+    "uncertainties",
+    "variables"
+   ],
+   "categories": [
+    "cs.CE"
+   ],
+   "id": "K_cs.CE"
+  },
+  {
+   "kind": "knowledge",
+   "concepts": [
+    "elastoplastic",
+    "elastoplasticity",
+    "math.AP",
+    "math.OC"
+   ],
+   "categories": [
+    "math.AP"
+   ],
+   "id": "K_math.AP"
+  },
+  {
+   "kind": "knowledge",
+   "concepts": [
+    "adaptive",
+    "adaptive mesh",
+    "amr",
+    "arising",
+    "cs.CE",
+    "functions",
+    "geometric",
+    "interior",
+    "interior point",
+    "linear systems",
+    "magnitude",
+    "math.NA",
+    "math.OC",
+    "mesh",
+    "mesh refinement",
+    "point",
+    "refinement",
+    "shape",
+    "variable"
+   ],
+   "categories": [
+    "math.NA"
+   ],
+   "id": "K_math.NA"
+  },
+  {
+   "kind": "knowledge",
+   "concepts": [
+    "algorithms",
+    "approach",
+    "arising",
+    "batteries",
+    "beam",
+    "bipolar",
+    "bound",
+    "canonical",
+    "canonical duality",
+    "cdt",
+    "computationally",
+    "configurations",
+    "constrained",
+    "cs.CE",
+    "deformations",
+    "density",
+    "density function",
+    "design variables",
+    "designs",
+    "determine",
+    "dimensional",
+    "discrete",
+    "distance",
+    "duality",
+    "duality theory",
+    "effective",
+    "elastoplastic",
+    "elastoplasticity",
+    "electrode",
+    "electrolysis",
+    "elements",
+    "failure",
+    "features",
+    "field",
+    "finite",
+    "flow",
+    "flows",
+    "framework",
+    "function",
+    "functional",
+    "functionals",
+    "functions",
+    "general",
+    "geometric",
+    "global",
+    "gradient",
+    "high",
+    "incremental",
+    "interior",
+    "interior point",
+    "large",
+    "level",
+    "level set",
+    "linear",
+    "linear systems",
+    "local",
+    "local minimizers",
+    "magnitude",
+    "manufacturing",
+    "material",
+    "math.AP",
+    "math.NA",
+    "math.OC",
+    "mechanical",
+    "mesh",
+    "minimizers",
+    "model",
+    "moments",
+    "moving",
+    "multiple",
+    "multiple local",
+    "network",
+    "networks",
+    "neural",
+    "neural network",
+    "neural networks",
+    "new",
+    "nonlinear",
+    "operator",
+    "optimization bipolar",
+    "optimization problem",
+    "order",
+    "phase",
+    "phase field",
+    "plates",
+    "point",
+    "power",
+    "presented",
+    "probability",
+    "problem",
+    "programming",
+    "properties",
+    "proposed method",
+    "random",
+    "rbto",
+    "real",
+    "reliability",
+    "robust",
+    "set",
+    "shape",
+    "solution",
+    "solve",
+    "splitting",
+    "stochastic",
+    "structural",
+    "structures",
+    "systems",
+    "temperature",
+    "theory",
+    "time",
+    "uncertain",
+    "uncertainties",
+    "uncertainty",
+    "variable",
+    "variables",
+    "volume",
+    "wasserstein"
+   ],
+   "categories": [
+    "math.OC"
+   ],
+   "id": "K_math.OC"
+  }
+ ],
+ "links": [
+  {
+   "kind": "knowledge",
+   "source": "K_cs.CE",
+   "target": "K_math.OC"
+  },
+  {
+   "kind": "knowledge",
+   "source": "K_cs.CE",
+   "target": "K_math.NA"
+  },
+  {
+   "kind": "knowledge",
+   "source": "K_math.AP",
+   "target": "K_math.OC"
+  },
+  {
+   "kind": "knowledge",
+   "source": "K_math.NA",
+   "target": "K_math.OC"
+  },
+  {
+   "kind": "knowledge",
+   "source": "K_math.NA",
+   "target": "K_cs.CE"
+  },
+  {
+   "kind": "knowledge",
+   "source": "K_math.OC",
+   "target": "K_math.NA"
+  },
+  {
+   "kind": "knowledge",
+   "source": "K_math.OC",
+   "target": "K_math.AP"
+  },
+  {
+   "kind": "knowledge",
+   "source": "K_math.OC",
+   "target": "K_cs.CE"
+  }
+ ]
+}

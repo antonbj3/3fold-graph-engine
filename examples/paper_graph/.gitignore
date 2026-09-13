@@ -1,0 +1,8 @@
+# Regenerable artifacts (see docs/RUNNING.md, "paper_graph on a public arXiv set"):
+#   python3 src/graph_engine/paper_graph/build_paper_graph.py --corpus examples/paper_graph/corpus.jsonl --out examples/paper_graph/paper_graph
+#   python3 examples/paper_graph/run_paper_graph_example.py
+*.pkl
+*.graphml
+# Semantic Scholar enrichment (citation counts + reference ids) is fetched at run time, never shipped
+corpus_s2.jsonl
+paper_graph_s2*

@@ -1,0 +1,129 @@
+{
+  "n_nodes": 50,
+  "n_edges": 74,
+  "edges_by_kind": {
+    "similarity": 74
+  },
+  "n_citation_links_directed": 0,
+  "n_dangling_refs": 0,
+  "density": 0.0604,
+  "degree": {
+    "min": 0,
+    "max": 9,
+    "mean": 2.96,
+    "median": 2.5,
+    "histogram": {
+      "0": 1,
+      "1": 12,
+      "2": 12,
+      "3": 7,
+      "4": 7,
+      "5": 7,
+      "6": 2,
+      "7": 1,
+      "9": 1
+    }
+  },
+  "connected_components": {
+    "count": 6,
+    "largest_size": 40,
+    "sizes": [
+      40,
+      3,
+      2,
+      2,
+      2,
+      1
+    ],
+    "singletons": 1
+  },
+  "avg_clustering": 0.286,
+  "triangles": 27,
+  "betweenness_mode": "exact (all nodes)",
+  "top_degree_centrality": [
+    [
+      "arxiv:2110.13358",
+      0.1837,
+      "Topology Optimization under Microscale Uncertainty using Sto"
+    ],
+    [
+      "arxiv:2103.08830",
+      0.1429,
+      "Reliability-based Topology Optimization using Stochastic Gra"
+    ],
+    [
+      "arxiv:2604.27208",
+      0.1224,
+      "Reliability-based Topology Optimization using Large Deviatio"
+    ],
+    [
+      "arxiv:2203.13525",
+      0.1224,
+      "Topology optimization of wind farm layouts"
+    ],
+    [
+      "arxiv:2004.05756",
+      0.102,
+      "A globally convergent method to accelerate topology optimiza"
+    ]
+  ],
+  "top_betweenness": [
+    [
+      "arxiv:2601.04003",
+      0.1922,
+      "Continuation methods for higher-order topology optimization"
+    ],
+    [
+      "arxiv:2004.06330",
+      0.1607,
+      "Topology optimization for incremental elastoplasticity: a ph"
+    ],
+    [
+      "arxiv:2110.13358",
+      0.1522,
+      "Topology Optimization under Microscale Uncertainty using Sto"
+    ],
+    [
+      "arxiv:1401.6475",
+      0.1361,
+      "Density and Level Set-XFEM Schemes for Topology Optimization"
+    ],
+    [
+      "arxiv:1807.07764",
+      0.1216,
+      "Novel flow field design for vanadium redox flow batteries vi"
+    ]
+  ],
+  "citation_digraph": {
+    "n_edges": 0,
+    "n_weakly_connected": 50,
+    "is_dag": true,
+    "top_cited_in_corpus": [
+      [
+        "arxiv:2207.13852",
+        0,
+        "Fiber bundle topology optimization for surface flows"
+      ],
+      [
+        "arxiv:2012.03764",
+        0,
+        "Topology optimization for quasistatic elastoplasticity"
+      ],
+      [
+        "arxiv:2107.07763",
+        0,
+        "Topology optimization using the unsmooth variational topolog"
+      ],
+      [
+        "arxiv:1712.02919",
+        0,
+        "On Topology Optimization and Canonical Duality Method"
+      ],
+      [
+        "arxiv:2510.02870",
+        0,
+        "Wasserstein crossover for evolutionary algorithm-based topol"
+      ]
+    ]
+  }
+}

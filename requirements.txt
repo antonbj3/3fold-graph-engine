@@ -1,0 +1,15 @@
+numpy
+scipy
+pyyaml
+pytest
+# paper_graph (citation/similarity graph + search evaluation)
+networkx
+scikit-learn
+# dataset_profiler payload analysers (image headers)
+pillow
+# optional, only for the modules marked in docs/RUNNING.md:
+#   requests      -> paper_graph/download_papers.py (arXiv / Semantic Scholar fetch)
+#   torch         -> llm_federation_gen.py (local generation driver)
+#   transformers  -> llm_federation_gen.py
+#   opencv-python -> decorrelated_recovery.py, video_admission_identifiability_pregate.py
+#   h5py          -> dataset_profiler.py HDF5 payloads

@@ -1,0 +1,753 @@
+{
+  "instances": {},
+  "gates": {
+    "G1_engine_validated": true,
+    "G2_anticausal_caught": true,
+    "G3_real_majority_pass": true,
+    "G4_subtractive_helps": true,
+    "G5_floor_grid_stable": true,
+    "G6_power_finite": true,
+    "G6b_specificity": true
+  },
+  "partA": {
+    "c1_by_N": [
+      [
+        2000,
+        3.6968004111635936e-06
+      ],
+      [
+        4000,
+        8.798105477017287e-07
+      ],
+      [
+        8000,
+        1.756187779542605e-07
+      ]
+    ],
+    "c2_causal_residual": 8.798105477017287e-07,
+    "c2_acausal_residual": 0.9430572226477468,
+    "c2_ratio": 1071886.6977796904
+  },
+  "partB": {
+    "naive_rho": {
+      "Au_Johnson": 0.37302332819162687,
+      "Au_McPeak": 0.5452203595153178,
+      "SiO2_Rodriguez": 0.0234038227892139,
+      "SiO2_Kischkat": 0.1785711707371116,
+      "H2O_Hale": 0.3228307723792385,
+      "H2O_Segelstein_xcheck": 0.3468210726198741
+    },
+    "sub_rho": {
+      "Au_Johnson": 0.340853627196264,
+      "Au_McPeak": 0.5229703234240269,
+      "SiO2_Rodriguez": 0.00044189109805790785,
+      "SiO2_Kischkat": 0.0029335214006265447,
+      "H2O_Hale": 0.0009767464712188117,
+      "H2O_Segelstein_xcheck": 0.011866356968634702
+    },
+    "n_pass_sub": 4,
+    "median_naive": 0.33482592249955634,
+    "median_sub": 0.007399939184630623,
+    "bonus_wideband_rho": 0.003962211678593966,
+    "hale_segelstein_agreement": 0.019517090723437405
+  },
+  "partC": {
+    "floors": {
+      "Au_Johnson": {
+        "floor_sub": 0.03800935400278524,
+        "floor_naive": 1.492119972572466,
+        "ratio_real_over_floor": 8.96762484232926,
+        "grid_stable": true,
+        "rel_change_2x": 0.08282257528682996
+      },
+      "Au_McPeak": {
+        "floor_sub": 0.018753538924948788,
+        "floor_naive": 1.478342952845175,
+        "ratio_real_over_floor": 27.88648721273044,
+        "grid_stable": true,
+        "rel_change_2x": 0.025713793867391137
+      },
+      "SiO2_Rodriguez": {
+        "floor_sub": 6.877813615583063e-05,
+        "floor_naive": 0.0010538052982464563,
+        "ratio_real_over_floor": 6.42487747933028,
+        "grid_stable": true,
+        "rel_change_2x": 0.025133734139021775
+      },
+      "SiO2_Kischkat": {
+        "floor_sub": 0.09672652832041254,
+        "floor_naive": 52.93797135821188,
+        "ratio_real_over_floor": 0.030327992243338618,
+        "grid_stable": true,
+        "rel_change_2x": 0.001524139610025296
+      },
+      "H2O_Hale": {
+        "floor_sub": 0.00029698155772307284,
+        "floor_naive": 1.4109250960639987,
+        "ratio_real_over_floor": 3.2889128830336363,
+        "grid_stable": true,
+        "rel_change_2x": 0.029076002197932216
+      },
+      "H2O_Segelstein_xcheck": {
+        "floor_sub": 0.0003275964303550744,
+        "floor_naive": 1.404257061892053,
+        "ratio_real_over_floor": 36.222485561802436,
+        "grid_stable": true,
+        "rel_change_2x": 0.004556215227445118
+      }
+    },
+    "honest_limited": {
+      "Au_Johnson": false,
+      "Au_McPeak": false,
+      "SiO2_Rodriguez": false,
+      "SiO2_Kischkat": false,
+      "H2O_Hale": false,
+      "H2O_Segelstein_xcheck": false
+    },
+    "n_limited": 0
+  },
+  "partC_metal_diagnostic": {
+    "Au_Johnson": {
+      "floor_generic": 0.03800935400278524,
+      "floor_metal": 0.7009564706023858,
+      "real_rho": 0.340853627196264,
+      "ratio_real_over_metal_floor": 0.48626932126518824
+    },
+    "Au_McPeak": {
+      "floor_generic": 0.018753538924948788,
+      "floor_metal": 1.5339706332169587,
+      "real_rho": 0.5229703234240269,
+      "ratio_real_over_metal_floor": 0.34092590307761134
+    }
+  },
+  "partD": {
+    "Au_Johnson": {
+      "rho_native": 0.340853627196264,
+      "rho_dense": 0.3059638287968942,
+      "abs_change": 0.03488979839936979
+    },
+    "Au_McPeak": {
+      "rho_native": 0.5229703234240269,
+      "rho_dense": 0.5250310590302523,
+      "abs_change": 0.002060735606225328
+    },
+    "SiO2_Rodriguez": {
+      "rho_native": 0.00044189109805790785,
+      "rho_dense": 0.0004467523470621996,
+      "abs_change": 4.861249004291734e-06
+    },
+    "SiO2_Kischkat": {
+      "rho_native": 0.0029335214006265447,
+      "rho_dense": 0.002928110508726853,
+      "abs_change": 5.410891899691652e-06
+    },
+    "H2O_Hale": {
+      "rho_native": 0.0009767464712188117,
+      "rho_dense": 0.0008631800285319943,
+      "abs_change": 0.00011356644268681738
+    },
+    "H2O_Segelstein_xcheck": {
+      "rho_native": 0.011866356968634702,
+      "rho_dense": 0.011790642984054555,
+      "abs_change": 7.57139845801464e-05
+    }
+  },
+  "partE": {
+    "pooled_power_curve": [
+      [
+        0.01,
+        0.0
+      ],
+      [
+        0.02,
+        0.0
+      ],
+      [
+        0.05,
+        0.0
+      ],
+      [
+        0.1,
+        0.0
+      ],
+      [
+        0.2,
+        0.16666666666666666
+      ],
+      [
+        0.5,
+        0.3333333333333333
+      ],
+      [
+        1.0,
+        0.5
+      ],
+      [
+        2.0,
+        0.75
+      ],
+      [
+        5.0,
+        1.0
+      ]
+    ],
+    "cross50_pooled": 1.0,
+    "cross80_pooled": 5.0,
+    "per_instance_crossing": {
+      "Au_Johnson": {
+        "0.05": {
+          "first_amp_detected": 5.0,
+          "power_curve": [
+            [
+              0.01,
+              false
+            ],
+            [
+              0.02,
+              false
+            ],
+            [
+              0.05,
+              false
+            ],
+            [
+              0.1,
+              false
+            ],
+            [
+              0.2,
+              false
+            ],
+            [
+              0.5,
+              false
+            ],
+            [
+              1.0,
+              false
+            ],
+            [
+              2.0,
+              false
+            ],
+            [
+              5.0,
+              true
+            ]
+          ]
+        },
+        "0.15": {
+          "first_amp_detected": 1.0,
+          "power_curve": [
+            [
+              0.01,
+              false
+            ],
+            [
+              0.02,
+              false
+            ],
+            [
+              0.05,
+              false
+            ],
+            [
+              0.1,
+              false
+            ],
+            [
+              0.2,
+              false
+            ],
+            [
+              0.5,
+              false
+            ],
+            [
+              1.0,
+              true
+            ],
+            [
+              2.0,
+              true
+            ],
+            [
+              5.0,
+              true
+            ]
+          ]
+        }
+      },
+      "Au_McPeak": {
+        "0.05": {
+          "first_amp_detected": 5.0,
+          "power_curve": [
+            [
+              0.01,
+              false
+            ],
+            [
+              0.02,
+              false
+            ],
+            [
+              0.05,
+              false
+            ],
+            [
+              0.1,
+              false
+            ],
+            [
+              0.2,
+              false
+            ],
+            [
+              0.5,
+              false
+            ],
+            [
+              1.0,
+              false
+            ],
+            [
+              2.0,
+              false
+            ],
+            [
+              5.0,
+              true
+            ]
+          ]
+        },
+        "0.15": {
+          "first_amp_detected": 1.0,
+          "power_curve": [
+            [
+              0.01,
+              false
+            ],
+            [
+              0.02,
+              false
+            ],
+            [
+              0.05,
+              false
+            ],
+            [
+              0.1,
+              false
+            ],
+            [
+              0.2,
+              false
+            ],
+            [
+              0.5,
+              false
+            ],
+            [
+              1.0,
+              true
+            ],
+            [
+              2.0,
+              true
+            ],
+            [
+              5.0,
+              true
+            ]
+          ]
+        }
+      },
+      "SiO2_Rodriguez": {
+        "0.05": {
+          "first_amp_detected": 2.0,
+          "power_curve": [
+            [
+              0.01,
+              false
+            ],
+            [
+              0.02,
+              false
+            ],
+            [
+              0.05,
+              false
+            ],
+            [
+              0.1,
+              false
+            ],
+            [
+              0.2,
+              false
+            ],
+            [
+              0.5,
+              false
+            ],
+            [
+              1.0,
+              false
+            ],
+            [
+              2.0,
+              true
+            ],
+            [
+              5.0,
+              true
+            ]
+          ]
+        },
+        "0.15": {
+          "first_amp_detected": 0.2,
+          "power_curve": [
+            [
+              0.01,
+              false
+            ],
+            [
+              0.02,
+              false
+            ],
+            [
+              0.05,
+              false
+            ],
+            [
+              0.1,
+              false
+            ],
+            [
+              0.2,
+              true
+            ],
+            [
+              0.5,
+              true
+            ],
+            [
+              1.0,
+              true
+            ],
+            [
+              2.0,
+              true
+            ],
+            [
+              5.0,
+              true
+            ]
+          ]
+        }
+      },
+      "SiO2_Kischkat": {
+        "0.05": {
+          "first_amp_detected": 0.5,
+          "power_curve": [
+            [
+              0.01,
+              false
+            ],
+            [
+              0.02,
+              false
+            ],
+            [
+              0.05,
+              false
+            ],
+            [
+              0.1,
+              false
+            ],
+            [
+              0.2,
+              false
+            ],
+            [
+              0.5,
+              true
+            ],
+            [
+              1.0,
+              true
+            ],
+            [
+              2.0,
+              true
+            ],
+            [
+              5.0,
+              true
+            ]
+          ]
+        },
+        "0.15": {
+          "first_amp_detected": 0.2,
+          "power_curve": [
+            [
+              0.01,
+              false
+            ],
+            [
+              0.02,
+              false
+            ],
+            [
+              0.05,
+              false
+            ],
+            [
+              0.1,
+              false
+            ],
+            [
+              0.2,
+              true
+            ],
+            [
+              0.5,
+              true
+            ],
+            [
+              1.0,
+              true
+            ],
+            [
+              2.0,
+              true
+            ],
+            [
+              5.0,
+              true
+            ]
+          ]
+        }
+      },
+      "H2O_Hale": {
+        "0.05": {
+          "first_amp_detected": 2.0,
+          "power_curve": [
+            [
+              0.01,
+              false
+            ],
+            [
+              0.02,
+              false
+            ],
+            [
+              0.05,
+              false
+            ],
+            [
+              0.1,
+              false
+            ],
+            [
+              0.2,
+              false
+            ],
+            [
+              0.5,
+              false
+            ],
+            [
+              1.0,
+              false
+            ],
+            [
+              2.0,
+              true
+            ],
+            [
+              5.0,
+              true
+            ]
+          ]
+        },
+        "0.15": {
+          "first_amp_detected": 0.5,
+          "power_curve": [
+            [
+              0.01,
+              false
+            ],
+            [
+              0.02,
+              false
+            ],
+            [
+              0.05,
+              false
+            ],
+            [
+              0.1,
+              false
+            ],
+            [
+              0.2,
+              false
+            ],
+            [
+              0.5,
+              true
+            ],
+            [
+              1.0,
+              true
+            ],
+            [
+              2.0,
+              true
+            ],
+            [
+              5.0,
+              true
+            ]
+          ]
+        }
+      },
+      "H2O_Segelstein_xcheck": {
+        "0.05": {
+          "first_amp_detected": 5.0,
+          "power_curve": [
+            [
+              0.01,
+              false
+            ],
+            [
+              0.02,
+              false
+            ],
+            [
+              0.05,
+              false
+            ],
+            [
+              0.1,
+              false
+            ],
+            [
+              0.2,
+              false
+            ],
+            [
+              0.5,
+              false
+            ],
+            [
+              1.0,
+              false
+            ],
+            [
+              2.0,
+              false
+            ],
+            [
+              5.0,
+              true
+            ]
+          ]
+        },
+        "0.15": {
+          "first_amp_detected": 2.0,
+          "power_curve": [
+            [
+              0.01,
+              false
+            ],
+            [
+              0.02,
+              false
+            ],
+            [
+              0.05,
+              false
+            ],
+            [
+              0.1,
+              false
+            ],
+            [
+              0.2,
+              false
+            ],
+            [
+              0.5,
+              false
+            ],
+            [
+              1.0,
+              false
+            ],
+            [
+              2.0,
+              true
+            ],
+            [
+              5.0,
+              true
+            ]
+          ]
+        }
+      }
+    },
+    "boot_stats": {
+      "Au_Johnson": {
+        "baseline": 0.340853627196264,
+        "n_boot": 300,
+        "sigma_boot": 0.028644732284460798,
+        "tau_delta": 0.03240067475766001
+      },
+      "Au_McPeak": {
+        "baseline": 0.5229703234240269,
+        "n_boot": 300,
+        "sigma_boot": 0.023455187027259627,
+        "tau_delta": 0.03964949159086298
+      },
+      "SiO2_Rodriguez": {
+        "baseline": 0.00044189109805790785,
+        "n_boot": 300,
+        "sigma_boot": 5.612082020230213e-05,
+        "tau_delta": 6.812483267636896e-05
+      },
+      "SiO2_Kischkat": {
+        "baseline": 0.0029335214006265447,
+        "n_boot": 300,
+        "sigma_boot": 3.2398363591102224e-05,
+        "tau_delta": 5.6852792650061565e-05
+      },
+      "H2O_Hale": {
+        "baseline": 0.0009767464712188117,
+        "n_boot": 300,
+        "sigma_boot": 0.0029868435409137525,
+        "tau_delta": 0.004669732274868767
+      },
+      "H2O_Segelstein_xcheck": {
+        "baseline": 0.011866356968634702,
+        "n_boot": 300,
+        "sigma_boot": 0.0003914753529920034,
+        "tau_delta": 0.0011193154901210367
+      }
+    },
+    "fp_checks": {
+      "Au_Johnson": 0.02666666666666667,
+      "Au_McPeak": 0.04666666666666667,
+      "SiO2_Rodriguez": 0.04,
+      "SiO2_Kischkat": 0.02666666666666667,
+      "H2O_Hale": 0.05,
+      "H2O_Segelstein_xcheck": 0.03333333333333333
+    },
+    "n_records": 108,
+    "note": "within-instance bootstrap design; supersedes an earlier cross-instance leave-one-out design that FAILED due to metal baseline contamination (see code comment above)"
+  },
+  "allpass": true,
+  "timestamp": "2026-09-11 18:13:06"
+}

@@ -1,0 +1,148 @@
+{
+  "gates": {
+    "GB1_engine_validated": true,
+    "GB2_anticausal_caught": true,
+    "GB3_real_majority_pass": false,
+    "G_REPRO_SPOTCHECK": true,
+    "G_DECORR_PASS": false,
+    "G_COBLIND": true
+  },
+  "partA": {
+    "r_c1b": 9.704561631455929e-05,
+    "r_c1b_25restart": 0.00013730596782200957,
+    "r_c2b": 0.01430754312134663,
+    "ratio_c2b": 147.43111193163847
+  },
+  "partB": {
+    "rho_fit_baseline": {
+      "Au_Johnson": 0.450949868147996,
+      "Au_McPeak": 0.3386662431402065,
+      "SiO2_Rodriguez": 0.3952783545112074,
+      "SiO2_Kischkat": 0.44922262909909544,
+      "H2O_Hale": 0.04816482426630811,
+      "H2O_Segelstein_xcheck": 0.021286909397466015
+    },
+    "n_pass_fit": 2,
+    "metal_diag": {
+      "Au_Johnson": {
+        "rho_fit_generic": 0.450949868147996,
+        "rho_fit_drude_interband": 0.45885439164514247
+      },
+      "Au_McPeak": {
+        "rho_fit_generic": 0.3386662431402065,
+        "rho_fit_drude_interband": 0.3620000702488478
+      }
+    },
+    "rho_sub_kk": {
+      "Au_Johnson": 0.340853627196264,
+      "Au_McPeak": 0.5229703234240269,
+      "SiO2_Rodriguez": 0.00044189109805790785,
+      "SiO2_Kischkat": 0.0029335214006265447,
+      "H2O_Hale": 0.0009767464712188117,
+      "H2O_Segelstein_xcheck": 0.011866356968634702
+    }
+  },
+  "partC": {
+    "n_records": 108,
+    "repro_match": true,
+    "pooled_power_recomputed": [
+      [
+        0.01,
+        0.0
+      ],
+      [
+        0.02,
+        0.0
+      ],
+      [
+        0.05,
+        0.0
+      ],
+      [
+        0.1,
+        0.0
+      ],
+      [
+        0.2,
+        0.16666666666666666
+      ],
+      [
+        0.5,
+        0.3333333333333333
+      ],
+      [
+        1.0,
+        0.5
+      ],
+      [
+        2.0,
+        0.75
+      ],
+      [
+        5.0,
+        1.0
+      ]
+    ]
+  },
+  "partD": {
+    "rho_naive": 0.5893815995534001,
+    "per_instance_rho": {
+      "Au_Johnson": 0.9240830645232915,
+      "Au_McPeak": 0.8730943326664642,
+      "SiO2_Rodriguez": -0.8729368419387692,
+      "SiO2_Kischkat": -0.39175023079434124,
+      "H2O_Hale": 0.7462009469225881,
+      "H2O_Segelstein_xcheck": 0.9019115144864118
+    },
+    "rho_within": 0.5429268074624372,
+    "per_instance_partial": {
+      "Au_Johnson": 0.9008088962705173,
+      "Au_McPeak": 0.9385019822837112,
+      "SiO2_Rodriguez": -0.8824155287924184,
+      "SiO2_Kischkat": 0.11934173939607792,
+      "H2O_Hale": 0.917037082416966,
+      "H2O_Segelstein_xcheck": 0.8894281618662139
+    },
+    "rho_partial": 0.7674106524164716,
+    "permutation_p": 0.0,
+    "null_mean": -0.0010090542770215811,
+    "null_std": 0.1467700862464611,
+    "n_eff": 1.1315989282205148,
+    "rho_step4": 0.701781899020898,
+    "permutation_p_step4": 0.0,
+    "n_eff_step4": 1.1752387313266632,
+    "per_instance_step4": {
+      "Au_Johnson": 0.7287347499067197,
+      "Au_McPeak": 0.9187186713200602,
+      "SiO2_Rodriguez": 0.9237253735238427,
+      "SiO2_Kischkat": 0.38035318415268365,
+      "H2O_Hale": 0.9010377716474492,
+      "H2O_Segelstein_xcheck": 0.889395166167635
+    },
+    "verdict": "CO-BLIND (n_eff~1, H0/null)",
+    "value_level_corr": 0.3667801461338218,
+    "vals_kk": [
+      0.340853627196264,
+      0.5229703234240269,
+      0.00044189109805790785,
+      0.0029335214006265447,
+      0.0009767464712188117,
+      0.011866356968634702
+    ],
+    "vals_fit": [
+      0.450949868147996,
+      0.3386662431402065,
+      0.3952783545112074,
+      0.44922262909909544,
+      0.04816482426630811,
+      0.021286909397466015
+    ],
+    "concrete_complement": {
+      "both": 16,
+      "a_only": 20,
+      "b_only": 20,
+      "neither": 52
+    }
+  },
+  "timestamp": "2026-09-11 18:18:30"
+}

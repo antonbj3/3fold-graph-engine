@@ -1,0 +1,37 @@
+{
+  "nodes": [
+    {
+      "id": "n.sensor",
+      "type": "measurement",
+      "title": "sensor calibration"
+    },
+    {
+      "id": "n.fusion",
+      "type": "build",
+      "title": "two-check fusion"
+    },
+    {
+      "id": "n.coverage",
+      "type": "question",
+      "title": "uncaught failure kinds"
+    },
+    {
+      "id": "n.orphan",
+      "type": "hole",
+      "title": "uncaught failure kind",
+      "status": "open"
+    }
+  ],
+  "edges": [
+    {
+      "src": "n.sensor",
+      "dst": "n.fusion",
+      "type": "enables"
+    },
+    {
+      "src": "n.coverage",
+      "dst": "n.fusion",
+      "type": "blocks"
+    }
+  ]
+}

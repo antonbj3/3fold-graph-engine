@@ -1,0 +1,12 @@
+{
+  "_meta": {
+    "note": "Example dependency graph. Node ids name BUILDS, never people. Status is human-adjudicated; `load` is recomputed by `validate` and must match.",
+    "goal_weights": {"FUSION-GOAL": 2}
+  },
+  "nodes": [
+    {"id": "SENSOR-CAL", "claim": "sensor calibration residual is inside the gate", "type": "EMPIRICAL", "status": "PROVEN", "evidence": ["MEAS-A2"], "depends_on": [], "load": 2, "risk": "LOW", "regime_note": "n/a", "cost": 1},
+    {"id": "COVERAGE", "claim": "the check suite covers every known failure kind", "type": "EMPIRICAL", "status": "OPEN", "evidence": [], "depends_on": ["SENSOR-CAL"], "load": 1, "risk": "HIGH", "regime_note": "one failure kind is still uncaught", "cost": 2},
+    {"id": "FUSION-V1", "claim": "fusing the two checks raises certified reliability", "type": "ENGINEERING", "status": "ASSUMED", "evidence": ["MEAS-B1"], "depends_on": ["SENSOR-CAL"], "load": 1, "risk": "MED", "regime_note": "n/a", "cost": 3},
+    {"id": "FUSION-GOAL", "claim": "a fused estimate certified up to its gauges", "type": "GOAL", "status": "OPEN", "evidence": [], "depends_on": ["FUSION-V1", "COVERAGE"], "load": 0, "risk": "HIGH", "regime_note": "n/a", "cost": 8}
+  ]
+}
