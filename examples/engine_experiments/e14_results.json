@@ -1,0 +1,40 @@
+{
+ "rule": {
+  "coverage": 1.0,
+  "accuracy_where_it_answers": 1.0,
+  "accuracy_by_template": [
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0
+  ]
+ },
+ "lm_raw_pooled_8_lenses": {
+  "accuracy": 0.591,
+  "accuracy_by_template": [
+   1.0,
+   0.825,
+   0.225,
+   0.9,
+   0.875,
+   0.075,
+   0.675,
+   0.15
+  ]
+ },
+ "error_correlation_lm_vs_rule": null,
+ "accept_only_where_they_agree": {
+  "coverage": 0.591,
+  "accuracy": 1.0,
+  "lm_accuracy_where_they_disagree": 0.0
+ },
+ "lm_calibrated_on_RULE_labels_no_ground_truth": {
+  "accuracy_held_out_pairs": 0.927,
+  "sd": 0.025,
+  "for_reference_calibrated_on_true_labels_e7b": 0.927
+ }
+}

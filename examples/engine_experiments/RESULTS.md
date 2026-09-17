@@ -54,6 +54,7 @@ corpus the gate abstains on all 57 papers from title and abstract. The modules b
 | `graph_interface` | combine two graphs through shared concepts only | R_ab = g_a + g_b + (h_a − h_b)ᵀ(S_A + S_B)⁺(h_a − h_b); exact, with g exact by default (a Hutchinson estimate only on request) |
 | `lens_pooling` | pool several phrasings of one question to one judge | per-stratum Platt scaling, error correlation, tempering, balanced lens sets from a Hadamard array |
 | `pooled_screening` | how many candidates per pooled question | two-stage Dorfman with noisy tests, closed forms |
+| `polarity_rules` | the sign a sentence asserts between two quantities, symbolically | one direction word per quantity per clause, negation flips, last clause wins, composition by product; abstains outside its lexicon (English only) |
 | `typed_extraction` | the stubbed prose → `Claim` step of `paper_graph/pipeline.py` | yes/no fields from the target node's claim; balanced lenses; isotonic calibration of the pooled log-odds; confidence = Π max(p, 1−p) = P(whole claim right); `agree` adds the log-odds of a second, independent judge |
 
 ## Measured
@@ -126,6 +127,18 @@ More lenses do not remove an error that every lens of one judge shares; a second
 Calibration (test): stated 0.60, entirely right 0.64 (0.9⁴ = 0.66); uncalibrated states 0.81–0.92 and is right 0.60–0.65. A
 straight-line (Platt) calibration was tried first and was under-confident (0.44 stated, 0.63 right); isotonic is used.
 
+**Speed of the open typed-decision mechanism (e13; Qwen2.5-0.5B-Instruct fp16 on an RTX 5070; one 400-token state, 20 yes/no
+fields).** One forward pass per field 504 ms per state (40 fields/s); all 20 as one batch with the state re-read 490 ms; state
+prefilled once and its KV cache shared by the 20 field suffixes 54.5 ms (367 fields/s). The three give the same probabilities
+(max difference 0.006, fp16). The open replica of the hosted service (read by an agent) does the same: prefill once, tile the
+cache, one batched pass, softmax restricted to the option tokens, no training.
+
+**Two real channels on one field (e14; the 320 labelled TEST sentences of e7).** Symbolic rule: coverage 1.0, accuracy 1.0 on the
+templated sentences and 10/10 on hand-written sentences outside the templates (tests) — templates and lexicon have the same author,
+so this is not an independent evaluation of the rule. Language model, eight lenses pooled: 0.591. Where both answer and agree
+(59 % of sentences): 1.000; where they disagree the language model is right 0.000. Language model calibrated per sentence form on the
+RULE's answers instead of the labels, held-out quantity pairs: 0.927 (sd 0.025), equal to calibration on true labels (e7b).
+
 **Mechanism signature (tests).** Electrostatic pull-in, Semenov thermal runaway and shallow-truss snap-through: one limit point,
 order 2.00, β 0.50, γ 0.50, at (1/3, 4/27), (1, 1/e), (1 − 1/√3, ·). Symmetric column: odd, γ 1.00. Cusp, linear, saturating: no limit point.
 
@@ -136,4 +149,5 @@ order 2.00, β 0.50, γ 0.50, at (1/3, 4/27), (1, 1/e), (1 − 1/√3, ·). Symm
 - `regime_posterior` assumes at most two transitions along ONE variable; `mechanism_signature` handles one state variable.
 - N_eff counts a single review that cites two independent origins as 2.
 - e11: the ordering proof assumes independent nodes and work that stops at the first failure; dependence was measured up to a shared-cause probability of 0.3 only.
-- e12: the judge is simulated. No real judge has been run through `typed_extraction`.
+- e12: the judge is simulated. No real judge has been run through `typed_extraction`. e14 uses the real 0.5B model's answers and a real rule, on templated sentences.
+- `polarity_rules`: English lexicon; one sentence; no coreference beyond "it"; abstains otherwise.
