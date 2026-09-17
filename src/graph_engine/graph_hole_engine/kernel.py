@@ -29,7 +29,9 @@ retro-fitted):
                          == I's  np.einsum('ij,jk,ik->i', G, Mi, G)  [scripts/physics_exp/d_extremal_allocation_demo.py:203]
     waterfill_reallocate == topopt OC  x*sqrt(-dC/λ)                 [scripts/warpfem_topopt.py:154]
                          == Fedorov-Wynn D-optimal step              [d_extremal_allocation_demo.py:203, the w*=... update]
-    participation_ratio  == Kish design-effect / CCF β-factor closed form  N/(1+(N-1)ρ)   (tests.py)
+    participation_ratio  == (Σλ)²/Σλ², for equicorrelation N/(1+(N-1)ρ²) — the SPECTRAL member of the effective-sample-size
+                         family. It is NOT the Kish / CCF β-factor sum-form N/(1+(N-1)ρ) (N=4, ρ=0.6: 1.92 vs 1.43);
+                         tests.py pins both, and neff_form.py says which one a given purpose needs.
 
 Pure numpy; no project dependencies.
 """
