@@ -1,0 +1,140 @@
+{
+ "HepTh@71": {
+  "resistance": [
+   -0.2032,
+   1.9e-185
+  ],
+  "adamic_adar": [
+   -0.0433,
+   9.3e-10
+  ],
+  "pref": [
+   0.1195,
+   1.7e-64
+  ],
+  "vel": [
+   0.1856,
+   1.7e-154
+  ],
+  "resistance|pref (partial)": -0.1658,
+  "mean impact pct: top-decile resistance vs rest": [
+   0.5786,
+   0.7677
+  ]
+ },
+ "HepTh@83": {
+  "resistance": [
+   -0.0316,
+   7.8e-06
+  ],
+  "adamic_adar": [
+   -0.05,
+   1.5e-12
+  ],
+  "pref": [
+   -0.0866,
+   1.4e-34
+  ],
+  "vel": [
+   0.0977,
+   1.2e-43
+  ],
+  "resistance|pref (partial)": -0.1155,
+  "mean impact pct: top-decile resistance vs rest": [
+   0.6536,
+   0.7943
+  ]
+ },
+ "HepTh@95": {
+  "resistance": [
+   -0.1108,
+   1.1e-38
+  ],
+  "adamic_adar": [
+   -0.0453,
+   1.1e-07
+  ],
+  "pref": [
+   0.0924,
+   2.2e-27
+  ],
+  "vel": [
+   0.0952,
+   5.7e-29
+  ],
+  "resistance|pref (partial)": -0.067,
+  "mean impact pct: top-decile resistance vs rest": [
+   0.585,
+   0.7242
+  ]
+ },
+ "HepPh@71": {
+  "resistance": [
+   -0.1119,
+   1e-56
+  ],
+  "adamic_adar": [
+   -0.0624,
+   1e-18
+  ],
+  "pref": [
+   0.0846,
+   4.2e-33
+  ],
+  "vel": [
+   0.0824,
+   1.7e-31
+  ],
+  "resistance|pref (partial)": -0.0786,
+  "mean impact pct: top-decile resistance vs rest": [
+   0.667,
+   0.7165
+  ]
+ },
+ "HepPh@83": {
+  "resistance": [
+   -0.1376,
+   4.3e-85
+  ],
+  "adamic_adar": [
+   -0.1141,
+   6e-59
+  ],
+  "pref": [
+   0.1369,
+   2.9e-84
+  ],
+  "vel": [
+   0.1116,
+   1.9e-56
+  ],
+  "resistance|pref (partial)": -0.0737,
+  "mean impact pct: top-decile resistance vs rest": [
+   0.6675,
+   0.7353
+  ]
+ },
+ "HepPh@95": {
+  "resistance": [
+   -0.1153,
+   3.9e-60
+  ],
+  "adamic_adar": [
+   -0.1157,
+   1.3e-60
+  ],
+  "pref": [
+   0.1185,
+   1.8e-63
+  ],
+  "vel": [
+   0.1029,
+   3.6e-48
+  ],
+  "resistance|pref (partial)": -0.0574,
+  "mean impact pct: top-decile resistance vs rest": [
+   0.6793,
+   0.7497
+  ]
+ }
+}

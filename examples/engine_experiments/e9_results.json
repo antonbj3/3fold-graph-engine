@@ -1,0 +1,35 @@
+{
+ "subsets_of_2": {
+  "n": 28,
+  "spearman_gain_vs_PR": 0.522,
+  "spearman_gain_vs_Kish": 0.278,
+  "spearman_gain_vs_BLUE": 0.278
+ },
+ "subsets_of_3": {
+  "n": 56,
+  "spearman_gain_vs_PR": 0.092,
+  "spearman_gain_vs_Kish": -0.047,
+  "spearman_gain_vs_BLUE": -0.065
+ },
+ "subsets_of_4": {
+  "n": 70,
+  "spearman_gain_vs_PR": 0.074,
+  "spearman_gain_vs_Kish": -0.107,
+  "spearman_gain_vs_BLUE": -0.244
+ },
+ "pairs": {
+  "mixed_option_order": {
+   "n": 16,
+   "PR": 1.92,
+   "Kish": 2.3,
+   "gain": 0.044
+  },
+  "same_option_order": {
+   "n": 12,
+   "PR": 1.46,
+   "Kish": 1.25,
+   "gain": 0.0
+  }
+ },
+ "kish_le_blue_everywhere": true
+}

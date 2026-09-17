@@ -1,0 +1,30 @@
+{
+ "raw_single": [
+  0.538,
+  0.004
+ ],
+ "raw_pooled": [
+  0.598,
+  0.013
+ ],
+ "calibrated_single": [
+  0.838,
+  0.022
+ ],
+ "calibrated_pooled": [
+  0.927,
+  0.025
+ ],
+ "brier_cal_naive": [
+  0.055,
+  0.022
+ ],
+ "brier_cal_tempered": [
+  0.059,
+  0.015
+ ],
+ "rho_after": [
+  0.279,
+  0.034
+ ]
+}

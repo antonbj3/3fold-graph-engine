@@ -1,0 +1,37 @@
+[
+ {
+  "probes_per_pair": 0,
+  "mean_p_two_if_one": 0.05,
+  "mean_p_two_if_two": 0.051,
+  "false_flag_rate": 0.0,
+  "recall": 0.0
+ },
+ {
+  "probes_per_pair": 2,
+  "mean_p_two_if_one": 0.094,
+  "mean_p_two_if_two": 0.101,
+  "false_flag_rate": 0.0,
+  "recall": 0.0
+ },
+ {
+  "probes_per_pair": 4,
+  "mean_p_two_if_one": 0.102,
+  "mean_p_two_if_two": 0.278,
+  "false_flag_rate": 0.007,
+  "recall": 0.247
+ },
+ {
+  "probes_per_pair": 8,
+  "mean_p_two_if_one": 0.065,
+  "mean_p_two_if_two": 0.805,
+  "false_flag_rate": 0.007,
+  "recall": 0.887
+ },
+ {
+  "probes_per_pair": 16,
+  "mean_p_two_if_one": 0.015,
+  "mean_p_two_if_two": 0.99,
+  "false_flag_rate": 0.0,
+  "recall": 0.993
+ }
+]

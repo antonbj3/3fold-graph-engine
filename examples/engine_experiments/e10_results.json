@@ -1,0 +1,26 @@
+{
+ "one_order(o=0)": {
+  "accuracy": 0.494,
+  "mean_log_odds_bias": 0.708
+ },
+ "one_order(o=1)": {
+  "accuracy": 0.572,
+  "mean_log_odds_bias": -0.879
+ },
+ "all_8": {
+  "accuracy": 0.591,
+  "mean_log_odds_bias": -0.086
+ },
+ "balanced_4_of_8 (all 6 such sets)": {
+  "accuracy": 0.582,
+  "abs_bias": 0.22
+ },
+ "single_order_4 (the 2 such sets)": {
+  "accuracy": 0.533,
+  "abs_bias": 0.794
+ },
+ "single_lens_mean": {
+  "accuracy": 0.537,
+  "abs_bias": 0.794
+ }
+}

@@ -1,0 +1,152 @@
+{
+ "judge r=0.8, error length=0.0, measured rho=0.00": {
+  "no_probes": [
+   0.7793,
+   0.1533
+  ],
+  "expensive_only": [
+   0.8423,
+   0.1158
+  ],
+  "cheap_sweep_naive": [
+   0.9349,
+   0.0489
+  ],
+  "cheap_sweep_tempered": [
+   0.9349,
+   0.0489
+  ],
+  "hybrid_naive": [
+   0.9642,
+   0.0298
+  ],
+  "hybrid_tempered": [
+   0.9646,
+   0.0302
+  ],
+  "expensive_probes_left_after_sweep": [
+   52.25,
+   1466.25
+  ]
+ },
+ "judge r=0.8, error length=0.15, measured rho=0.16": {
+  "no_probes": [
+   0.7793,
+   0.1533
+  ],
+  "expensive_only": [
+   0.845,
+   0.1141
+  ],
+  "cheap_sweep_naive": [
+   0.8562,
+   0.1114
+  ],
+  "cheap_sweep_tempered": [
+   0.8803,
+   0.0889
+  ],
+  "hybrid_naive": [
+   0.902,
+   0.0839
+  ],
+  "hybrid_tempered": [
+   0.9213,
+   0.0643
+  ],
+  "expensive_probes_left_after_sweep": [
+   52.25,
+   1466.25
+  ]
+ },
+ "judge r=0.8, error length=0.4, measured rho=0.47": {
+  "no_probes": [
+   0.7793,
+   0.1533
+  ],
+  "expensive_only": [
+   0.845,
+   0.1141
+  ],
+  "cheap_sweep_naive": [
+   0.8018,
+   0.1697
+  ],
+  "cheap_sweep_tempered": [
+   0.829,
+   0.115
+  ],
+  "hybrid_naive": [
+   0.841,
+   0.145
+  ],
+  "hybrid_tempered": [
+   0.8871,
+   0.0853
+  ],
+  "expensive_probes_left_after_sweep": [
+   52.25,
+   1466.25
+  ]
+ },
+ "judge r=0.7, error length=0.15, measured rho=0.18": {
+  "no_probes": [
+   0.7793,
+   0.1533
+  ],
+  "expensive_only": [
+   0.845,
+   0.1141
+  ],
+  "cheap_sweep_naive": [
+   0.7947,
+   0.1518
+  ],
+  "cheap_sweep_tempered": [
+   0.8303,
+   0.1219
+  ],
+  "hybrid_naive": [
+   0.8563,
+   0.119
+  ],
+  "hybrid_tempered": [
+   0.8769,
+   0.0943
+  ],
+  "expensive_probes_left_after_sweep": [
+   52.25,
+   1466.25
+  ]
+ },
+ "judge r=0.9, error length=0.15, measured rho=0.14": {
+  "no_probes": [
+   0.7793,
+   0.1533
+  ],
+  "expensive_only": [
+   0.845,
+   0.1141
+  ],
+  "cheap_sweep_naive": [
+   0.925,
+   0.0588
+  ],
+  "cheap_sweep_tempered": [
+   0.9364,
+   0.0476
+  ],
+  "hybrid_naive": [
+   0.9526,
+   0.0405
+  ],
+  "hybrid_tempered": [
+   0.9705,
+   0.0272
+  ],
+  "expensive_probes_left_after_sweep": [
+   52.25,
+   1466.25
+  ]
+ }
+}

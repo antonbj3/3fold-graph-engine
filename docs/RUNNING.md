@@ -135,6 +135,7 @@ result not reproducible from this repo.
 | `src/graph_engine/cert_federation_measure.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/cert_grade_engine.py` | VERIFIED-FRESH |
 | `src/graph_engine/certifying_power_cert.py` | VERIFIED-FRESH |
+| `src/graph_engine/claim_federation.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/classical_feature_lineage_registry.py` | VERIFIED-FRESH |
 | `src/graph_engine/competence_decorrelation_gate.py` | VERIFIED-FRESH |
 | `src/graph_engine/coupling_admission_precheck.py` | VERIFIED-FRESH |
@@ -160,16 +161,20 @@ result not reproducible from this repo.
 | `src/graph_engine/graph_hole_engine/kernel.py` | VERIFIED-FRESH |
 | `src/graph_engine/graph_hole_engine/oed_sibling.py` | VERIFIED-FRESH |
 | `src/graph_engine/graph_hole_engine/tests.py` | VERIFIED-FRESH |
+| `src/graph_engine/graph_interface.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/identifiability_oed.py` | VERIFIED-FRESH |
 | `src/graph_engine/inverse_design/persona_design_gi_service.py` | VERIFIED-FRESH |
 | `src/graph_engine/leg_admission.py` | VERIFIED-FRESH |
 | `src/graph_engine/leg_decorrelation_lineage_gate.py` | VERIFIED-FRESH |
+| `src/graph_engine/lens_pooling.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/linalg_guards.py` | VERIFIED-FRESH |
 | `src/graph_engine/literature_grader_prototype.py` | VERIFIED-FRESH |
 | `src/graph_engine/llm_federation_analysis.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/llm_federation_data.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/llm_federation_forced_adversary.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/llm_federation_gen.py` | CUDA-ONLY | generation driver; on 2026-09-12 CUDA torch + transformers were present but the Hugging Face model download failed (connection refused from this host); not run. Needs the models named in its spec table on disk. 
+| `src/graph_engine/margin_net.py` | SYNTHETIC-ONLY |
+| `src/graph_engine/mechanism_signature.py` | VERIFIED-FRESH |
 | `src/graph_engine/member_decorrelation_cert.py` | VERIFIED-FRESH |
 | `src/graph_engine/monotone_agnostic_admission.py` | VERIFIED-FRESH |
 | `src/graph_engine/motion_validity_cert.py` | VERIFIED-FRESH |
@@ -191,12 +196,17 @@ result not reproducible from this repo.
 | `src/graph_engine/paper_graph/scale_index.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/paper_graph/search_cert_abstain.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/paper_graph/unified_graph_engine.py` | SYNTHETIC-ONLY |
+| `src/graph_engine/pooled_screening.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/probe_gauge_cert.py` | VERIFIED-FRESH |
+| `src/graph_engine/regime_posterior.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/reliability_gate_decorr_check.py` | VERIFIED-FRESH |
 | `src/graph_engine/render_match_decorrelation_judge.py` | VERIFIED-FRESH |
+| `src/graph_engine/replay_policy.py` | VERIFIED-FRESH |
+| `src/graph_engine/resistance_sketch.py` | VERIFIED-FRESH |
 | `src/graph_engine/scene_eyes_coverage_audit.py` | VERIFIED-FRESH |
 | `src/graph_engine/scene_eyes_neff_leg.py` | VERIFIED-FRESH |
 | `src/graph_engine/stage_decorrelation_verifier.py` | VERIFIED-FRESH |
+| `src/graph_engine/throws.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/tools/allindex.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/tools/anchor_graph_tools.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/tools/atoms_lint.py` | SYNTHETIC-ONLY |
@@ -214,6 +224,8 @@ result not reproducible from this repo.
 | `src/graph_engine/tools/preflight.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/tools/system_map.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/tools/tool_find.py` | SYNTHETIC-ONLY |
+| `src/graph_engine/typed_extraction.py` | SYNTHETIC-ONLY |
+| `src/graph_engine/unlock_value.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/video_admission_agreement_cert.py` | VERIFIED-FRESH |
 | `src/graph_engine/video_admission_cert.py` | VERIFIED-FRESH |
 | `src/graph_engine/video_admission_identifiability_pregate.py` | VERIFIED-FRESH |

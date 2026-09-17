@@ -1,0 +1,138 @@
+{
+ "HepTh@95": {
+  "residual_growth_ap_by_round": [
+   0.1667,
+   0.1768,
+   0.1794,
+   0.1851,
+   0.1862,
+   0.1868,
+   0.188,
+   0.1845,
+   0.1891
+  ],
+  "picked": [
+   "pref*vel",
+   "cn_chain*cn_chain",
+   "cn_coupling*cn_coupling",
+   "age_gap*recency",
+   "hole*hole",
+   "cn_coupling*adamic_adar",
+   "adamic_adar*adamic_adar",
+   "cn_chain*pref"
+  ],
+  "random_growth_ap_by_round": [
+   0.1667,
+   0.1687,
+   0.1691,
+   0.1713,
+   0.1739,
+   0.1758,
+   0.1762,
+   0.176,
+   0.1764
+  ]
+ },
+ "HepTh@107": {
+  "residual_growth_ap_by_round": [
+   0.1597,
+   0.1625,
+   0.1634,
+   0.1661,
+   0.1693,
+   0.1703,
+   0.1703,
+   0.1716,
+   0.17
+  ],
+  "picked": [
+   "pref*vel",
+   "cn_chain*cn_chain",
+   "cn_coupling*cn_coupling",
+   "age_gap*recency",
+   "cn_chain*pref",
+   "hole*hole",
+   "recency*recency",
+   "cn_coupling*age_gap"
+  ],
+  "random_growth_ap_by_round": [
+   0.1597,
+   0.1616,
+   0.1617,
+   0.162,
+   0.1628,
+   0.1643,
+   0.1643,
+   0.1642,
+   0.1645
+  ]
+ },
+ "HepPh@95": {
+  "residual_growth_ap_by_round": [
+   0.1959,
+   0.1962,
+   0.1955,
+   0.2048,
+   0.2061,
+   0.2067,
+   0.2069,
+   0.2089,
+   0.2097
+  ],
+  "picked": [
+   "recency*recency",
+   "hole*hole",
+   "pref*vel",
+   "adamic_adar*adamic_adar",
+   "cn_coupling*cn_chain",
+   "adamic_adar*pref",
+   "resistance*age_gap",
+   "age_gap*recency"
+  ],
+  "random_growth_ap_by_round": [
+   0.1959,
+   0.1974,
+   0.1976,
+   0.2007,
+   0.2019,
+   0.2028,
+   0.2031,
+   0.2032,
+   0.2038
+  ]
+ },
+ "HepPh@107": {
+  "residual_growth_ap_by_round": [
+   0.1879,
+   0.1876,
+   0.1915,
+   0.199,
+   0.1982,
+   0.1974,
+   0.1993,
+   0.1993,
+   0.2003
+  ],
+  "picked": [
+   "recency*recency",
+   "adamic_adar*adamic_adar",
+   "pref*vel",
+   "hole*hole",
+   "cn_coupling*cn_chain",
+   "adamic_adar*pref",
+   "age_gap*recency",
+   "cn_chain*age_gap"
+  ],
+  "random_growth_ap_by_round": [
+   0.1879,
+   0.1884,
+   0.1882,
+   0.1906,
+   0.192,
+   0.193,
+   0.1938,
+   0.1943,
+   0.1945
+  ]
+ }
+}

@@ -1,0 +1,122 @@
+{
+ "misread_rate=0.0": {
+  "oracle": {
+   "abstain": 0.0,
+   "harmful": 0.0,
+   "correct": 0.0,
+   "c_pred_err": 0.0
+  },
+  "one_lens_raw": {
+   "abstain": 0.451,
+   "harmful": 0.015,
+   "correct": 7.605,
+   "c_pred_err": 0.208
+  },
+  "four_lenses_one_order": {
+   "abstain": 0.129,
+   "harmful": 0.51,
+   "correct": 20.935,
+   "c_pred_err": 0.053
+  },
+  "four_balanced_tempered": {
+   "abstain": 0.004,
+   "harmful": 0.02,
+   "correct": 26.82,
+   "c_pred_err": 0.002
+  },
+  "balanced_calibrated": {
+   "abstain": 0.001,
+   "harmful": 0.065,
+   "correct": 26.88,
+   "c_pred_err": 0.003
+  },
+  "two_judges_balanced_calibrated": {
+   "abstain": 0.003,
+   "harmful": 0.0,
+   "correct": 26.89,
+   "c_pred_err": 0.001
+  },
+  "papers_per_run": 43,
+  "oracle_writes_per_run": 27.0
+ },
+ "misread_rate=0.1": {
+  "oracle": {
+   "abstain": 0.0,
+   "harmful": 0.0,
+   "correct": 0.0,
+   "c_pred_err": 0.0
+  },
+  "one_lens_raw": {
+   "abstain": 0.492,
+   "harmful": 0.295,
+   "correct": 5.535,
+   "c_pred_err": 0.204
+  },
+  "four_lenses_one_order": {
+   "abstain": 0.132,
+   "harmful": 3.255,
+   "correct": 18.085,
+   "c_pred_err": 0.124
+  },
+  "four_balanced_tempered": {
+   "abstain": 0.05,
+   "harmful": 3.875,
+   "correct": 20.97,
+   "c_pred_err": 0.136
+  },
+  "balanced_calibrated": {
+   "abstain": 0.152,
+   "harmful": 3.28,
+   "correct": 17.17,
+   "c_pred_err": 0.136
+  },
+  "two_judges_balanced_calibrated": {
+   "abstain": 0.232,
+   "harmful": 1.355,
+   "correct": 15.68,
+   "c_pred_err": 0.118
+  },
+  "papers_per_run": 43,
+  "oracle_writes_per_run": 27.0
+ },
+ "misread_rate=0.2": {
+  "oracle": {
+   "abstain": 0.0,
+   "harmful": 0.0,
+   "correct": 0.0,
+   "c_pred_err": 0.0
+  },
+  "one_lens_raw": {
+   "abstain": 0.523,
+   "harmful": 0.485,
+   "correct": 4.005,
+   "c_pred_err": 0.193
+  },
+  "four_lenses_one_order": {
+   "abstain": 0.136,
+   "harmful": 5.51,
+   "correct": 15.655,
+   "c_pred_err": 0.165
+  },
+  "four_balanced_tempered": {
+   "abstain": 0.154,
+   "harmful": 5.61,
+   "correct": 14.75,
+   "c_pred_err": 0.168
+  },
+  "balanced_calibrated": {
+   "abstain": 0.618,
+   "harmful": 0.09,
+   "correct": 0.32,
+   "c_pred_err": 0.165
+  },
+  "two_judges_balanced_calibrated": {
+   "abstain": 0.469,
+   "harmful": 0.805,
+   "correct": 6.03,
+   "c_pred_err": 0.159
+  },
+  "papers_per_run": 43,
+  "oracle_writes_per_run": 27.0
+ }
+}

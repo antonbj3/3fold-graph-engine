@@ -1,0 +1,44 @@
+{
+ "HepTh": {
+  "candidates": 400000,
+  "base_rate": 0.0342,
+  "verify_random": 33,
+  "stage1_then_verify": 406,
+  "stage1_judge(d'=1.0)_verify": {
+   "confirmed": 636,
+   "judged": 10000
+  },
+  "judge_only(d'=1.0)_verify": 0,
+  "stage1_judge(d'=2.0)_verify": {
+   "confirmed": 894,
+   "judged": 10000
+  },
+  "judge_only(d'=2.0)_verify": 0,
+  "stage1_judge(d'=3.0)_verify": {
+   "confirmed": 964,
+   "judged": 5000
+  },
+  "judge_only(d'=3.0)_verify": 0
+ },
+ "HepPh": {
+  "candidates": 400000,
+  "base_rate": 0.0515,
+  "verify_random": 56,
+  "stage1_then_verify": 466,
+  "stage1_judge(d'=1.0)_verify": {
+   "confirmed": 700,
+   "judged": 10000
+  },
+  "judge_only(d'=1.0)_verify": 0,
+  "stage1_judge(d'=2.0)_verify": {
+   "confirmed": 910,
+   "judged": 10000
+  },
+  "judge_only(d'=2.0)_verify": 0,
+  "stage1_judge(d'=3.0)_verify": {
+   "confirmed": 971,
+   "judged": 5000
+  },
+  "judge_only(d'=3.0)_verify": 0
+ }
+}

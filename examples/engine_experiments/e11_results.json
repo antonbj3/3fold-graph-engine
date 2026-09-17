@@ -1,0 +1,47 @@
+{
+ "existing_priority": {
+  "mean_cost_vs_optimal": 1.207,
+  "p95": 1.488
+ },
+ "true_p": {
+  "mean_cost_vs_optimal": 1.0,
+  "p95": 1.0
+ },
+ "p_noise_0.5": {
+  "mean_cost_vs_optimal": 1.035,
+  "p95": 1.119
+ },
+ "p_noise_1.0": {
+  "mean_cost_vs_optimal": 1.117,
+  "p95": 1.359
+ },
+ "p_noise_2.0": {
+  "mean_cost_vs_optimal": 1.289,
+  "p95": 1.864
+ },
+ "risk_class_only": {
+  "mean_cost_vs_optimal": 1.025,
+  "p95": 1.089
+ },
+ "random": {
+  "mean_cost_vs_optimal": 2.093,
+  "p95": 3.581
+ },
+ "dependent_failures": {
+  "shared_cause_prob=0.0": {
+   "new_rule_with_marginal_p_vs_true_optimum": 1.0,
+   "p95": 1.0,
+   "existing_priority_vs_true_optimum": 1.1084
+  },
+  "shared_cause_prob=0.1": {
+   "new_rule_with_marginal_p_vs_true_optimum": 1.005,
+   "p95": 1.0202,
+   "existing_priority_vs_true_optimum": 1.1005
+  },
+  "shared_cause_prob=0.3": {
+   "new_rule_with_marginal_p_vs_true_optimum": 1.0263,
+   "p95": 1.086,
+   "existing_priority_vs_true_optimum": 1.1141
+  }
+ }
+}

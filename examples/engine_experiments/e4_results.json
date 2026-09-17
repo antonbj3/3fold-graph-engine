@@ -1,0 +1,126 @@
+{
+ "err=0.15,copied=0.3,two_transition_share=0.0": {
+  "vote": 0.653,
+  "regime_posterior": 0.7793,
+  "collision_flagged_passive": 0.0,
+  "collision_prec_passive": NaN,
+  "collision_rec_passive": NaN,
+  "regime_posterior_assuming_no_collision(p_two=0)": 0.779,
+  "greedy_entropy_potential": [
+   0.8038,
+   0.8226,
+   0.8386
+  ],
+  "collision_flagged_after_60_greedy_probes": 0.0,
+  "collision_prec_after_60_greedy_probes": NaN,
+  "collision_rec_after_60_greedy_probes": NaN,
+  "greedy_error_potential": [
+   0.8085,
+   0.8284,
+   0.8448
+  ],
+  "random": [
+   0.7846,
+   0.7988,
+   0.8071
+  ],
+  "federation_default(2 answers per probe)": [
+   0.6718,
+   0.6795,
+   0.6832
+  ]
+ },
+ "err=0.3,copied=0.3,two_transition_share=0.0": {
+  "vote": 0.5895,
+  "regime_posterior": 0.6765,
+  "collision_flagged_passive": 0.0,
+  "collision_prec_passive": NaN,
+  "collision_rec_passive": NaN,
+  "regime_posterior_assuming_no_collision(p_two=0)": 0.6765,
+  "greedy_entropy_potential": [
+   0.718,
+   0.7463,
+   0.7714
+  ],
+  "collision_flagged_after_60_greedy_probes": 0.0,
+  "collision_prec_after_60_greedy_probes": NaN,
+  "collision_rec_after_60_greedy_probes": NaN,
+  "greedy_error_potential": [
+   0.7201,
+   0.7491,
+   0.7772
+  ],
+  "random": [
+   0.6906,
+   0.7154,
+   0.7333
+  ],
+  "federation_default(2 answers per probe)": [
+   0.6117,
+   0.6213,
+   0.6266
+  ]
+ },
+ "err=0.15,copied=0.6,two_transition_share=0.0": {
+  "vote": 0.644,
+  "regime_posterior": 0.7618,
+  "collision_flagged_passive": 0.0,
+  "collision_prec_passive": NaN,
+  "collision_rec_passive": NaN,
+  "regime_posterior_assuming_no_collision(p_two=0)": 0.7616,
+  "greedy_entropy_potential": [
+   0.7921,
+   0.815,
+   0.8339
+  ],
+  "collision_flagged_after_60_greedy_probes": 0.0,
+  "collision_prec_after_60_greedy_probes": NaN,
+  "collision_rec_after_60_greedy_probes": NaN,
+  "greedy_error_potential": [
+   0.7979,
+   0.8182,
+   0.835
+  ],
+  "random": [
+   0.7752,
+   0.7884,
+   0.8003
+  ],
+  "federation_default(2 answers per probe)": [
+   0.6629,
+   0.6701,
+   0.6737
+  ]
+ },
+ "err=0.15,copied=0.3,two_transition_share=0.4": {
+  "vote": 0.6492,
+  "regime_posterior": 0.7817,
+  "collision_flagged_passive": 0.0,
+  "collision_prec_passive": NaN,
+  "collision_rec_passive": 0.0,
+  "regime_posterior_assuming_no_collision(p_two=0)": 0.7815,
+  "greedy_entropy_potential": [
+   0.8039,
+   0.8118,
+   0.8199
+  ],
+  "collision_flagged_after_60_greedy_probes": 0.0,
+  "collision_prec_after_60_greedy_probes": NaN,
+  "collision_rec_after_60_greedy_probes": 0.0,
+  "greedy_error_potential": [
+   0.8086,
+   0.8166,
+   0.8245
+  ],
+  "random": [
+   0.7878,
+   0.7962,
+   0.8053
+  ],
+  "federation_default(2 answers per probe)": [
+   0.6662,
+   0.6727,
+   0.6762
+  ]
+ }
+}

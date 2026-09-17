@@ -161,13 +161,21 @@ class GraphHoleEngine:
     It NEVER calls waterfill_reallocate — reallocating a budget is the sibling optimizer's job.
     """
 
-    def __init__(self, adapter: DomainAdapter) -> None:
+    def __init__(self, adapter: DomainAdapter, sketch_k: int | None = None) -> None:
         self.a = adapter
+        self.sketch_k = sketch_k      # None = dense pinv (exact). An int = resistance_sketch with that many solves.
 
     # --- the resolvent-leverage hole field (SHARED kernel) ----------------------------------------
     def hole_field(self) -> np.ndarray:
         """ℓ = L⁺_ii over the nodes — the invariant structural-hole field."""
-        return resolvent_leverage(self.a.governing_operator(), self.a.point_embeddings())
+        Op, V = self.a.governing_operator(), self.a.point_embeddings()
+        if self.sketch_k and V.shape[0] == V.shape[1] and np.array_equal(V, np.eye(len(V))):
+            from ..resistance_sketch import ResistanceSketch
+            import scipy.sparse as sp
+            sk = ResistanceSketch.from_laplacian(Op, k=self.sketch_k)
+            if sk is not None:
+                return sk.refined_hole_field(sp.csr_matrix(Op))
+        return resolvent_leverage(Op, V)
 
     def hole_ranking(self) -> list[Hashable]:
         nodes = self.a.nodes()

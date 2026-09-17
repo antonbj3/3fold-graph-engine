@@ -1,0 +1,30 @@
+{
+ "_note": "CURATED-PUBLIC test fixture, hand-written for the federation tests. Textbook-level relations with rounded validity ranges taken from the cited public sources. It is an illustration of the contract, not a materials database. Nothing here comes from a private graph.",
+ "graphs": [
+  {"graph_id": "MAT", "label": "CURATED-PUBLIC", "scales": {"grain_size_nm": "log", "cooling_rate_K_per_s": "log"},
+   "concepts": [{"id": "grain_size", "aliases": ["grain diameter"]}, {"id": "yield_strength"}, {"id": "porosity"}, {"id": "fatigue_strength"}],
+   "sources": [
+    {"id": "Hall1951", "derives_from": [], "ref": "E. O. Hall, Proc. Phys. Soc. B 64, 747 (1951)"},
+    {"id": "Petch1953", "derives_from": [], "ref": "N. J. Petch, J. Iron Steel Inst. 174, 25 (1953)"},
+    {"id": "Textbook-HP", "derives_from": ["Hall1951", "Petch1953"], "ref": "any materials textbook restating Hall-Petch"},
+    {"id": "Chokshi1989", "derives_from": [], "ref": "Chokshi, Rosen, Karch, Gleiter, Scripta Metall. 23, 1679 (1989)"},
+    {"id": "Schiotz2003", "derives_from": [], "ref": "Schiotz, Jacobsen, Science 301, 1357 (2003)"},
+    {"id": "Murakami2002", "derives_from": [], "ref": "Y. Murakami, Metal Fatigue: Effects of Small Defects and Nonmetallic Inclusions (2002)"}],
+   "claims": [
+    {"id": "hp", "subject": "grain_size", "object": "yield_strength", "sign": -1, "validity": {"grain_size_nm": [25, 100000]}, "evidence": ["Hall1951", "Petch1953", "Textbook-HP"]},
+    {"id": "hp_down_to_10", "subject": "grain_size", "object": "yield_strength", "sign": -1, "validity": {"grain_size_nm": [10, 25]}, "evidence": ["Schiotz2003"]},
+    {"id": "inverse_hp", "subject": "grain_size", "object": "yield_strength", "sign": 1, "validity": {"grain_size_nm": [2, 8]}, "evidence": ["Schiotz2003"]},
+    {"id": "softening_below_25", "subject": "grain_size", "object": "yield_strength", "sign": 1, "validity": {"grain_size_nm": [5, 25]}, "evidence": ["Chokshi1989"]},
+    {"id": "pores_fatigue", "subject": "porosity", "object": "fatigue_strength", "sign": -1, "validity": {}, "evidence": ["Murakami2002"]}]},
+  {"graph_id": "PROC", "label": "CURATED-PUBLIC",
+   "concepts": [{"id": "cooling_rate"}, {"id": "grain diameter"}, {"id": "scan_speed"}, {"id": "yield_strength"}],
+   "sources": [
+    {"id": "KurzFisher", "derives_from": [], "ref": "Kurz, Fisher, Fundamentals of Solidification (1998)"},
+    {"id": "DebRoy2018", "derives_from": [], "ref": "DebRoy et al., Prog. Mater. Sci. 92, 112 (2018)"},
+    {"id": "ProcessHandbook", "derives_from": ["Hall1951"], "ref": "a process handbook that restates Hall-Petch from Hall (1951)"}],
+   "claims": [
+    {"id": "cool_grain", "subject": "cooling_rate", "object": "grain diameter", "sign": -1, "validity": {"cooling_rate_K_per_s": [1, 1000000]}, "evidence": ["KurzFisher", "DebRoy2018"]},
+    {"id": "speed_cool", "subject": "scan_speed", "object": "cooling_rate", "sign": 1, "validity": {}, "evidence": ["DebRoy2018"]},
+    {"id": "hp_restated", "subject": "grain diameter", "object": "yield_strength", "sign": -1, "validity": {"grain_size_nm": [25, 100000]}, "evidence": ["ProcessHandbook"]}]}
+ ]
+}

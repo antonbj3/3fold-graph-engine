@@ -1,0 +1,458 @@
+{
+ "err=0.15,echo=0.0": {
+  "fusion": {
+   "full": {
+    "sign_acc": 0.8604,
+    "n_stress": 74.0,
+    "boundary_prec": 0.5858,
+    "boundary_rec": 1.0,
+    "n_links": 221.75,
+    "link_prec": 0.6978,
+    "n_rejected": 169.75
+   },
+   "no_lineage": {
+    "sign_acc": 0.8604,
+    "n_stress": 74.0,
+    "boundary_prec": 0.5858,
+    "boundary_rec": 1.0,
+    "n_links": 221.75,
+    "link_prec": 0.6978,
+    "n_rejected": 169.75
+   },
+   "no_validity": {
+    "sign_acc": 0.8005,
+    "n_stress": 67.375,
+    "boundary_prec": 0.0,
+    "boundary_rec": 0.0,
+    "n_links": 391.5,
+    "link_prec": 0.2251,
+    "n_rejected": 0.0
+   },
+   "neither": {
+    "sign_acc": 0.8005,
+    "n_stress": 67.375,
+    "boundary_prec": 0.0,
+    "boundary_rec": 0.0,
+    "n_links": 391.5,
+    "link_prec": 0.2251,
+    "n_rejected": 0.0
+   }
+  },
+  "decided_and_right_share_every_10_probes": {
+   "default(open_first,then_evpi_x_extent)": [
+    0.3601,
+    0.379,
+    0.3924,
+    0.4018,
+    0.408,
+    0.4128,
+    0.416
+   ],
+   "random": [
+    0.3601,
+    0.3628,
+    0.3662,
+    0.3699,
+    0.3737,
+    0.3768,
+    0.3782
+   ],
+   "reach_over_cost": [
+    0.3601,
+    0.3659,
+    0.3707,
+    0.3775,
+    0.383,
+    0.3879,
+    0.3907
+   ],
+   "entropy_only": [
+    0.3601,
+    0.379,
+    0.3924,
+    0.4018,
+    0.408,
+    0.4128,
+    0.416
+   ],
+   "entropy_x_extent": [
+    0.3601,
+    0.3742,
+    0.379,
+    0.3847,
+    0.39,
+    0.3942,
+    0.4006
+   ],
+   "evpi_x_extent": [
+    0.3601,
+    0.378,
+    0.3893,
+    0.3943,
+    0.3995,
+    0.4042,
+    0.4074
+   ],
+   "evpi_x_extent_x_dependents": [
+    0.3601,
+    0.3701,
+    0.3763,
+    0.3826,
+    0.3886,
+    0.393,
+    0.399
+   ]
+  },
+  "top50_inferred_link_precision_after_60_probes": {
+   "default(open_first,then_evpi_x_extent)": 0.965,
+   "random": 1.0,
+   "reach_over_cost": 1.0,
+   "entropy_only": 0.965,
+   "entropy_x_extent": 1.0,
+   "evpi_x_extent": 1.0,
+   "evpi_x_extent_x_dependents": 1.0
+  }
+ },
+ "err=0.15,echo=0.3": {
+  "fusion": {
+   "full": {
+    "sign_acc": 0.8629,
+    "n_stress": 76.875,
+    "boundary_prec": 0.6351,
+    "boundary_rec": 1.0,
+    "n_links": 216.25,
+    "link_prec": 0.7203,
+    "n_rejected": 151.625
+   },
+   "no_lineage": {
+    "sign_acc": 0.8503,
+    "n_stress": 76.875,
+    "boundary_prec": 0.6351,
+    "boundary_rec": 1.0,
+    "n_links": 216.25,
+    "link_prec": 0.7203,
+    "n_rejected": 151.625
+   },
+   "no_validity": {
+    "sign_acc": 0.7924,
+    "n_stress": 68.375,
+    "boundary_prec": 0.0,
+    "boundary_rec": 0.0,
+    "n_links": 367.875,
+    "link_prec": 0.2306,
+    "n_rejected": 0.0
+   },
+   "neither": {
+    "sign_acc": 0.7659,
+    "n_stress": 68.375,
+    "boundary_prec": 0.0,
+    "boundary_rec": 0.0,
+    "n_links": 367.875,
+    "link_prec": 0.2306,
+    "n_rejected": 0.0
+   }
+  },
+  "decided_and_right_share_every_10_probes": {
+   "default(open_first,then_evpi_x_extent)": [
+    0.3636,
+    0.3834,
+    0.3967,
+    0.4054,
+    0.4124,
+    0.4171,
+    0.4209
+   ],
+   "random": [
+    0.3636,
+    0.3668,
+    0.3686,
+    0.373,
+    0.3765,
+    0.38,
+    0.3828
+   ],
+   "reach_over_cost": [
+    0.3636,
+    0.3704,
+    0.3754,
+    0.382,
+    0.3855,
+    0.3902,
+    0.394
+   ],
+   "entropy_only": [
+    0.3636,
+    0.3834,
+    0.3967,
+    0.4054,
+    0.4124,
+    0.4171,
+    0.4209
+   ],
+   "entropy_x_extent": [
+    0.3636,
+    0.3787,
+    0.3828,
+    0.3874,
+    0.3933,
+    0.3981,
+    0.4044
+   ],
+   "evpi_x_extent": [
+    0.3636,
+    0.3834,
+    0.3944,
+    0.3978,
+    0.4033,
+    0.4093,
+    0.4117
+   ],
+   "evpi_x_extent_x_dependents": [
+    0.3636,
+    0.3732,
+    0.3797,
+    0.3846,
+    0.3903,
+    0.3943,
+    0.3992
+   ]
+  },
+  "top50_inferred_link_precision_after_60_probes": {
+   "default(open_first,then_evpi_x_extent)": 0.9075,
+   "random": 1.0,
+   "reach_over_cost": 1.0,
+   "entropy_only": 0.9075,
+   "entropy_x_extent": 1.0,
+   "evpi_x_extent": 1.0,
+   "evpi_x_extent_x_dependents": 1.0
+  }
+ },
+ "err=0.15,echo=0.6": {
+  "fusion": {
+   "full": {
+    "sign_acc": 0.8632,
+    "n_stress": 74.375,
+    "boundary_prec": 0.5992,
+    "boundary_rec": 1.0,
+    "n_links": 202.875,
+    "link_prec": 0.7106,
+    "n_rejected": 151.375
+   },
+   "no_lineage": {
+    "sign_acc": 0.8488,
+    "n_stress": 74.375,
+    "boundary_prec": 0.5992,
+    "boundary_rec": 1.0,
+    "n_links": 202.875,
+    "link_prec": 0.7106,
+    "n_rejected": 151.375
+   },
+   "no_validity": {
+    "sign_acc": 0.7934,
+    "n_stress": 67.75,
+    "boundary_prec": 0.0,
+    "boundary_rec": 0.0,
+    "n_links": 354.25,
+    "link_prec": 0.2376,
+    "n_rejected": 0.0
+   },
+   "neither": {
+    "sign_acc": 0.7695,
+    "n_stress": 67.75,
+    "boundary_prec": 0.0,
+    "boundary_rec": 0.0,
+    "n_links": 354.25,
+    "link_prec": 0.2376,
+    "n_rejected": 0.0
+   }
+  },
+  "decided_and_right_share_every_10_probes": {
+   "default(open_first,then_evpi_x_extent)": [
+    0.353,
+    0.3737,
+    0.3864,
+    0.3957,
+    0.4017,
+    0.4066,
+    0.4097
+   ],
+   "random": [
+    0.353,
+    0.3568,
+    0.36,
+    0.3653,
+    0.3698,
+    0.373,
+    0.3753
+   ],
+   "reach_over_cost": [
+    0.353,
+    0.3589,
+    0.3634,
+    0.3688,
+    0.3739,
+    0.3783,
+    0.3822
+   ],
+   "entropy_only": [
+    0.353,
+    0.3737,
+    0.3864,
+    0.3957,
+    0.4017,
+    0.4066,
+    0.4097
+   ],
+   "entropy_x_extent": [
+    0.353,
+    0.368,
+    0.3729,
+    0.3793,
+    0.3826,
+    0.3887,
+    0.3946
+   ],
+   "evpi_x_extent": [
+    0.353,
+    0.3731,
+    0.3824,
+    0.3874,
+    0.3934,
+    0.3964,
+    0.4015
+   ],
+   "evpi_x_extent_x_dependents": [
+    0.353,
+    0.363,
+    0.3689,
+    0.3745,
+    0.38,
+    0.3858,
+    0.3882
+   ]
+  },
+  "top50_inferred_link_precision_after_60_probes": {
+   "default(open_first,then_evpi_x_extent)": 0.965,
+   "random": 1.0,
+   "reach_over_cost": 0.995,
+   "entropy_only": 0.965,
+   "entropy_x_extent": 0.995,
+   "evpi_x_extent": 0.9875,
+   "evpi_x_extent_x_dependents": 1.0
+  }
+ },
+ "err=0.3,echo=0.3": {
+  "fusion": {
+   "full": {
+    "sign_acc": 0.7173,
+    "n_stress": 106.0,
+    "boundary_prec": 0.4736,
+    "boundary_rec": 1.0,
+    "n_links": 216.25,
+    "link_prec": 0.5711,
+    "n_rejected": 151.625
+   },
+   "no_lineage": {
+    "sign_acc": 0.7032,
+    "n_stress": 106.0,
+    "boundary_prec": 0.4736,
+    "boundary_rec": 1.0,
+    "n_links": 216.25,
+    "link_prec": 0.5711,
+    "n_rejected": 151.625
+   },
+   "no_validity": {
+    "sign_acc": 0.6855,
+    "n_stress": 98.125,
+    "boundary_prec": 0.0,
+    "boundary_rec": 0.0,
+    "n_links": 367.875,
+    "link_prec": 0.1769,
+    "n_rejected": 0.0
+   },
+   "neither": {
+    "sign_acc": 0.6624,
+    "n_stress": 98.125,
+    "boundary_prec": 0.0,
+    "boundary_rec": 0.0,
+    "n_links": 367.875,
+    "link_prec": 0.1769,
+    "n_rejected": 0.0
+   }
+  },
+  "decided_and_right_share_every_10_probes": {
+   "default(open_first,then_evpi_x_extent)": [
+    0.2893,
+    0.3104,
+    0.3263,
+    0.3388,
+    0.3478,
+    0.3541,
+    0.3593
+   ],
+   "random": [
+    0.2893,
+    0.2943,
+    0.2986,
+    0.3034,
+    0.3087,
+    0.3138,
+    0.3172
+   ],
+   "reach_over_cost": [
+    0.2893,
+    0.298,
+    0.3038,
+    0.3115,
+    0.3172,
+    0.3251,
+    0.3309
+   ],
+   "entropy_only": [
+    0.2893,
+    0.3104,
+    0.3263,
+    0.3388,
+    0.3478,
+    0.3541,
+    0.3593
+   ],
+   "entropy_x_extent": [
+    0.2893,
+    0.3087,
+    0.3192,
+    0.3266,
+    0.3337,
+    0.3421,
+    0.3501
+   ],
+   "evpi_x_extent": [
+    0.2893,
+    0.3104,
+    0.3254,
+    0.3383,
+    0.3443,
+    0.3506,
+    0.357
+   ],
+   "evpi_x_extent_x_dependents": [
+    0.2893,
+    0.3029,
+    0.3097,
+    0.3175,
+    0.3251,
+    0.33,
+    0.3361
+   ]
+  },
+  "top50_inferred_link_precision_after_60_probes": {
+   "default(open_first,then_evpi_x_extent)": 0.745,
+   "random": 0.97,
+   "reach_over_cost": 0.985,
+   "entropy_only": 0.745,
+   "entropy_x_extent": 0.985,
+   "evpi_x_extent": 0.9475,
+   "evpi_x_extent_x_dependents": 0.8925
+  }
+ }
+}
