@@ -28,7 +28,7 @@ from __future__ import annotations
 
 import numpy as np
 
-__all__ = ["throw_scores", "draw", "draw_pairs", "inclusion_probabilities", "draw_set_dpp", "dpp_inclusion_probabilities", "throw_from_continuum", "densify_sequential", "throw_at_point_dpp"]
+__all__ = ["throw_scores", "draw", "draw_pairs", "inclusion_probabilities", "draw_set_dpp", "dpp_inclusion_probabilities", "throw_from_continuum", "densify_sequential", "throw_at_point_dpp", "chain_throw"]
 
 
 def throw_scores(mechanism: np.ndarray, graph: np.ndarray, subject: np.ndarray | None = None,
@@ -199,3 +199,16 @@ def throw_at_point_dpp(Z: np.ndarray, x_star: np.ndarray, scale: float | None = 
     if k is not None and len(S) > k:
         top = np.argsort(-pi)[:k]; S, pi = S[top], pi[top]
     return S, pi
+
+
+def chain_throw(Z: np.ndarray, a: int, b: int, steps: int = 3, dither: float = 0.0, seed: int = 0) -> np.ndarray:
+    """A chain throw a → · → · → b: the segment from z_a to z_b sampled at t = 1/(steps+1) … steps/(steps+1), each point
+    decoded to its nearest node (optionally dithered). Measured (e27b, cit-HepTh): the only rule that finds LONG future links
+    above random — 2.0 % of chains between far pairs contain a future co-citation (random triples 0.7 %, far pairs by softmax 0 %),
+    with within-set resistance 1.2. A long throw pays when it is decoded as a path, not as a pair: the intermediate nodes are the
+    ones a new paper can cite together with one end. Returns the sorted unique node ids of the chain including both ends."""
+    rng = np.random.default_rng(seed); za, zb = Z[a], Z[b]; nodes = [int(a), int(b)]
+    for t in np.linspace(0, 1, steps + 2)[1:-1]:
+        x = za + t * (zb - za) + (dither * rng.standard_normal(Z.shape[1]) if dither > 0 else 0.0)
+        nodes.append(int(np.argmin(np.linalg.norm(Z - x, axis=1))))
+    return np.array(sorted(set(nodes)), int)

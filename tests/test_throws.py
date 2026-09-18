@@ -120,3 +120,11 @@ def test_point_dpp_throw_has_exact_marginals_and_sits_near_the_design_point():
     scale = float(np.median(np.sort(d)[:6])); q = np.exp(-d ** 2 / (2 * scale ** 2)); near = np.flatnonzero(q > 1e-6)
     pi = dpp_inclusion_probabilities(Z[near], quality=q[near])
     assert np.abs(hits[near] / n - pi).max() < 0.08
+
+
+def test_chain_throw_decodes_the_segment_to_intermediate_nodes():
+    from graph_engine.throws import chain_throw
+    Z = np.zeros((7, 2)); Z[:, 0] = np.arange(7); Z[3] = [3.0, 0.2]           # a line of nodes with one slightly off
+    ch = chain_throw(Z, 0, 6, steps=3)
+    assert ch[0] == 0 and ch[-1] == 6 and set(ch) >= {0, 6} and 1 <= len(ch) - 2 <= 3
+    assert all(0 < i < 6 for i in ch[1:-1])                                    # intermediate nodes lie between the ends
