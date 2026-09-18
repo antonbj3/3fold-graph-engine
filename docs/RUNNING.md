@@ -200,6 +200,7 @@ result not reproducible from this repo.
 | `src/graph_engine/polarity_rules.py` | VERIFIED-FRESH |
 | `src/graph_engine/pooled_screening.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/probe_gauge_cert.py` | VERIFIED-FRESH |
+| `src/graph_engine/record_guarantee.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/regime_posterior.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/reliability_gate_decorr_check.py` | VERIFIED-FRESH |
 | `src/graph_engine/render_match_decorrelation_judge.py` | VERIFIED-FRESH |

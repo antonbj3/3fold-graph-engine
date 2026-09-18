@@ -55,6 +55,7 @@ corpus the gate abstains on all 57 papers from title and abstract. The modules b
 | `lens_pooling` | pool several phrasings of one question to one judge | per-stratum Platt scaling, error correlation, tempering, balanced lens sets from a Hadamard array |
 | `pooled_screening` | how many candidates per pooled question | two-stage Dorfman with noisy tests, closed forms |
 | `plan_value` | probing and working in one currency | settle cost per node by a dynamic programme over instruments (cost, reliability) with admission level τ; nodes ordered by (1 − p)/settle cost; cheap-instrument value = S_expensive − S_all ≥ 0 |
+| `record_guarantee` | admit extracted records so that ≥ 1 − α of the admitted are entirely right, distribution-free | score = least certain field; threshold = largest of 20 quantile candidates whose Clopper–Pearson (1 − δ/20) bound is ≤ α (Learn-then-Test); assumes exchangeability only |
 | `polarity_rules` | the sign a sentence asserts between two quantities, symbolically | one direction word per quantity per clause, negation flips, last clause wins, composition by product; abstains outside its lexicon (English only) |
 | `typed_extraction` | the stubbed prose → `Claim` step of `paper_graph/pipeline.py` | yes/no fields from the target node's claim; balanced lenses; isotonic calibration of the pooled log-odds; confidence = Π max(p, 1−p) = P(whole claim right); `agree` adds the log-odds of a second, independent judge |
 
@@ -153,6 +154,12 @@ gameable, τ is the knob. Negative: choosing the instrument per node by the sett
 in this range, because the judge is always worth trying here; the programme skips a cheap instrument only when it cannot leave the
 band or costs more than the cell (test). A first version scored probes by criticality × E[Δp]; that quantity is identically zero
 (martingale) and was replaced before any number was produced.
+
+**Record admission with a guarantee (test; e12's simulated judge, 4 fields, 10 % shared misreading → 0.64 of records entirely
+right).** The product gate Π max(p, 1−p) ≥ 0.9 admits records that are right ~0.65 of the time (level broken in 20 of 20 splits).
+`record_guarantee` at α = 0.1 admits nothing (the level cannot be certified), at α = 0.45 admits 30 %+ and holds the level in 20 of
+20 splits (calibration 600 records, δ = 0.05). Two wrong versions were caught by the held-out test: scanning from the most certain
+record admitted nothing; scanning until a threshold passed broke the level in 8 of 20 splits. Bonferroni over a fixed grid fixed it.
 
 **Mechanism signature (tests).** Electrostatic pull-in, Semenov thermal runaway and shallow-truss snap-through: one limit point,
 order 2.00, β 0.50, γ 0.50, at (1/3, 4/27), (1, 1/e), (1 − 1/√3, ·). Symmetric column: odd, γ 1.00. Cusp, linear, saturating: no limit point.
