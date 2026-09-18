@@ -58,6 +58,8 @@ corpus the gate abstains on all 57 papers from title and abstract. The modules b
 | `record_guarantee` | admit extracted records so that ≥ 1 − α of the admitted are entirely right, distribution-free | score = least certain field; threshold = largest of the unique score quantiles (≤ 20, taken from the calibration scores) whose Clopper–Pearson (1 − δ/grid size) bound is ≤ α (Learn-then-Test; valid because the labels are independent given the scores); assumes exchangeability only |
 | `source_reliability` | how often each independent origin is right, from agreement, plus a few pinned truths to break the mirror symmetry | Dawid–Skene EM with a Beta prior over roots (copies collapsed first); feeds `Federation(reliability_by_root=…)` |
 | `profile` | every assumption a graph's owner makes, in one validated object | ~30 fields grouped by the module that reads them; estimable ones (per-root reliability, p_transition) filled from data, requirements (z, p, τ, α) declared; `merge` of two graphs' profiles keeps per-root numbers and takes the stricter requirement, reporting every difference |
+| `hidden_variable` | an overlapping-box disagreement read as a candidate UNDECLARED variable, not a contradiction to settle | data side: the attribute split with the largest χ² (or Gini) drop, permutation p-value, the boxes it would add; mechanism side (`from_mechanism`): the model parameters that can flip the sign of dy/dx inside the declared ranges, before any report |
+| `precision_form` | one quadratic form for structure, margins and regimes; value of one observation or of a SET in bits | J from the Laplacian + lineage-weighted observation blocks + a local Gaussian image of a Bernoulli belief; rank-1 updates; set value ½ log det(I + H C Hᵀ/σ²), submodular, greedy |
 | `closed_loop` | the engine choosing probes against a world with known sign structure, scored against the truth | world of ≤ 1-transition sign functions with sourced, copied, unreliable claims; policies engine / copies / random / oracle; wrong measure and believed wrong measure |
 | `polarity_rules` | the sign a sentence asserts between two quantities, symbolically | one direction word per quantity per clause, negation flips, last clause wins, composition by product; abstains outside its lexicon (English only) |
 | `typed_extraction` | the stubbed prose → `Claim` step of `paper_graph/pipeline.py` | yes/no fields from the target node's claim; balanced lenses; isotonic calibration of the pooled log-odds; confidence = Π max(p, 1−p) = P(whole claim right); `agree` adds the log-odds of a second, independent judge |
@@ -255,6 +257,24 @@ two-transition posterior needs probes on both sides of both transitions, and the
 single-transition reading explains the claims. The oracle policy is implemented but not run (25 × 12 × 2 posterior copies per step).
 This is the first measurement in this package of the engine choosing experiments end to end; the world is functions with the sign
 structure of e17's mechanisms, not a simulator.
+
+**One quadratic form (e24, `precision_form`).** Exact to machine precision: effective resistance = (e_i−e_j)ᵀJ⁺(e_i−e_j) (1e-16);
+the GLS estimate and variance of `margin_net` = posterior mean and variance of the observation block (0.0 / 4e-18, including a
+singular Σ from declared copies); a report is a rank-1 update (Sherman–Morrison, 2e-15; an update in the Laplacian's null space is
+detected and recomputed exactly instead); the value of an observation ½ log₂(1 + hᵀCh/σ²) equals the realized drop of the Gaussian
+entropy (2e-14) and the value of a SET is the sum along any order (chain rule, 9e-16). The Bernoulli block is a LOCAL Gaussian
+image: it ranks candidate probes as `regime_posterior` does (Spearman 0.9999) but its bits are off by up to 43 % (median 15 %) against
+the exact two-outcome drop — order yes, bits no. Set value is monotone and submodular (200/200 random checks), greedy found the
+optimum in 100/100 small instances. Set composition on a two-cluster graph: the best triple is three far pairs with low mutual
+coherence, not "a tight core plus one far element" (the throws.py expectation, now contradicted twice: e19 and here) — the rule trades
+resistance for independence: more bits than the top-3-by-resistance in 6/6 instances (2.2–2.5 vs 2.1–2.3; random 1.6–1.9). One bits-per-
+cost list ranks structure, margin and regime candidates together; the three single-currency top-1s are three different candidates and
+the joint top-1 is a fourth that none of them nominates, because cost and probe noise are invisible to resistance alone.
+
+**Hidden variables (test).** Sixteen reports with a planted effect modifier (sign flips above age 50) among two decoys: the split on
+age at 45–55 is found with permutation p < 0.02 and the decoys at p > 0.05; with no planted effect every attribute is at chance; an
+attribute missing on most reports cannot score. Mechanism side: for harvested yield Y = hK(1 − h/r) against effort h ∈ [0.2, 0.8],
+the growth rate r (flip at h = r/2) is nominated and the carrying capacity K (scales, never flips) scores 0.
 
 **Label-free calibration (e18; same 320 sentences).** Raw pooled 0.591; subtracting each lens's batch-mean log-odds (Batch Calibration) 0.572;
 per sentence form 0.603; per-form Platt on the rule's answers 0.927; on true labels 0.927. The option prior is not the fault; the

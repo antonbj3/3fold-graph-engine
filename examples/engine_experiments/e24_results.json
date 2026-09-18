@@ -1,0 +1,188 @@
+{
+ "T1_resistance": {
+  "graphs": 5,
+  "pairs_per_graph": 50,
+  "max_abs_error_vs_exact_pinv": 1.1102230246251565e-16,
+  "max_rel_error_of_the_k4096_sketch": 0.07915249243064482,
+  "exact": true
+ },
+ "T2_margins": {
+  "n_reports": 4,
+  "rank_Sigma": 2,
+  "margin_net_mhat": 0.6748885162175553,
+  "form_mean": 0.6748885162175553,
+  "abs_error_mean": 0.0,
+  "margin_net_s2": 0.027528514121279133,
+  "form_var": 0.02752851412127913,
+  "abs_error_var": 3.469446951953614e-18
+ },
+ "T3_sherman_morrison": {
+  "updates_in_range": 20,
+  "max_abs_error_vs_recomputed_pinv": 1.7208456881689926e-15,
+  "null_space_h_used_sherman_morrison": false,
+  "error_if_it_had_been_used": 0.0016000000000014891,
+  "fallback_matches_pinv": 0.0
+ },
+ "T4_value": {
+  "max_abs_error_determinant_lemma_bits": 1.9095836023552692e-14,
+  "n_bernoulli_candidates": 65,
+  "p_range": [
+   0.2,
+   0.8
+  ],
+  "reliabilities": [
+   0.6,
+   0.7,
+   0.8,
+   0.9,
+   0.97
+  ],
+  "spearman_gaussian_vs_regime_fisher_form": 0.9999234964913729,
+  "spearman_gaussian_vs_exact_entropy_drop": 0.9996065853237057,
+  "max_rel_gap_gaussian_vs_exact": 0.43304158688660577,
+  "median_rel_gap_gaussian_vs_exact": 0.14976950813371148,
+  "note": "the Bernoulli block is a LOCAL Gaussian image: the order is kept, the value is not"
+ },
+ "T5_set": {
+  "chain_rule_abs_error_bits": 8.881784197001252e-16,
+  "checks": 200,
+  "monotone_ok": 200,
+  "submodular_ok": 200,
+  "worst_diminishing_returns_violation_bits": 0.0,
+  "greedy_vs_brute": {
+   "instances": 100,
+   "candidates": 8,
+   "k": 3,
+   "min_ratio": 0.9999999999999998,
+   "mean_ratio": 1.0,
+   "n_optimal": 100,
+   "bound_1_minus_1_over_e": 0.6321205588285577
+  },
+  "composition_two_cluster_graph": {
+   "instances": 6,
+   "n_far_in_best": [
+    3,
+    3,
+    3,
+    3,
+    2,
+    3
+   ],
+   "best_mean_R": [
+    3.54,
+    3.294,
+    3.577,
+    3.185,
+    2.927,
+    3.237
+   ],
+   "top3_by_resistance_mean_R": [
+    3.6,
+    3.368,
+    3.612,
+    3.22,
+    3.511,
+    3.305
+   ],
+   "best_mean_coherence": [
+    0.824,
+    0.806,
+    0.832,
+    0.847,
+    0.336,
+    0.824
+   ],
+   "top3_mean_coherence": [
+    0.874,
+    0.912,
+    0.856,
+    0.864,
+    0.888,
+    0.851
+   ],
+   "random_mean_coherence": [
+    0.32,
+    0.291,
+    0.258,
+    0.282,
+    0.3,
+    0.23
+   ],
+   "best_value_bits": [
+    2.384,
+    2.338,
+    2.374,
+    2.203,
+    2.522,
+    2.278
+   ],
+   "top3_by_resistance_value_bits": [
+    2.234,
+    2.07,
+    2.32,
+    2.163,
+    2.187,
+    2.21
+   ],
+   "random_value_bits": [
+    1.805,
+    1.718,
+    1.764,
+    1.672,
+    1.908,
+    1.592
+   ],
+   "finding": "not a tight core plus one far element: the best triple is usually all far, but gives up resistance and mutual coherence against the top-3 by resistance"
+  }
+ },
+ "T6_one_currency": {
+  "top5": [
+   {
+    "id": "edge_2_11",
+    "kind": "structure",
+    "bits": 1.2308,
+    "bits_per_cost": 1.2308,
+    "cost": 1.0
+   },
+   {
+    "id": "edge_1_8",
+    "kind": "structure",
+    "bits": 1.1136,
+    "bits_per_cost": 1.1136,
+    "cost": 1.0
+   },
+   {
+    "id": "edge_6_9",
+    "kind": "structure",
+    "bits": 1.0665,
+    "bits_per_cost": 1.0665,
+    "cost": 1.0
+   },
+   {
+    "id": "report_m_loose",
+    "kind": "margin",
+    "bits": 1.0222,
+    "bits_per_cost": 1.0222,
+    "cost": 1.0
+   },
+   {
+    "id": "probe_r0.95",
+    "kind": "regime",
+    "bits": 0.4274,
+    "bits_per_cost": 0.4274,
+    "cost": 1.0
+   }
+  ],
+  "n_candidates": 8,
+  "top1_by_resistance_alone": "edge_3_1",
+  "top1_by_margin_z_alone": "report_m_loose",
+  "top1_by_regime_value_alone": "probe_r0.95",
+  "joint_top1": "edge_2_11",
+  "gap_top1_top2_bits_per_cost": 0.11710836112418566,
+  "margin_z": {
+   "m_tight": 16.405,
+   "m_loose": 0.295
+  },
+  "note": "each part ranks only its own kind; bits per cost ranks all three and disagrees with resistance even inside the structure kind, because cost and probe noise are invisible to R"
+ }
+}

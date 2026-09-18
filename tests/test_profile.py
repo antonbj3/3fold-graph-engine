@@ -1,5 +1,5 @@
 """EngineProfile: defaults equal the modules' own, validation catches what the modules would silently accept, the
-estimable fields come from data, and merging two graphs' profiles keeps per-root numbers and takes the stricter requirement."""
+estimable fields come from data, and merging two graphs' profiles keeps per-root numbers and takes the value that leaves more open."""
 import json
 import sys
 from pathlib import Path
