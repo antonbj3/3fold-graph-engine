@@ -72,7 +72,7 @@ corpus the gate abstains on all 57 papers from title and abstract. The modules b
 | `regime_markov` | the sign along x as a telegraph process: any number of transitions in one code path | forward–backward on the fixed partition, exact; majority box claims exact by block enumeration; P(N = k) from the same pass |
 | `next_actions` | one list of what to do next, from every channel, in the contract's form; a runner that routes the outcome back | bits per cost across regimes, margins and the precision form; priority / χ² / EVPI channels listed apart, never mixed in; `apply` returns the fold-ledger row with predicted and realized bits; BUNDLES (probe pairs, a cell's sweep at one lineage root, chain-throw links) priced by their exact joint value in the same list, no reserved share |
 | `claim_types` | the checker layer: dimensions, certificates, link typecheck | unit grammar → dimension vector; a claim carries a certificate (deductive from a model over its box, statistical from a fitted guarantee, or none) and readers take r from it; a two-step link must resolve one concept, intersect boxes, agree on scale and dimension |
-| `decision_cert` | trust relative to a DECISION, not global (from the Hollow project's decision certificates): p_flip of a predicate over the beliefs, and which measurement can flip it | sign-on-box (exact posterior mass), margin (Φ), chain (declared independence); `flip_attribution` ranks candidates by P(flip)/cost; listed in `next_actions` as a separate currency |
+| `decision_cert` | trust relative to a DECISION, not global (decision certificates, concept transfer): p_flip of a predicate over the beliefs, and which measurement can flip it | sign-on-box (exact posterior mass), margin (Φ), chain (declared independence); `flip_attribution` ranks candidates by P(flip)/cost; listed in `next_actions` as a separate currency |
 | `guarantees` | what is proved about the probe rule and what is not | cell identity Δ_U = Σ w_c I(Z_c; Y); adaptive monotone (proved); NOT adaptive submodular with noisy answers (counter-example); bounds f, g of the allocation lemma; greedy vs adaptive optimum by enumeration |
 | `disagreement_field` | the interval between claims filled twice — by the claims and by a first-principles model — and the gap between the fillings | pointwise JS between P₊^claims and P₊^model; model probes enter with lineage root = the model (K probes = one root); throws ranked by co-moving gaps; a world with planted hidden links (shared latent parameters) as the throw facit without proximity |
 | `alarm` | model-error alarm with an exact false-alarm bound: a nonnegative martingale on realized − predicted drops (Ville) | mixture of bets with the model's exact conditional cumulant; α holds for adaptively chosen probes, no exchangeability; power measured only |
@@ -351,7 +351,7 @@ Three additions to the loop, same 40 worlds, paired against `engine` (1.24 at bu
   per pair; a second transition costs ~12 probes and the budget has to be raised for it or a cheaper instrument (a sweep from a
   computation cell: many probes per run) has to exist. Recorded as the limit, not as a rule to tune.
 - **E-optimal / T-optimal allocation (e21c): negative, with the reason.** A max-min rule (raise the smallest pairwise discrimination
-  between mass-carrying hypotheses; the identifiability-steered excitation of the Hollow project, Atkinson–Fedorov's model
+  between mass-carrying hypotheses; identifiability-steered excitation, Atkinson–Fedorov's model
   discrimination) is identically zero on this fixed threshold family until nearly every cell is probed: two hypotheses that agree on
   every probed cell have discrimination 0, and one probe lifts only the pairs straddling its own cell. The fallback (mean lift of the
   tied weakest set) spends probes on "threshold in cell i vs i + 1" — hairline distinctions of no value. Measured: +0.10 ± 0.05 wrong and
@@ -514,7 +514,7 @@ certificate inside its box, 1 − α from a statistical one, the profile's defau
 whose shared variable is log on one side and linear on the other unless both declare it. Caveat: the modal acceptance is "no type
 claim was made" — a dimension check cannot see a lost per-cent sign.
 
-**Decision-relative certificates (test; `decision_cert`, lifted as a concept from the Hollow project).** A node with wide uncertainty
+**Decision-relative certificates (test; `decision_cert`, lifted as a concept from a sibling project).** A node with wide uncertainty
 can still certify a decision if the decision does not flip anywhere in the credible set: p_flip is exact on the regime partition
 (equals brute-force enumeration), Φ-exact for margins (Monte-Carlo agreement 3e-3), a declared-independence product for chains. The
 attribution of the next measurement follows the decision, not the entropy: with two pairs where only one carries the decision, the
@@ -522,7 +522,7 @@ bits ranking puts the empty high-entropy pair first and the flip ranking puts th
 OUTSIDE the decision's box can flip a sign decision (a far − answer lifts exactly the hypotheses that fail on the box) — a first test
 assumed the opposite and was wrong.
 
-**Coupled criticality and the noise floor (e31; two more readings of the precision form, concepts from the Hollow project).**
+**Coupled criticality and the noise floor (e31; two more readings of the precision form, concepts from a sibling project).**
 Criticality = the smallest non-gauge eigenvalue of J with its direction. Two healthy parts (σ_min 1.05 each) glued through one shared,
 unmeasured concept: joint σ_min 0.050, a 21× collapse, and the weak mode loads 0.5 / 0.5 on the two interiors with the shared node at
 amplitude exactly 0. Two things the seed did NOT transfer as stated: gluing precision forms is information-monotone, so a joint
