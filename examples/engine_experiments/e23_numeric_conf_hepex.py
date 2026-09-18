@@ -34,7 +34,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from graph_engine.margin_net import MarginNet                      # noqa: E402
 from graph_engine.numeric_rules import extract_numeric_claims      # noqa: E402
 
-DATA = Path.home() / "projects/hunt_3fold/data"
+from _data import DATA
 CACHE = DATA / "arxiv_hepex.jsonl"
 OUT = Path(__file__).with_name("e23_results.json")
 API = ("https://export.arxiv.org/api/query?search_query={q}&sortBy=submittedDate&sortOrder={o}"
