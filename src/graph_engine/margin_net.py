@@ -58,7 +58,7 @@ from scipy.stats import chi2, norm
 
 from .claim_federation import lineage_information
 
-__all__ = ["MarginNet", "EdgeEstimate"]
+__all__ = ["MarginNet", "EdgeEstimate", "tree_paths", "tree_matrix", "tree_covariance", "tree_gls"]
 
 
 def _h(p):
@@ -94,10 +94,17 @@ class MarginNet:
 
     # -- loading -----------------------------------------------------------------------------------
     _shares: dict = field(default_factory=dict)
+    _tree: dict = field(default_factory=dict)          # tree node id -> {"parent", "share"}: the general lineage state
 
     def add_sources(self, sources: list[dict]) -> None:
-        """source = {"id", "derives_from": [ids] (copies), "shares": {group: rho} (partially shared error, 0 < rho < 1)}"""
+        """source = {"id", "derives_from": [ids] (copies), "shares": {group: rho} (partially shared error, 0 < rho < 1)}
+        or a TREE node {"id", "parent": id or None, "share": theta} — the one object the other two are special cases of
+        (independent = own leaf with theta 1; copy = theta 0 under a shared node; shares rho = ancestor rho + leaf 1-rho).
+        A report whose source is a tree node is read through the tree (`tree_gls`); the old records are untouched."""
         for s in sources:
+            if "parent" in s or "share" in s or "theta" in s:
+                self._tree[s["id"]] = {"parent": s.get("parent"), "share": float(s.get("share", s.get("theta", 0.0)))}
+                continue
             self._parents[s["id"]] = sorted(set(self._parents.get(s["id"], [])) | set(s.get("derives_from", [])))
             for g, rho in (s.get("shares") or {}).items():
                 if not 0.0 < rho < 1.0:
@@ -129,22 +136,28 @@ class MarginNet:
         sig = np.array([self.default_sigma if r.get("sigma") is None else r["sigma"] for r in R], float)
         if (sig <= 0).any():
             raise ValueError(f"edge {id}: sigma must be > 0 (a report without uncertainty cannot be combined)")
-        rs = [frozenset().union(*[self.roots(x) for x in (r.get("sources") or [f"{id}#{k}"])]) for k, r in enumerate(R)]
-        allr = sorted(set().union(*rs))
-        M = np.array([[1.0 if x in r else 0.0 for x in allr] for r in rs]); M /= M.sum(1, keepdims=True)
-        # partially shared errors: each report's group weights are the mean over its sources' declared shares
-        grp: list[dict] = []
-        for k, r in enumerate(R):
-            srcs = r.get("sources") or []; d: dict = {}
-            for x in srcs:
-                for g, rho in self._shares.get(x, {}).items():
-                    d[g] = d.get(g, 0.0) + rho / len(srcs)
-            grp.append(d)
-        groups = sorted({g for d in grp for g in d})
-        if groups:
-            tot = np.array([min(sum(d.values()), 0.999) for d in grp])
-            G = np.array([[math.sqrt(d.get(g, 0.0)) for g in groups] for d in grp])
-            M = np.hstack([np.sqrt(1 - tot)[:, None] * M, G]); allr = allr + [f"shared:{g}" for g in groups]
+        tnodes = [(r.get("sources") or [None])[0] for r in R]
+        tree_mode = bool(self._tree) and all(x in self._tree for x in tnodes)
+        rs = None
+        if tree_mode:                                          # the general state: a tree of error components
+            M, allr = tree_matrix(tnodes, self._tree); groups = ["tree"]
+        else:
+            rs = [frozenset().union(*[self.roots(x) for x in (r.get("sources") or [f"{id}#{k}"])]) for k, r in enumerate(R)]
+            allr = sorted(set().union(*rs))
+            M = np.array([[1.0 if x in r else 0.0 for x in allr] for r in rs]); M /= M.sum(1, keepdims=True)
+            # partially shared errors: each report's group weights are the mean over its sources' declared shares
+            grp: list[dict] = []
+            for k, r in enumerate(R):
+                srcs = r.get("sources") or []; d: dict = {}
+                for x in srcs:
+                    for g, rho in self._shares.get(x, {}).items():
+                        d[g] = d.get(g, 0.0) + rho / len(srcs)
+                grp.append(d)
+            groups = sorted({g for d in grp for g in d})
+            if groups:
+                tot = np.array([min(sum(d.values()), 0.999) for d in grp])
+                G = np.array([[math.sqrt(d.get(g, 0.0)) for g in groups] for d in grp])
+                M = np.hstack([np.sqrt(1 - tot)[:, None] * M, G]); allr = allr + [f"shared:{g}" for g in groups]
         B = sig[:, None] * M                                   # e = B ε
         Sigma = B @ B.T
         Sp = np.linalg.pinv(Sigma, rcond=1e-10)
@@ -161,7 +174,7 @@ class MarginNet:
         kind = "VIOLATED" if z < -self.stressed_below_z else "STRESSED" if z < self.stressed_below_z else "OK"
         if p_agree < self.disagree_p:
             kind = "REGIME-BOUNDARY" if self._disjoint_validity(R) else "CONTRADICTION"
-        neff = lineage_information(rs) if not groups else info * len(sig) / float((1.0 / sig ** 2).sum())
+        neff = lineage_information(rs) if not groups else info * len(sig) / float((1.0 / sig ** 2).sum())  # rs is None in tree mode
         return EdgeEstimate(id, e["between"], mhat, s, z, pv, len(m), neff, q, dof, p_agree, kind, dict(zip(allr, a)))
 
     @staticmethod
@@ -207,3 +220,208 @@ class MarginNet:
         q = lambda c: {"p_all_hold": float((c == 0).mean()), "mean": float(c.mean()), "sd": float(c.std()),
                        "p_at_least_half": float((c >= math.ceil(len(E) / 2)).mean())}
         return {"with_shared_sources": q(joint), "as_if_independent": q(indep)}
+
+
+# ====================================================================================================
+# The three lineage states are ONE object: a TREE of error components
+# ====================================================================================================
+"""
+A report's error is a sum of independent components picked up along its path from the root of a provenance tree:
+
+        e_k = sigma_k * SUM_{v in path(k)} sqrt(theta_v) * eps_v ,     SUM_{v in path(k)} theta_v = 1 ,
+
+theta_v = the share of the report's variance injected at tree node v (eps_v iid N(0,1), one per node). Hence
+
+        Sigma = D T Tt D ,   T[k, v] = sqrt(theta_v) * [v in path(k)] ,   corr(j,k) = SUM_{v in path(j) & path(k)} theta_v.
+
+The three states of `add_sources` are three trees:
+  independent      each report its own leaf with theta_leaf = 1                      -> corr 0
+  copy             reports sharing every theta>0 node (theta_leaf = 0)               -> corr 1, Sigma singular
+  partially shared a common ancestor with theta = rho, own leaf theta = 1 - rho      -> corr rho   (`shares: {g: rho}`)
+and rho in (0,1) interpolates the first two continuously (test).
+
+Exactness on singular Sigma. Two reports are perfectly correlated iff they carry the same set of theta>0 nodes
+("key"); such a class C is a copy class. With J the n x |classes| matrix whose column C is s_C = (sigma_k)_{k in C}
+on block C, Sigma = J Sigma' Jt with Sigma' the CLASS correlation matrix (Sigma'_CC' = shared theta, diag 1), J of
+full column rank, Sigma' non-singular (order classes by the depth of their deepest theta>0 node: T' is triangular
+with non-zero diagonal). Then Sigma+ = J+t Sigma'^-1 J+ with J+x = (s_Ct x_C)/||s_C||^2, so for any u, v
+
+        ut Sigma+ v = phi(u)t Sigma'^-1 phi(v),    phi(x)_C = SUM_{k in C} sigma_k x_k / SUM_{k in C} sigma_k^2.
+
+So a copy class with zero own variance collapses to ONE pseudo-report z_C = phi(m)_C with DESIGN COEFFICIENT
+d_C = phi(1)_C = (SUM sigma_k)/(SUM sigma_k^2) (not 1) and unit-variance error attached at its deepest node. That
+reproduces the pinv (Moore-Penrose) answer exactly, including the case where 1 is outside range(Sigma) (two copies
+with sigma 0.1 and 0.2: mhat = (s.m)/(s.1), s^2 = (SUM sigma^2)^2/(SUM sigma)^2), and it is what "zero own variance"
+means for the recursion: the class is one observation, weighted by sigma, not by 1/sigma^2.
+
+The recursion (nested random effects, O(n * depth), no Sigma). With g_v = SUM_{w <= v} sqrt(theta_w) eps_w the
+cumulative error at node v, each class is an EXACT observation g_{v_C} = z_C - mu d_C, and
+
+        Q(mu) = (z - mu d)t Sigma'^-1 (z - mu d) = min_{g} SUM_{v: theta_v>0} (g_v - g_{parent(v)})^2 / theta_v
+
+(g of the virtual root = 0). Eliminating g_v upward, post-order, each node passes a quadratic form in
+(g_parent, mu, 1) -- a 3x3 matrix, one Schur complement per node. At the root Q(mu) = A mu^2 + 2 B mu + C, so
+        mhat = -B / A,   s^2 = 1 / A,   A = 1t Sigma+ 1,   N_eff = A * harmonic mean of the sigma_k^2
+(the N_eff `estimate` reports when groups are declared). Closed forms this reproduces: copies only and equal sigma
+-> N_eff = number of distinct origins = claim_federation.lineage_information = ||M+1||^2; one shared ancestor with
+rho over m reports -> N_eff = m / (1 + (m-1) rho), Kish (tests).
+"""
+
+
+def _tree_records(tree) -> dict:
+    """{"id", "parent", "share"} records (or {id: {"parent", "share"}}) -> {id: (parent, theta)}."""
+    if isinstance(tree, dict):
+        recs = [dict(v, id=k) for k, v in tree.items()]
+    else:
+        recs = list(tree)
+    out: dict = {}
+    for r in recs:
+        th = float(r.get("share", r.get("theta", 0.0)))
+        if not -1e-12 <= th <= 1.0 + 1e-12:
+            raise ValueError(f"tree node {r['id']}: share = {th} must be in [0, 1]")
+        out[r["id"]] = (r.get("parent"), min(max(th, 0.0), 1.0))
+    for n, (p, _) in out.items():
+        if p is not None and p not in out:
+            raise ValueError(f"tree node {n}: parent {p!r} is not declared")
+    return out
+
+
+def tree_paths(tree, nodes=None, tol: float = 1e-9) -> dict:
+    """{node: (path from root to node, as ids)} with the check that the shares along each used path sum to 1."""
+    T = _tree_records(tree)
+    paths: dict = {}
+    for n in (list(T) if nodes is None else list(nodes)):
+        if n not in T:
+            raise ValueError(f"tree: node {n!r} is not declared")
+        p, seen = [], set()
+        x = n
+        while x is not None:
+            if x in seen:
+                raise ValueError(f"tree: cycle at {x!r}")
+            seen.add(x); p.append(x); x = T[x][0]
+        paths[n] = tuple(reversed(p))
+    if nodes is not None:
+        for n in paths:
+            tot = sum(T[v][1] for v in paths[n])
+            if abs(tot - 1.0) > tol:
+                raise ValueError(f"tree: shares along the path of {n!r} sum to {tot:.6g}, must be 1")
+    return paths
+
+
+def tree_matrix(nodes, tree):
+    """T[k, v] = sqrt(theta_v) [v in path(k)] for the report attach-nodes `nodes`; returns (T, node order)."""
+    T = _tree_records(tree)
+    paths = tree_paths(tree, nodes)
+    order = sorted({v for n in nodes for v in paths[n]})
+    idx = {v: i for i, v in enumerate(order)}
+    A = np.zeros((len(nodes), len(order)))
+    for k, n in enumerate(nodes):
+        for v in paths[n]:
+            A[k, idx[v]] = math.sqrt(T[v][1])
+    return A, order
+
+
+def tree_covariance(nodes, sigmas, tree):
+    """Sigma = D T Tt D, the dense covariance of the reports (O(n^2); only for checking `tree_gls`)."""
+    A, _ = tree_matrix(nodes, tree)
+    B = np.asarray(sigmas, float)[:, None] * A
+    return B @ B.T
+
+
+def tree_gls(reports, tree, tol: float = 1e-9) -> dict:
+    """GLS through a tree covariance in O(n * depth), without forming Sigma.
+
+    report = {"margin", "sigma", "node"} (or "sources": [node]). Returns m (estimate), s, info = 1t Sigma+ 1,
+    n_eff = info * harmonic mean of sigma^2, q (chi2 inside range(Sigma)), dof, n_classes, off (the part of
+    m - mhat*1 outside range(Sigma), per report: declared copies that disagree). Equal to the pinv route to 1e-10,
+    including exact copies, where Sigma is singular: see the module note -- each copy class collapses to ONE
+    pseudo-observation with design coefficient (SUM sigma)/(SUM sigma^2), which is the Moore-Penrose answer."""
+    R = list(reports)
+    if not R:
+        return {"m": float("nan"), "s": float("inf"), "info": 0.0, "n_eff": 0.0, "q": 0.0, "dof": 0,
+                "n_reports": 0, "n_classes": 0, "off": []}
+    nodes = [r["node"] if "node" in r else (r.get("sources") or [None])[0] for r in R]
+    m = np.array([r["margin"] for r in R], float)
+    sig = np.array([r.get("sigma", 0.1) for r in R], float)
+    if (sig <= 0).any():
+        raise ValueError("tree_gls: sigma must be > 0")
+    T = _tree_records(tree)
+    paths = tree_paths(tree, nodes, tol=tol)
+
+    # (1) copy classes: same set of theta>0 nodes on the path  <=>  correlation 1
+    key = [tuple(v for v in paths[n] if T[v][1] > 0) for n in nodes]
+    cls: dict = {}
+    for k, kk in enumerate(key):
+        cls.setdefault(kk, []).append(k)
+    order = list(cls)
+    d = np.array([sum(sig[k] for k in ix) / sum(sig[k] ** 2 for k in ix) for ix in cls.values()])
+    z = np.array([sum(sig[k] * m[k] for k in ix) / sum(sig[k] ** 2 for k in ix) for ix in cls.values()])
+    obs = {kk[-1]: c for c, kk in enumerate(order)}          # deepest theta>0 node -> class (one per node)
+
+    # (2) upward elimination over the theta>0 nodes; each node passes a quadratic form in (g_parent, mu, 1)
+    dep: dict = {}
+
+    def depth(v):
+        chain = []
+        while v not in dep:
+            chain.append(v); v = T[v][0]
+            if v is None:
+                dep[chain[-1]] = 0; v = chain.pop()
+        for x in reversed(chain):
+            dep[x] = dep[T[x][0]] + 1
+        return dep[chain[0]] if chain else dep[v]
+
+    pos = sorted({v for kk in order for v in kk}, key=lambda v: (-depth(v), v))        # deepest first = post-order
+    par = {}
+    for v in pos:                                            # nearest theta>0 ancestor
+        x = T[v][0]
+        while x is not None and T[x][1] <= 0:
+            x = T[x][0]
+        par[v] = x
+    up: dict = {v: np.zeros((3, 3)) for v in pos}             # accumulated child messages, in (g_v, mu, 1)
+    root = np.zeros((3, 3))                                   # messages that reach the virtual root (g = 0)
+    for v in pos:
+        S, th = up[v], T[v][1]
+        if v in obs:                                          # g_v = z_c - d_c * mu  (exact observation)
+            c = obs[v]
+            L = np.array([[0.0, -d[c], z[c]], [0, 1, 0], [0, 0, 1]])   # (g_v, mu, 1) = L (g_v?, mu, 1), row0 = subst
+            S = L.T @ S @ L                                   # substitute into the children's messages
+            S[0, :] = 0.0; S[:, 0] = 0.0                      # g_v is gone
+            a = np.array([-1.0, -d[c], z[c]])                 # (g_v - g_p) = a . (g_p, mu, 1)
+            M = S + np.outer(a, a) / th
+        else:                                                 # minimise over g_v (Schur complement)
+            cuu = S[0, 0] + 1.0 / th
+            b = np.array([-1.0 / th, S[0, 1], S[0, 2]])       # cross terms g_v * (g_p, mu, 1)
+            C = np.zeros((3, 3)); C[1:, 1:] = S[1:, 1:]; C[0, 0] = 1.0 / th
+            M = C - np.outer(b, b) / cuu
+        p = par[v]
+        if p is None:
+            root += M
+        else:
+            up[p] += M
+    A = float(root[1, 1])                                     # Q(mu) = A mu^2 + 2 root[1,2] mu + root[2,2]
+    if A <= 0:
+        raise ValueError("tree_gls: no information about the estimate (1 is orthogonal to range(Sigma))")
+    mhat = -float(root[1, 2]) / A
+    q = max(float(root[1, 1] * mhat ** 2 + 2 * root[1, 2] * mhat + root[2, 2]), 0.0)
+    off = np.zeros(len(R))
+    for c, ix in enumerate(cls.values()):                     # (I - P)(m - mhat 1): within-class, P projects on s_C
+        s_c = sig[list(ix)]; r_c = m[list(ix)] - mhat
+        off[list(ix)] = r_c - s_c * float(s_c @ r_c) / float(s_c @ s_c)
+    hm = len(sig) / float((1.0 / sig ** 2).sum())             # harmonic mean of sigma^2
+    return {"m": mhat, "s": math.sqrt(1.0 / A), "info": A, "n_eff": A * hm, "q": q, "dof": len(cls) - 1,
+            "n_reports": len(R), "n_classes": len(cls), "off": off.tolist(), "classes": [list(v) for v in cls.values()],
+            "class_keys": order}
+
+
+def tree_from_shares(reports_groups, rho: float, root: str = "shared") -> list[dict]:
+    """The `shares: {g: rho}` state as a tree: one ancestor per group with theta = rho, a leaf per report with 1-rho.
+    reports_groups = [group id or None per report]; returns (tree records, one attach node per report)."""
+    tree, nodes = [], []
+    for g in sorted({g for g in reports_groups if g is not None}):
+        tree.append({"id": f"{root}:{g}", "parent": None, "share": rho})
+    for k, g in enumerate(reports_groups):
+        p = f"{root}:{g}" if g is not None else None
+        tree.append({"id": f"leaf{k}", "parent": p, "share": 1.0 - rho if g is not None else 1.0})
+        nodes.append(f"leaf{k}")
+    return tree, nodes

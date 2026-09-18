@@ -456,6 +456,16 @@ eigenvalues below the floor, k = 64 → 98.7 %, k = 256 → 96 %; the exact kern
 (4.3). So a determinantal throw drawn from a sketched kernel is drawn from noise at these widths — which is what e27's DPP arm
 measured (0.5 %, below random). A σ_min below the floor is not a finding; a DPP on a sketch needs the exact kernel or k ≫ n.
 
+**Lineage is a tree of error components (e36; `margin_net.tree_gls`).** The three lineage states are one object: e_k = σ_k Σ_{v ∈ path(k)}
+√θ_v ε_v, Σθ = 1 along a path — independent (θ at the leaf), copy (no own variance), partially shared (a common ancestor carries ρ).
+GLS on that tree in O(n · depth) by post-order elimination without forming Σ: equal to the pinv route to 3e-14 on 200 random trees
+(196 with singular Σ), 431× faster at 2 000 reports (0.03 s vs 14 s), linear to 8 000. Exact copies collapse to one σ-weighted
+pseudo-observation (what Moore–Penrose does when 1 ∉ range(Σ)), closed form checked. N_eff = ‖M⁺1‖² when the tree has only copies
+(9e-16) and Kish m/(1 + (m − 1)ρ) for one shared ancestor (1e-12); s is strictly increasing in ρ from σ/√m to σ. The cost of a
+mis-declaration, on known truth (500 draws): declaring INDEPENDENT what is shared or copied is the only expensive error — 95 %
+coverage falls to 64–77 % — while over-declaring sharing is conservative (96–100 %). That is the e23/e26 question answered where the
+truth is known: when in doubt, declare the ancestor. Sources may now be given as {"id", "parent", "share": θ} records.
+
 **Label-free calibration (e18; same 320 sentences).** Raw pooled 0.591; subtracting each lens's batch-mean log-odds (Batch Calibration) 0.572;
 per sentence form 0.603; per-form Platt on the rule's answers 0.927; on true labels 0.927. The option prior is not the fault; the
 per-form sign inversion is, and only labels (the rule's are enough) fix it.

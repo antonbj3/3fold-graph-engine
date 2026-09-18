@@ -112,3 +112,121 @@ def test_partially_shared_error_sits_between_independent_and_copy_and_is_not_a_c
     assert 1.0 < shared.n_eff < 3.0 and abs(ind.n_eff - 3.0) < 1e-9
     assert shared.kind in ("OK", "STRESSED") and copies.kind == "CONTRADICTION"      # copies must agree; shared may differ
     assert shared.p_agree > 0.01
+
+
+# ---------------------------------------------------------------------------------------------------
+# the three lineage states as ONE object: a tree of error components  (e36)
+# ---------------------------------------------------------------------------------------------------
+from graph_engine.margin_net import tree_gls, tree_covariance, tree_from_shares  # noqa: E402
+from graph_engine.claim_federation import lineage_information  # noqa: E402
+
+
+def _pinv_gls(nodes, sig, m, tree):
+    """the reference route: form Sigma = D T Tt D and go through the pseudo-inverse, exactly as MarginNet.estimate."""
+    S = tree_covariance(nodes, sig, tree); Sp = np.linalg.pinv(S, rcond=1e-10)
+    one = np.ones(len(m)); info = float(one @ Sp @ one); mh = float(one @ Sp @ m) / info
+    q = max(float(m @ Sp @ m) - mh * mh * info, 0.0)
+    off = (np.eye(len(m)) - S @ Sp) @ (m - mh)
+    return mh, (1.0 / info) ** 0.5, info, q, off
+
+
+def _random_tree(rng, n_reports, depth, copies=False):
+    """a random tree of `depth` levels with shares drawn from a Dirichlet (they sum to 1 along every path)."""
+    par = {"root": None}; layers = [["root"]]
+    for d in range(depth):
+        new = []
+        for p in layers[-1]:
+            for c in range(int(rng.integers(1, 3))):
+                v = f"n{d}_{len(new)}"; par[v] = p; new.append(v)
+        layers.append(new)
+    sh = rng.dirichlet(np.ones(depth + 1))
+    if copies:                                           # the deepest level carries no own variance -> exact copies
+        sh[-2] += sh[-1]; sh[-1] = 0.0
+    tree = [{"id": v, "parent": par[v], "share": float(sh[d])} for d, layer in enumerate(layers) for v in layer]
+    nodes = [layers[-1][int(rng.integers(len(layers[-1])))] for _ in range(n_reports)]
+    return tree, nodes
+
+
+def test_tree_gls_equals_the_pinv_estimate_including_exact_copies():
+    """O(n*depth) recursion == the pinv route to 1e-10 on random trees. Where Sigma is singular (exact copies) the
+    recursion collapses each copy class to ONE observation weighted by sigma, with design coefficient
+    (sum sigma)/(sum sigma^2) instead of 1 — that is what the Moore-Penrose inverse does there, not 1/sigma^2 weights."""
+    rng = np.random.default_rng(0); worst = 0.0; n_singular = 0
+    for trial in range(120):
+        tree, nodes = _random_tree(rng, int(rng.integers(3, 12)), int(rng.integers(1, 4)), copies=bool(trial % 2))
+        sig = rng.uniform(0.05, 0.5, len(nodes)); m = rng.normal(0.3, 0.2, len(nodes))
+        r = tree_gls([{"margin": m[k], "sigma": sig[k], "node": nodes[k]} for k in range(len(nodes))], tree)
+        a, b, info, q, off = _pinv_gls(nodes, sig, m, tree)
+        n_singular += int(np.linalg.matrix_rank(tree_covariance(nodes, sig, tree), tol=1e-10) < len(nodes))
+        worst = max(worst, abs(r["m"] - a), abs(r["s"] - b), abs(r["q"] - q) / max(1.0, abs(q)),
+                    float(np.max(np.abs(np.array(r["off"]) - off))))
+    assert worst < 1e-10 and n_singular > 20
+    # the closed form for two exact copies with different sigma (1 is OUTSIDE range(Sigma))
+    tree = [{"id": "o", "parent": None, "share": 1.0}, {"id": "a", "parent": "o", "share": 0.0},
+            {"id": "b", "parent": "o", "share": 0.0}]
+    r = tree_gls([{"margin": 0.4, "sigma": 0.1, "node": "a"}, {"margin": 0.6, "sigma": 0.2, "node": "b"}], tree)
+    assert abs(r["m"] - (0.1 * 0.4 + 0.2 * 0.6) / 0.3) < 1e-12 and abs(r["s"] - (0.01 + 0.04) / 0.3) < 1e-12
+
+
+def test_the_three_lineage_states_are_three_trees_and_marginnet_reads_them():
+    """independent = own leaf theta 1; copy = theta 0 under one node; shares rho = ancestor rho + leaf 1-rho.
+    MarginNet.add_sources takes the tree records and returns exactly what tree_gls and the old machinery return."""
+    vals = [0.30, 0.42, 0.20]
+    trees = {"independent": [{"id": f"p{k}", "parent": None, "share": 1.0} for k in range(3)],
+             "copy": [{"id": "o", "parent": None, "share": 1.0}] + [{"id": f"p{k}", "parent": "o", "share": 0.0} for k in range(3)],
+             "shared": [{"id": "CDF", "parent": None, "share": 0.5}] + [{"id": f"p{k}", "parent": "CDF", "share": 0.5} for k in range(3)]}
+    out = {}
+    for name, tree in trees.items():
+        n = MarginNet(default_sigma=0.1); n.add_sources(tree)
+        n.add_edge("e", ["a", "b"], [{"margin": v, "sources": [f"p{k}"]} for k, v in enumerate(vals)])
+        est = n.estimate("e"); g = tree_gls([{"margin": v, "sigma": 0.1, "node": f"p{k}"} for k, v in enumerate(vals)], tree)
+        assert abs(est.m - g["m"]) < 1e-12 and abs(est.s - g["s"]) < 1e-12 and abs(est.n_eff - g["n_eff"]) < 1e-12
+        out[name] = est
+    assert abs(out["independent"].s - 0.1 / 3 ** 0.5) < 1e-12 and abs(out["copy"].s - 0.1) < 1e-12
+    assert out["independent"].s < out["shared"].s < out["copy"].s
+    assert out["copy"].kind == "CONTRADICTION" and out["shared"].kind in ("OK", "STRESSED")
+    # the same three states through the OLD records give the same numbers (the old contract is untouched)
+    old = MarginNet(default_sigma=0.1)
+    old.add_sources([{"id": "p0"}, {"id": "p1", "derives_from": ["p0"]}, {"id": "p2", "derives_from": ["p0"]}])
+    old.add_edge("e", ["a", "b"], [{"margin": v, "sources": [f"p{k}"]} for k, v in enumerate(vals)])
+    assert abs(old.estimate("e").s - out["copy"].s) < 1e-12
+    sh = MarginNet(default_sigma=0.1); sh.add_sources([{"id": f"p{k}", "shares": {"CDF": 0.5}} for k in range(3)])
+    sh.add_edge("e", ["a", "b"], [{"margin": v, "sources": [f"p{k}"]} for k, v in enumerate(vals)])
+    assert abs(sh.estimate("e").s - out["shared"].s) < 1e-12 and abs(sh.estimate("e").n_eff - out["shared"].n_eff) < 1e-12
+
+
+def test_tree_neff_is_lineage_information_for_copies_and_kish_for_one_shared_ancestor():
+    """(a) copies only (theta_leaf in {0,1}) and equal sigma: N_eff = ||M+1||^2 = number of distinct origins.
+       (b) one ancestor with rho over m reports: N_eff = m/(1+(m-1)rho) (Kish = neff_form's variance-reduction form)."""
+    from graph_engine.neff_form import neff_form
+    rng = np.random.default_rng(1)
+    for origins, per in ((3, 2), (4, 1), (2, 5), (5, 3)):
+        tree = [{"id": f"o{j}", "parent": None, "share": 1.0} for j in range(origins)]
+        nodes = []
+        for j in range(origins):
+            for c in range(per):
+                tree.append({"id": f"c{j}_{c}", "parent": f"o{j}", "share": 0.0}); nodes.append(f"c{j}_{c}")
+        m = rng.normal(0.2, 0.05, len(nodes))
+        r = tree_gls([{"margin": m[k], "sigma": 0.1, "node": nodes[k]} for k in range(len(nodes))], tree)
+        li = lineage_information([frozenset([n.split("_")[0].replace("c", "o")]) for n in nodes])
+        assert abs(r["n_eff"] - li) < 1e-10 and abs(r["n_eff"] - origins) < 1e-10
+        assert abs(r["s"] - 0.1 / origins ** 0.5) < 1e-10
+    for m_rep in (2, 3, 10, 50):
+        for rho in (0.05, 0.2, 0.5, 0.9):
+            tree, nodes = tree_from_shares(["g"] * m_rep, rho)
+            r = tree_gls([{"margin": 0.3, "sigma": 0.2, "node": n} for n in nodes], tree)
+            kish = m_rep / (1 + (m_rep - 1) * rho)
+            assert abs(r["n_eff"] - kish) < 1e-9
+            assert abs(r["n_eff"] - neff_form(m_rep, rho, goal="variance_reduction")["n_eff"]) < 1e-3
+            assert abs(r["s"] - 0.2 * (kish ** -0.5)) < 1e-12
+
+
+def test_rho_interpolates_the_two_old_states_continuously():
+    """rho -> 0 is the independent case, rho -> 1 the copy case, and s is strictly increasing in between."""
+    m_rep = 6; sig = 0.15; ss = []
+    for rho in np.linspace(0.0, 1.0, 21):
+        tree, nodes = tree_from_shares(["g"] * m_rep, float(rho))
+        ss.append(tree_gls([{"margin": 0.3, "sigma": sig, "node": n} for n in nodes], tree)["s"])
+    ss = np.array(ss)
+    assert abs(ss[0] - sig / m_rep ** 0.5) < 1e-12 and abs(ss[-1] - sig) < 1e-12
+    assert (np.diff(ss) > 0).all() and abs(ss[10] - sig * ((1 + 5 * 0.5) / 6) ** 0.5) < 1e-12
