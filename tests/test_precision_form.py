@@ -357,3 +357,161 @@ def test_t6_one_currency_decides_what_the_parts_cannot():
     # within one kind the joint order is not the part's order either
     struct = [r for r in ranked if r[3] == "structure"]
     assert struct[0][0] != by_resistance
+
+
+# ==================================================================================================
+# T7–T11: the five readings of one covariance — each thin method against the module it duplicates
+# ==================================================================================================
+from graph_engine import resistance_sketch as rs  # noqa: E402
+from graph_engine.throws import dpp_inclusion_probabilities, draw_set_dpp  # noqa: E402
+
+
+def _laplacian_form(n, extra, seed):
+    edges, w = random_connected_graph(n, extra, seed)
+    f = PrecisionForm.zeros(n).add_laplacian(edges, w)
+    L = laplacian_from_edges(n, edges, w)[0].toarray()
+    return f, edges, w, L
+
+
+def _half_logpdet(J, tol=1e-8):
+    """½ log of the PSEUDO-determinant of J (product of the eigenvalues above the tolerance)."""
+    ev = np.linalg.eigvalsh((J + J.T) / 2)
+    ev = ev[ev > tol * max(ev.max(), 1.0)]
+    return 0.5 * float(np.log(ev).sum())
+
+
+def test_t7_hole_field_is_diag_of_the_covariance_and_the_sketch_hole_field():
+    n = 40
+    f, edges, w, L = _laplacian_form(n, 30, 7)
+    exact = np.diag(np.linalg.pinv(L, hermitian=True))
+    assert np.abs(f.hole_field() - exact).max() < 1e-10                       # same matrix, read twice
+    sk = ResistanceSketch.build(n, edges, w, k=256, seed=0)
+    rel = np.abs(sk.hole_field() - f.hole_field()) / f.hole_field()
+    assert rel.max() < 0.35 and rel.mean() < 0.12                            # sketch: its own √(2/k) error
+    rel_ref = np.abs(sk.refined_hole_field(laplacian_from_edges(n, edges, w)[0]) - f.hole_field()) / f.hole_field()
+    assert rel_ref.max() < rel.max()
+    assert np.abs(f.hole_field(index=[3, 5]) - exact[[3, 5]]).max() < 1e-10
+
+
+def test_t8_edge_leverage_from_the_form_sums_to_n_minus_one():
+    n = 45
+    f, edges, w, L = _laplacian_form(n, 40, 8)
+    lev = f.edge_leverage(edges, w)
+    assert abs(lev.sum() - (n - 1)) < 1e-8                                    # exact: spanning-tree count
+    assert lev.min() > 0 and lev.max() <= 1 + 1e-9
+    sk = ResistanceSketch.build(n, edges, w, k=256, seed=1)
+    lev_sk = rs.edge_leverage(sk, edges, w)
+    assert np.abs(lev_sk - lev).max() < 0.25                                  # sketch error only
+    assert abs(lev_sk.sum() - (n - 1)) < 0.6 * (n - 1)
+    r_exact = np.array([L.shape[0] and float((np.eye(n)[a] - np.eye(n)[b]) @ np.linalg.pinv(L, hermitian=True) @ (np.eye(n)[a] - np.eye(n)[b])) for a, b in edges])
+    assert np.abs(lev / w - r_exact).max() < 1e-10
+
+
+def test_t9_throw_set_is_the_same_dpp_as_throws_draw_set_dpp():
+    n, sigma = 24, 0.7
+    f, edges, w, L = _laplacian_form(n, 18, 9)
+    cand = np.arange(n)
+    C = f.cov()
+    lam, V = np.linalg.eigh(C); lam = np.clip(lam, 0, None)
+    Z = V * np.sqrt(lam)                                                      # Z Zᵀ = C
+    assert np.abs(Z @ Z.T - C).max() < 1e-10
+    quality = np.sqrt(np.diag(C)) / sigma                                     # absorbs _dpp_kernel's row normalization
+    pi_throws = dpp_inclusion_probabilities(Z, quality)
+    pi_form = f.throw_inclusion(cand, sigma)
+    assert np.abs(pi_form - pi_throws).max() < 1e-12                          # identical marginals
+    assert abs(pi_form.sum() - np.diag(C @ np.linalg.inv(np.eye(n) * sigma ** 2 + C)).sum()) < 1e-10
+    same = 0
+    for s in range(30):
+        a = f.throw_set(cand, sigma, seed=s)[0]
+        b = draw_set_dpp(Z, quality, seed=s)[0]
+        same += int(len(a) == len(b) and np.array_equal(a, b))
+    assert same >= 27                                                         # same algorithm, same seed
+    # and the sampler's own marginals: Monte-Carlo frequency ≈ the exact inclusion probabilities
+    cnt = np.zeros(n)
+    for s in range(600):
+        cnt[f.throw_set(cand, sigma, seed=1000 + s)[0]] += 1
+    assert np.abs(cnt / 600 - pi_form).max() < 4 * np.sqrt(0.25 / 600) + 0.02
+    m, p = f.throw_set(cand, sigma, seed=3)
+    assert np.abs(p - pi_form[m]).max() < 1e-15 and len(set(m.tolist())) == len(m)
+
+
+def test_t10_link_update_entropy_drop_and_kirchhoff_drop_are_two_different_potentials():
+    n, w_new = 30, 1.7
+    f, edges, w, L = _laplacian_form(n, 22, 10)
+    pairs = [(0, 7), (3, 19), (11, 25)]
+    logdet_bits, kirch_pred, kirch_real, logdet_real = [], [], [], []
+    for i, j in pairs:
+        g = f.copy()
+        R = g.resistance(i, j)
+        pred_bits = float(np.log1p(w_new * R) / (2 * np.log(2)))
+        kirch_pred.append(g.kirchhoff_drop(i, j, w_new))
+        tr_before = n * float(np.trace(g.cov()))
+        J0 = g.J.copy()
+        bits = g.observe_link(i, j, w_new)
+        assert abs(bits - pred_bits) < 1e-12                                  # ½log₂(1 + w R_ij)
+        # realized drop of ½log det C from a RECOMPUTED pseudo-inverse / pseudo-determinant
+        realized = (_half_logpdet(g.J) - _half_logpdet(J0)) / np.log(2)
+        logdet_bits.append(pred_bits); logdet_real.append(realized)
+        kirch_real.append(tr_before - n * float(np.trace(np.linalg.pinv(g.J, hermitian=True))))
+        assert np.abs(g.cov() - np.linalg.pinv(g.J, hermitian=True)).max() < 1e-9   # Sherman–Morrison exact
+    assert max(abs(a - b) for a, b in zip(logdet_bits, logdet_real)) < 1e-9
+    assert max(abs(a - b) for a, b in zip(kirch_pred, kirch_real)) < 1e-8
+    # the sketched Kirchhoff drop of resistance_sketch predicts the same number (its own error)
+    sk = ResistanceSketch.build(n, edges, w, k=512, seed=2, second_order=True)
+    ii = np.array([p[0] for p in pairs]); jj = np.array([p[1] for p in pairs])
+    sk_pred = sk.kirchhoff_drop(ii, jj, w_new)
+    assert (np.abs(sk_pred - np.array(kirch_pred)) / np.array(kirch_pred)).max() < 0.5
+    # the two potentials RANK links differently: not the same object
+    cands = [(a, b) for a in range(n) for b in range(a + 1, n)][:120]
+    bits = np.array([float(np.log1p(w_new * f.resistance(a, b)) / (2 * np.log(2))) for a, b in cands])
+    kd = np.array([f.kirchhoff_drop(a, b, w_new) for a, b in cands])
+    assert cands[int(np.argmax(bits))] != cands[int(np.argmax(kd))]
+    assert spearmanr(bits, kd).statistic < 0.98
+
+
+def test_t11_sparsify_from_the_form_keeps_resistances_like_the_sketch_version():
+    n, q = 30, 6000
+    f, edges, w, L = _laplacian_form(n, 45, 11)
+    Cex = np.linalg.pinv(L, hermitian=True)
+    iu = np.triu_indices(n, 1)
+    R0 = np.array([Cex[a, a] + Cex[b, b] - 2 * Cex[a, b] for a, b in zip(*iu)])
+
+    def worst_rel(e2, w2):
+        L2 = laplacian_from_edges(n, e2, w2)[0].toarray()
+        C2 = np.linalg.pinv(L2, hermitian=True)
+        R2 = np.array([C2[a, a] + C2[b, b] - 2 * C2[a, b] for a, b in zip(*iu)])
+        return float(np.abs(R2 / R0 - 1).max())
+
+    err_f, err_s, sizes = [], [], []
+    for s in range(6):
+        e_f, w_f, lev_f = f.sparsify(edges, w, q=q, seed=s)
+        e_s, w_s, lev_s = rs.sparsify(n, edges, w, q=q, k=256, seed=s)
+        assert abs(lev_f.sum() - (n - 1)) < 1e-8                # exact leverages, sketch's are not
+        assert np.abs(lev_s - lev_f).max() < 0.25
+        err_f.append(worst_rel(e_f, w_f)); err_s.append(worst_rel(e_s, w_s)); sizes.append(len(e_f))
+        assert n - 1 <= len(e_f) <= len(edges)
+    assert max(err_f) < 0.20 and max(err_s) < 0.20              # same tolerance band, both directions
+    assert np.mean(err_f) < 0.16 and np.mean(err_s) < 0.16
+    assert np.mean(err_f) <= np.mean(err_s) + 0.02              # exact leverages never worse in the mean
+
+
+def test_t11b_sparsify_actually_drops_edges_at_the_same_error_as_the_sketch():
+    """A denser graph and a smaller sample: edges are removed, and the exact-leverage version and the
+    sketched-leverage version land in the same error band (the guarantee is O(√(n log n / q)))."""
+    n, q = 40, 1200
+    f, edges, w, L = _laplacian_form(n, 160, 12)
+    Cex = np.linalg.pinv(L, hermitian=True)
+    iu = np.triu_indices(n, 1)
+    R0 = np.array([Cex[a, a] + Cex[b, b] - 2 * Cex[a, b] for a, b in zip(*iu)])
+    err_f, err_s, kept = [], [], []
+    for s in range(4):
+        e_f, w_f, _ = f.sparsify(edges, w, q=q, seed=s)
+        e_s, w_s, _ = rs.sparsify(n, edges, w, q=q, k=256, seed=s)
+        for e2, w2, acc in ((e_f, w_f, err_f), (e_s, w_s, err_s)):
+            C2 = np.linalg.pinv(laplacian_from_edges(n, e2, w2)[0].toarray(), hermitian=True)
+            R2 = np.array([C2[a, a] + C2[b, b] - 2 * C2[a, b] for a, b in zip(*iu)])
+            acc.append(float(np.abs(R2 / R0 - 1).max()))
+        kept.append(len(e_f))
+    assert min(kept) < len(edges)                               # edges really are dropped here
+    assert np.mean(err_f) < 0.55 and np.mean(err_s) < 0.55
+    assert np.mean(err_f) <= np.mean(err_s) + 0.10

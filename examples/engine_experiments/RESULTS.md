@@ -301,6 +301,12 @@ coherence, not "a tight core plus one far element" (the throws.py expectation, n
 resistance for independence: more bits than the top-3-by-resistance in 6/6 instances (2.2–2.5 vs 2.1–2.3; random 1.6–1.9). One bits-per-
 cost list ranks structure, margin and regime candidates together; the three single-currency top-1s are three different candidates and
 the joint top-1 is a fourth that none of them nominates, because cost and probe noise are invisible to resistance alone.
+Five readings of one matrix (added the same evening): hole field = diag(C) (error 0.0 against the exact pinv), edge leverage
+w_e R_e with Σ = n − 1 (7e-15), a set throw as the DPP with kernel Q C_S Q/σ² (marginals equal `throws` to 8e-13 when the quality
+absorbs the row normalisation — plain `draw_set_dpp(Z)` is a different kernel of the same family), a confirmed link as the rank-1
+update with realized value ½ log₂(1 + wR_ij) (8e-15), and the spectral sparsifier from exact leverages (resistances kept within the
+same band as the sketched version, mean 0.12 vs 0.14). Not the same object: the entropy drop and the Kirchhoff (trace) drop rank the
+same 120 candidate links at Spearman 0.94 with different top-1s — a log-det ranking of links is not a trace ranking.
 
 **Hidden variables (test).** Sixteen reports with a planted effect modifier (sign flips above age 50) among two decoys: the split on
 age at 45–55 is found with permutation p < 0.02 and the decoys at p > 0.05; with no planted effect every attribute is at chance; an

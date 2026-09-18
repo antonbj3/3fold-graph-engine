@@ -55,6 +55,20 @@ and belief probes (T6). What the joint object decides that the parts do not: the
 alone, by margin z alone and by regime value alone are three different candidates, and the bits/cost
 ranking picks one of them for a reason the other two cannot see.
 
+FIVE READINGS OF ONE MATRIX. Five modules read the same posterior covariance C = J⁺ at five places;
+here they are five thin methods over the one C, no second implementation of the algebra (T7–T11):
+    hole_field()      diag(C) = L⁺_ii           — graph_hole_engine.hole_field, resistance_sketch.hole_field
+    resistance(i,j)   vᵀCv, v = e_i−e_j          — resistance_sketch.resistance; edge_leverage() = w_e R_e is
+                                                  resistance_sketch.edge_leverage, Σ over a connected graph = n−1
+    throw_set(...)    DPP with kernel Q C_S Q/σ² — throws.draw_set_dpp / densify_sequential / throw_at_point_dpp
+    observe_link(i,j,w)  rank-1 J += w vvᵀ       — resistance_sketch's Sherman–Morrison edge addition
+    sparsify(...)     leverage sampling of edges — resistance_sketch.sparsify (Spielman–Srivastava)
+Two POTENTIALS live on the same update and must not be confused: the set/link value maximizes the
+ENTROPY of the Gaussian, ½log det C — one added edge drops it by ½log(1 + w R_ij); the Kirchhoff
+index maximizes the TRACE, n·tr C — the same edge drops it by n·w‖C v‖²/(1 + w R_ij)
+(resistance_sketch.kirchhoff_drop). Same C, same rank-1 update, different functional: a log-det
+ranking and a trace ranking of candidate links are not the same ranking (T10).
+
 numpy/scipy only; dense — this is the exact reference form, the sketch is the scalable one.
 """
 from __future__ import annotations
@@ -223,6 +237,97 @@ class PrecisionForm:
 
     def brute_best_set(self, cands: list[Candidate], k: int) -> list[Candidate]:
         return max((list(S) for S in combinations(cands, k)), key=self.value_of)
+
+    # -- the five readings of C ---------------------------------------------------------------------
+    # Each is a projection of the SAME covariance; none of them recomputes the algebra (T7–T11).
+    def hole_field(self, index=None) -> np.ndarray:
+        """(1) diag(C). On a form whose only block is a graph Laplacian this is L⁺_ii — the hole field
+        of graph_hole_engine.hole_field (exact pinv) and of resistance_sketch.hole_field (sketched)."""
+        c = np.diag(self.cov()).copy()
+        return c if index is None else c[np.asarray(index, np.int64)]
+
+    def edge_leverage(self, edges, weights=None, index=None) -> np.ndarray:
+        """(2) w_e·R_e per edge, from the same C — resistance_sketch.edge_leverage. On a connected
+        Laplacian-only form Σ_e w_e R_e = n − 1 exactly (spanning-tree inclusion probabilities)."""
+        e = np.asarray(edges, np.int64)
+        w = np.ones(len(e)) if weights is None else np.asarray(weights, float)
+        return np.array([wij * self.resistance(int(a), int(b), index) for (a, b), wij in zip(e, w)])
+
+    def _dpp_kernel(self, candidates, sigma: float = 1.0, quality=None) -> np.ndarray:
+        cand = np.asarray(candidates, np.int64)
+        K = self.cov()[np.ix_(cand, cand)] / float(sigma) ** 2
+        if quality is not None:
+            q = np.asarray(quality, float)
+            K = q[:, None] * K * q[None, :]
+        return (K + K.T) / 2
+
+    def throw_inclusion(self, candidates, sigma: float = 1.0, quality=None) -> np.ndarray:
+        """Exact P(i ∈ S) of `throw_set`: diag(K(I + K)⁻¹), K = Q C_S Q/σ² — the marginal kernel of
+        throws.dpp_inclusion_probabilities read off this form's covariance."""
+        K = self._dpp_kernel(candidates, sigma, quality)
+        return np.diag(K @ np.linalg.inv(np.eye(len(K)) + K))
+
+    def throw_set(self, candidates, sigma: float = 1.0, quality=None, seed: int = 0):
+        """(3) one throw as a SET: S ~ DPP with L-ensemble kernel K = Q C_S Q/σ², i.e. P(S) ∝ det(K_S),
+        the volume the members span in the posterior geometry. Same spectral algorithm as
+        throws.draw_set_dpp (Hough et al. 2006), whose kernel is this one when Z Zᵀ = C and the
+        quality absorbs its row normalization, q_i = √C_ii/σ (T9). Returns (members, their exact
+        inclusion probabilities). The potential maximized here is the log-det/entropy one:
+        ½log₂det(I + C_S/σ²) is `set_value_bits` of the same set."""
+        K = self._dpp_kernel(candidates, sigma, quality)
+        rng = np.random.default_rng(seed)
+        lam, V = np.linalg.eigh(K); lam = np.clip(lam, 0, None)
+        keep = rng.random(len(lam)) < lam / (1 + lam)
+        Vk = V[:, keep]; chosen: list[int] = []
+        while Vk.shape[1] > 0:
+            p = (Vk ** 2).sum(1); p /= p.sum()
+            i = int(rng.choice(len(p), p=p)); chosen.append(i)
+            j = int(np.argmax(np.abs(Vk[i])))
+            v = Vk[:, j] / Vk[i, j]
+            Vk = Vk - np.outer(v, Vk[i]); Vk = np.delete(Vk, j, axis=1)
+            if Vk.shape[1]:
+                Vk, _ = np.linalg.qr(Vk)
+        loc = np.array(sorted(chosen), dtype=np.int64)
+        cand = np.asarray(candidates, np.int64)
+        return cand[loc], self.throw_inclusion(candidates, sigma, quality)[loc]
+
+    def observe_link(self, i: int, j: int, w: float = 1.0, index=None) -> float:
+        """(4) a confirmed link between i and j IS an observation of the contrast: h = e_i − e_j with
+        σ² = 1/w, i.e. J += w vvᵀ, the Laplacian edge — one rank-1 `observe` (Sherman–Morrison, the
+        same update resistance_sketch does on L⁺). Returns the realized entropy drop
+        ½log₂(1 + w R_ij) bits. The TRACE drop of the same edge is `kirchhoff_drop` (T10)."""
+        v = np.zeros(self.d)
+        a, c = (i, j) if index is None else (int(index[i]), int(index[j]))
+        v[a], v[c] = 1.0, -1.0
+        sigma = float(w) ** -0.5
+        bits = self.value_bits(v, sigma)
+        self.observe(v, sigma)
+        return float(bits)
+
+    def kirchhoff_drop(self, i: int, j: int, w: float = 1.0, index=None) -> float:
+        """The OTHER potential of the same rank-1 update: the decrease of the Kirchhoff index n·tr C
+        when the edge (i,j,w) is added, Δ = n·w‖C v‖²/(1 + w vᵀ C v) — resistance_sketch.kirchhoff_drop
+        (which sketches ‖L⁺v‖² by a second-order sketch). Not the log-det value (T10)."""
+        v = np.zeros(self.d)
+        a, c = (i, j) if index is None else (int(index[i]), int(index[j]))
+        v[a], v[c] = 1.0, -1.0
+        Cv = self.cov() @ v
+        return float(self.d * w * float(Cv @ Cv) / (1.0 + w * float(v @ Cv)))
+
+    def sparsify(self, edges, weights=None, q: int | None = None, seed: int = 0, index=None):
+        """(5) Spielman–Srivastava sparsification with the leverages read off this C instead of a
+        sketch: sample q edges ∝ w_e R_e, reweight by 1/(q p_e). Returns (edges, weights, leverages),
+        the signature of resistance_sketch.sparsify (T11)."""
+        e = np.asarray(edges, np.int64)
+        w = np.ones(len(e)) if weights is None else np.asarray(weights, float)
+        lev = np.clip(self.edge_leverage(e, w, index), 1e-12, None)
+        p = lev / lev.sum()
+        q = int(q or max(4 * self.d, 1))
+        rng = np.random.default_rng(seed)
+        draw = rng.choice(len(e), q, replace=True, p=p)
+        cnt = np.bincount(draw, minlength=len(e)).astype(float)
+        keep = np.flatnonzero(cnt)
+        return e[keep], w[keep] * cnt[keep] / (q * p[keep]), lev
 
 
 def set_value_bits(C: np.ndarray, H, sigma=1.0) -> float:
