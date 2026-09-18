@@ -41,3 +41,17 @@ def test_oddness_is_a_property_of_F_not_of_its_branch_and_bad_brackets_fail_loud
     assert not s.odd
     with pytest.raises(ValueError):
         signature(lambda x, m: 1.0 + x * x + m * m, (0.1, 0.9), (0.0, 1.0))                       # never zero
+
+
+def test_vector_state_signature_agrees_with_scalar_and_reads_a_coupled_fold():
+    from graph_engine.mechanism_signature import signature_vector
+    # the scalar pull-in model, traced as a 1-vector
+    s1 = signature_vector(lambda u, m: np.array([m - u[0] * (1 - u[0]) ** 2]), np.array([0.02]), 0.01, ds=0.004, mu_stop=(-1, 1))
+    assert s1.n_limit >= 1 and abs(s1.mu_c - 4 / 27) < 2e-3 and abs(s1.order - 2) < 0.1 and abs(s1.gamma - 0.5) < 0.05
+    # two-state shallow (von Mises) truss: two hinged bars, vertical load P, horizontal spring k on the apex; snap-through fold
+    def truss(v, P, k=0.3):
+        u, w = v                                          # apex vertical drop u, horizontal offset w (asymmetric mode)
+        return np.array([P - u * (u - 1) * (u - 2) - 0.5 * w * w, -k * w - w * u])
+    s2 = signature_vector(truss, np.array([0.02, 0.0]), 0.0, ds=0.004, mu_stop=(-3, 3))
+    assert s2.n_limit >= 1 and abs(s2.mu_c - (1 - 1 / np.sqrt(3)) * (1 / np.sqrt(3)) * (1 + 1 / np.sqrt(3))) < 5e-3
+    assert abs(s2.order - 2) < 0.1 and abs(s2.gamma - 0.5) < 0.05 and not s2.odd

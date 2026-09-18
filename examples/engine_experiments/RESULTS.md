@@ -50,7 +50,7 @@ corpus the gate abstains on all 57 papers from title and abstract. The modules b
 | `unlock_value` | order of work when open nodes can fail | largest-ratio initial chain segment first, ratio = (1 − Πp)/expected cost; optimal for one goal with no or chain precedence (brute force over every feasible order, 160 graphs); heuristic for trees and for several goals |
 | `replay_policy` | which pairs get connected next, learned from the graph's own history | logistic policy on graph features; `grow_span` adds the direction most correlated with the residual; optional 1/π weights |
 | `throws` | new links to try | far in graph, far in subject, close in mechanism; systematic sampling with EXACT inclusion probabilities (test against 6 000 draws); pair-list form for large graphs |
-| `mechanism_signature` | are two models mechanically alike | limit points, tangency order, β, γ, oddness of F(x, μ) = 0 |
+| `mechanism_signature` | are two models mechanically alike | limit points, tangency order, β, γ, oddness of F(x, μ) = 0; `signature_vector` does the same for x ∈ ℝⁿ by pseudo-arclength continuation (limit point = tangent's μ-component changes sign, σ_min(∂F/∂x) → 0) |
 | `graph_interface` | combine two graphs through shared concepts only | R_ab = g_a + g_b + (h_a − h_b)ᵀ(S_A + S_B)⁺(h_a − h_b); exact, with g exact by default (a Hutchinson estimate only on request) |
 | `lens_pooling` | pool several phrasings of one question to one judge | per-stratum Platt scaling, error correlation, tempering, balanced lens sets from a Hadamard array |
 | `pooled_screening` | how many candidates per pooled question | two-stage Dorfman with noisy tests, closed forms |
@@ -168,6 +168,8 @@ with one fixed reliability. Needs ≥ 3 independent origins per question to be i
 
 **Mechanism signature (tests).** Electrostatic pull-in, Semenov thermal runaway and shallow-truss snap-through: one limit point,
 order 2.00, β 0.50, γ 0.50, at (1/3, 4/27), (1, 1/e), (1 − 1/√3, ·). Symmetric column: odd, γ 1.00. Cusp, linear, saturating: no limit point.
+Vector state (test): the scalar pull-in traced as a 1-vector gives the same numbers; a two-state shallow truss (vertical drop + an
+asymmetric mode coupled through a spring) reads its snap-through fold at the known load with order 2.00 and γ = 0.50.
 
 ## Limits
 

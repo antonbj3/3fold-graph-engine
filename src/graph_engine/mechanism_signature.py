@@ -32,7 +32,7 @@ from typing import Callable
 import numpy as np
 from scipy.optimize import brentq
 
-__all__ = ["Signature", "signature", "distance"]
+__all__ = ["Signature", "signature", "signature_vector", "distance"]
 
 
 @dataclass
@@ -82,3 +82,47 @@ def distance(a: Signature, b: Signature) -> float:
     if a.n_limit == 0:
         return 0.0 if a.odd == b.odd else 1.0
     return abs(a.order - b.order) + 2 * abs(a.gamma - b.gamma) + (0.0 if a.odd == b.odd else 1.0)
+
+
+def signature_vector(F: Callable[[np.ndarray, float], np.ndarray], x0: np.ndarray, mu0: float, ds: float = 0.01, n_steps: int = 3000,
+                     mu_stop: tuple[float, float] = (-np.inf, np.inf), window: tuple[float, float] = (1e-3, 3e-2)) -> Signature:
+    """The same signature for a VECTOR state x ∈ ℝⁿ, F(x, μ) = 0 traced by pseudo-arclength continuation (Keller 1977).
+    A limit point is where the tangent's μ-component changes sign; there σ_min(∂F/∂x) → 0 and the curve turns back.
+    order:  μ_c − μ ∝ |x − x_c|^order along the curve (x measured by arclength from the fold)
+    gamma:  σ_min(∂F/∂x) ∝ |μ_c − μ|^gamma
+    odd:    F(−x, μ) = −F(x, μ) on a grid.
+    Scalar models give the same numbers as `signature` (test); the fold of a coupled two-state model reads order 2, γ = 1/2."""
+    from scipy.optimize import fsolve
+    x = np.asarray(x0, float); n = len(x); mu = float(mu0)
+    x = fsolve(lambda v: F(v, mu), x, xtol=1e-12)
+    def J(x, mu, h=1e-6):
+        Jx = np.zeros((n, n)); Jm = np.zeros(n); f0 = F(x, mu)
+        for k in range(n):
+            e = np.zeros(n); e[k] = h; Jx[:, k] = (F(x + e, mu) - F(x - e, mu)) / (2 * h)
+        Jm[:] = (F(x, mu + h) - F(x, mu - h)) / (2 * h); return Jx, Jm
+    Jx, Jm = J(x, mu); t = np.linalg.lstsq(np.c_[Jx, Jm], -np.zeros(n), rcond=None)[0]
+    null = np.linalg.svd(np.c_[Jx, Jm])[2][-1]; t = null / np.linalg.norm(null); t = t if t[-1] > 0 else -t
+    xs, mus, sig = [x.copy()], [mu], [np.linalg.svd(Jx, compute_uv=False)[-1]]
+    for _ in range(n_steps):
+        guess = np.r_[x, mu] + ds * t
+        def G(v):
+            return np.r_[F(v[:n], v[n]), t @ (v - np.r_[x, mu]) - ds]
+        v = fsolve(G, guess, xtol=1e-12); x, mu = v[:n], float(v[n])
+        if not (mu_stop[0] <= mu <= mu_stop[1]) or not np.all(np.isfinite(v)):
+            break
+        Jx, Jm = J(x, mu); null = np.linalg.svd(np.c_[Jx, Jm])[2][-1]; tn = null / np.linalg.norm(null)
+        t = tn if tn @ t > 0 else -tn
+        xs.append(x.copy()); mus.append(mu); sig.append(np.linalg.svd(Jx, compute_uv=False)[-1])
+    xs, mus, sig = np.array(xs), np.array(mus), np.array(sig)
+    s_arc = np.r_[0, np.cumsum(np.linalg.norm(np.diff(xs, axis=0), axis=1))]      # arclength of the STATE: near a fold dμ ≈ 0
+    d = np.gradient(mus, s_arc); idx = [k for k in range(2, len(d) - 2) if d[k - 1] * d[k + 1] < 0 and abs(d[k]) <= min(abs(d[k - 1]), abs(d[k + 1]))]
+    idx = [k for j, k in enumerate(idx) if j == 0 or k - idx[j - 1] > 3]
+    gx = np.linspace(0.05, 1.0, 7)[:, None] * (np.abs(xs).max(0) + 1e-9)[None, :]; gm = np.linspace(mus.min(), mus.max(), 5)
+    odd = all(np.allclose(F(-g, m), -np.asarray(F(g, m)), atol=1e-9 * (1 + np.abs(F(g, m)).max())) for g in gx for m in gm)
+    if not idx:
+        return Signature(0, float("nan"), float("nan"), float("nan"), odd, float("nan"), float("nan"))
+    k0 = idx[0]; sl = slice(max(k0 - 3, 0), k0 + 4); c = np.polyfit(s_arc[sl], mus[sl], 2); sc = -c[1] / (2 * c[0]); muc = float(np.polyval(c, sc))
+    span = s_arc[-1] - s_arc[0]; dxs = np.abs(s_arc - sc); dm = np.abs(muc - mus); m = (dxs > window[0] * span) & (dxs < window[1] * span) & (dm > 0) & (sig > 0)
+    order = float(np.polyfit(np.log(dxs[m]), np.log(dm[m]), 1)[0]); gamma = float(np.polyfit(np.log(dm[m]), np.log(sig[m]), 1)[0])
+    xc = xs[np.argmin(np.abs(s_arc - sc))]
+    return Signature(len(idx), order, 1.0 / order, gamma, bool(odd), float(np.linalg.norm(xc)), muc)
