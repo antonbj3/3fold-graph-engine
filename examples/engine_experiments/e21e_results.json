@@ -1,0 +1,50 @@
+{
+ "engine+guard2+replay+majority": {
+  "wrong": 1.08,
+  "se": 0.069,
+  "gap": -0.08,
+  "tp_fn_fp": [
+   7,
+   18,
+   2
+  ],
+  "paired_vs_baseline": 0.0,
+  "wins": 0
+ },
+ "engine+total+replay+majority": {
+  "wrong": 1.164,
+  "se": 0.075,
+  "gap": 0.106,
+  "tp_fn_fp": [
+   6,
+   19,
+   0
+  ],
+  "paired_vs_baseline": 0.085,
+  "wins": 14
+ },
+ "engine+total+majority": {
+  "wrong": 1.363,
+  "se": 0.085,
+  "gap": 0.312,
+  "tp_fn_fp": [
+   5,
+   20,
+   0
+  ],
+  "paired_vs_baseline": 0.283,
+  "wins": 8
+ },
+ "engine+total": {
+  "wrong": 1.375,
+  "se": 0.091,
+  "gap": 0.342,
+  "tp_fn_fp": [
+   6,
+   19,
+   0
+  ],
+  "paired_vs_baseline": 0.296,
+  "wins": 11
+ }
+}

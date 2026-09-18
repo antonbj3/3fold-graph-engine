@@ -90,8 +90,8 @@ Six statements, each carried by numbers below; the rest of this file is the evid
    error (coverage 95 → 64–77 %); over-declaring sharing is conservative. When in doubt, declare the ancestor.
 2. **The probe rule is monotone, not submodular under noise (e33).** A contradicting answer makes the same probe worth more.
    Purchases with increasing returns — a second regime transition, a sweep, a throw plus its verification — are invisible to a
-   one-step price at ANY price (e21e) and must be priced at their own depth: exactly priced probe pairs find the collisions with no
-   reserved share (e21f). Three allocation rules were refuted on the way (burst, E-optimal, correctly priced one-step).
+   one-step price unless the family term is in the price (e21e: 0 → 6 of 25); priced at their own depth they are found without a
+   reserved share (e21f: 7 of 25, 0 false flags). Three allocation rules were refuted on the way (burst, E-optimal, correctly priced one-step).
 3. **The label decides what a throw is (e27d, e3d).** Under co-citation, near pairs win and every far rule loses (e3b, e19, e27,
    e27c). Under densification — the field later builds a route where there was none — far pairs win 3.2× and a learned policy on the
    same ten features beats the resistance decile 1.4–1.9×, with the weights inverted. The engine's objective is the second label.
@@ -365,8 +365,14 @@ Three additions to the loop, same 40 worlds, paired against `engine` (1.24 at bu
   without, and the calibration turns over-confident (gap +0.09 to +0.34): pairs win cells where a single would have lowered the sign
   potential more per unit cost. Test pins: pair gain between the best single and the two best singles + λH_fam (the slack lives only
   in the family term), predicted = realized four-outcome expectation to 1e-9.
-- **the correctly priced one-step rule (e21e):** first run INVALID — the `+total` flag was not wired into the value branch (found by the e21f
-  agent), so the run measured plain `engine`. Rerun below.
+- **the correctly priced one-step rule (e21e, rerun with the flag wired; the first run had measured plain `engine` and was discarded):**
+  `total_value_probe` = ΔU + ΔH_family in one price, one step, no share: with replay and majority 6 of 25 collisions, 0 false flags,
+  wrong 1.164 (+0.085 ± 0.05), gap +0.11; without replay 5–6 of 25, wrong 1.36–1.38, gap +0.31–0.34. So the PRICE is most of the
+  story — a one-step rule that prices the family term finds 6 where the unpriced rule found 0 — and the two-step bundle adds one
+  more (7) at the same accuracy cost. The statement above that "one-step cannot buy it at any price" was drawn from the invalid
+  run and is withdrawn: e33's increasing returns explain why the single price undervalues by ~10×, not why it would be zero.
+  What none of the no-share rules fixes is the over-confidence they buy (gap +0.09 to +0.34 against −0.08 for the guard share):
+  the family term spends probes where the sign potential's own calibration is not repaired. That is the alarm's job (e21g).
 
 **One quadratic form (e24, `precision_form`).** Exact to machine precision: effective resistance = (e_i−e_j)ᵀJ⁺(e_i−e_j) (1e-16);
 the GLS estimate and variance of `margin_net` = posterior mean and variance of the observation block (0.0 / 4e-18, including a
