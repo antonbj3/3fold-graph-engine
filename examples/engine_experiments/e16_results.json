@@ -1,74 +1,1169 @@
 {
- "tau=0.9,judge_reliability=0.8": {
+ "_meta": {
+  "n_graphs_per_cell": 600,
+  "n_nodes": 8,
+  "judge_cost": 1.0,
+  "cell_cost": 20.0,
+  "note": "values are [mean, standard error over graphs]; common random numbers across arms within a graph"
+ },
+ "tau=0.9,judge_reliability=0.55": {
   "priority_cell": {
-   "spend": 48.27,
-   "wrong_settlements_per_goal": 0.023
+   "spend": [
+    50.7667,
+    1.4392
+   ],
+   "wrong_per_goal": [
+    0.015,
+    0.005
+   ],
+   "wrong_per_node_worked": [
+    0.0037,
+    0.0014
+   ],
+   "nodes_worked": [
+    2.8633,
+    0.0824
+   ],
+   "n_graphs": 600
   },
   "ratio_cell": {
-   "spend": 35.03,
-   "wrong_settlements_per_goal": 0.005
+   "spend": [
+    35.9,
+    1.141
+   ],
+   "wrong_per_goal": [
+    0.0067,
+    0.0033
+   ],
+   "wrong_per_node_worked": [
+    0.0008,
+    0.0004
+   ],
+   "nodes_worked": [
+    1.8433,
+    0.064
+   ],
+   "n_graphs": 600
   },
   "judge_first": {
-   "spend": 5.29,
-   "wrong_settlements_per_goal": 0.087
+   "spend": [
+    142.38,
+    6.1164
+   ],
+   "wrong_per_goal": [
+    0.16,
+    0.0169
+   ],
+   "wrong_per_node_worked": [
+    0.0859,
+    0.0103
+   ],
+   "nodes_worked": [
+    1.7867,
+    0.0644
+   ],
+   "n_graphs": 600
   },
   "plan_value": {
-   "spend": 5.49,
-   "wrong_settlements_per_goal": 0.153
+   "spend": [
+    35.7317,
+    1.1156
+   ],
+   "wrong_per_goal": [
+    0.04,
+    0.008
+   ],
+   "wrong_per_node_worked": [
+    0.0112,
+    0.0025
+   ],
+   "nodes_worked": [
+    2.7683,
+    0.0709
+   ],
+   "n_graphs": 600
+  },
+  "judge_first_at_plan_value_order": {
+   "spend": [
+    142.4783,
+    6.122
+   ],
+   "wrong_per_goal": [
+    0.1917,
+    0.0185
+   ],
+   "wrong_per_node_worked": [
+    0.0718,
+    0.008
+   ],
+   "nodes_worked": [
+    2.7,
+    0.0707
+   ],
+   "n_graphs": 600
+  },
+  "plan_value_at_judge_first_order": {
+   "spend": [
+    35.6633,
+    1.1111
+   ],
+   "wrong_per_goal": [
+    0.0117,
+    0.0044
+   ],
+   "wrong_per_node_worked": [
+    0.0015,
+    0.0005
+   ],
+   "nodes_worked": [
+    1.8533,
+    0.0653
+   ],
+   "n_graphs": 600
+  }
+ },
+ "tau=0.9,judge_reliability=0.6": {
+  "priority_cell": {
+   "spend": [
+    50.7667,
+    1.4392
+   ],
+   "wrong_per_goal": [
+    0.015,
+    0.005
+   ],
+   "wrong_per_node_worked": [
+    0.0037,
+    0.0014
+   ],
+   "nodes_worked": [
+    2.8633,
+    0.0824
+   ],
+   "n_graphs": 600
+  },
+  "ratio_cell": {
+   "spend": [
+    35.9,
+    1.141
+   ],
+   "wrong_per_goal": [
+    0.0067,
+    0.0033
+   ],
+   "wrong_per_node_worked": [
+    0.0008,
+    0.0004
+   ],
+   "nodes_worked": [
+    1.8433,
+    0.064
+   ],
+   "n_graphs": 600
+  },
+  "judge_first": {
+   "spend": [
+    38.5717,
+    1.6554
+   ],
+   "wrong_per_goal": [
+    0.16,
+    0.0162
+   ],
+   "wrong_per_node_worked": [
+    0.0945,
+    0.0108
+   ],
+   "nodes_worked": [
+    1.7633,
+    0.0639
+   ],
+   "n_graphs": 600
+  },
+  "plan_value": {
+   "spend": [
+    33.1283,
+    1.1014
+   ],
+   "wrong_per_goal": [
+    0.09,
+    0.0119
+   ],
+   "wrong_per_node_worked": [
+    0.0316,
+    0.0052
+   ],
+   "nodes_worked": [
+    2.815,
+    0.0746
+   ],
+   "n_graphs": 600
+  },
+  "judge_first_at_plan_value_order": {
+   "spend": [
+    38.8083,
+    1.6483
+   ],
+   "wrong_per_goal": [
+    0.205,
+    0.0184
+   ],
+   "wrong_per_node_worked": [
+    0.0832,
+    0.0088
+   ],
+   "nodes_worked": [
+    2.7183,
+    0.0711
+   ],
+   "n_graphs": 600
+  },
+  "plan_value_at_judge_first_order": {
+   "spend": [
+    32.5117,
+    1.0579
+   ],
+   "wrong_per_goal": [
+    0.0483,
+    0.0088
+   ],
+   "wrong_per_node_worked": [
+    0.0283,
+    0.0063
+   ],
+   "nodes_worked": [
+    1.8317,
+    0.0677
+   ],
+   "n_graphs": 600
+  }
+ },
+ "tau=0.9,judge_reliability=0.7": {
+  "priority_cell": {
+   "spend": [
+    50.7667,
+    1.4392
+   ],
+   "wrong_per_goal": [
+    0.015,
+    0.005
+   ],
+   "wrong_per_node_worked": [
+    0.0037,
+    0.0014
+   ],
+   "nodes_worked": [
+    2.8633,
+    0.0824
+   ],
+   "n_graphs": 600
+  },
+  "ratio_cell": {
+   "spend": [
+    35.9,
+    1.141
+   ],
+   "wrong_per_goal": [
+    0.0067,
+    0.0033
+   ],
+   "wrong_per_node_worked": [
+    0.0008,
+    0.0004
+   ],
+   "nodes_worked": [
+    1.8433,
+    0.064
+   ],
+   "n_graphs": 600
+  },
+  "judge_first": {
+   "spend": [
+    10.3367,
+    0.4238
+   ],
+   "wrong_per_goal": [
+    0.14,
+    0.0158
+   ],
+   "wrong_per_node_worked": [
+    0.0812,
+    0.0102
+   ],
+   "nodes_worked": [
+    1.7783,
+    0.064
+   ],
+   "n_graphs": 600
+  },
+  "plan_value": {
+   "spend": [
+    10.22,
+    0.4146
+   ],
+   "wrong_per_goal": [
+    0.1817,
+    0.0174
+   ],
+   "wrong_per_node_worked": [
+    0.0679,
+    0.0077
+   ],
+   "nodes_worked": [
+    2.735,
+    0.0707
+   ],
+   "n_graphs": 600
+  },
+  "judge_first_at_plan_value_order": {
+   "spend": [
+    10.22,
+    0.4146
+   ],
+   "wrong_per_goal": [
+    0.1817,
+    0.0174
+   ],
+   "wrong_per_node_worked": [
+    0.0679,
+    0.0077
+   ],
+   "nodes_worked": [
+    2.735,
+    0.0707
+   ],
+   "n_graphs": 600
+  },
+  "plan_value_at_judge_first_order": {
+   "spend": [
+    10.3367,
+    0.4238
+   ],
+   "wrong_per_goal": [
+    0.14,
+    0.0158
+   ],
+   "wrong_per_node_worked": [
+    0.0812,
+    0.0102
+   ],
+   "nodes_worked": [
+    1.7783,
+    0.064
+   ],
+   "n_graphs": 600
+  }
+ },
+ "tau=0.9,judge_reliability=0.8": {
+  "priority_cell": {
+   "spend": [
+    50.7667,
+    1.4392
+   ],
+   "wrong_per_goal": [
+    0.015,
+    0.005
+   ],
+   "wrong_per_node_worked": [
+    0.0037,
+    0.0014
+   ],
+   "nodes_worked": [
+    2.8633,
+    0.0824
+   ],
+   "n_graphs": 600
+  },
+  "ratio_cell": {
+   "spend": [
+    35.9,
+    1.141
+   ],
+   "wrong_per_goal": [
+    0.0067,
+    0.0033
+   ],
+   "wrong_per_node_worked": [
+    0.0008,
+    0.0004
+   ],
+   "nodes_worked": [
+    1.8433,
+    0.064
+   ],
+   "n_graphs": 600
+  },
+  "judge_first": {
+   "spend": [
+    5.4583,
+    0.1997
+   ],
+   "wrong_per_goal": [
+    0.0817,
+    0.0119
+   ],
+   "wrong_per_node_worked": [
+    0.0422,
+    0.0072
+   ],
+   "nodes_worked": [
+    1.83,
+    0.0641
+   ],
+   "n_graphs": 600
+  },
+  "plan_value": {
+   "spend": [
+    5.53,
+    0.1918
+   ],
+   "wrong_per_goal": [
+    0.12,
+    0.0139
+   ],
+   "wrong_per_node_worked": [
+    0.0404,
+    0.0056
+   ],
+   "nodes_worked": [
+    2.82,
+    0.0693
+   ],
+   "n_graphs": 600
+  },
+  "judge_first_at_plan_value_order": {
+   "spend": [
+    5.53,
+    0.1918
+   ],
+   "wrong_per_goal": [
+    0.12,
+    0.0139
+   ],
+   "wrong_per_node_worked": [
+    0.0404,
+    0.0056
+   ],
+   "nodes_worked": [
+    2.82,
+    0.0693
+   ],
+   "n_graphs": 600
+  },
+  "plan_value_at_judge_first_order": {
+   "spend": [
+    5.4583,
+    0.1997
+   ],
+   "wrong_per_goal": [
+    0.0817,
+    0.0119
+   ],
+   "wrong_per_node_worked": [
+    0.0422,
+    0.0072
+   ],
+   "nodes_worked": [
+    1.83,
+    0.0641
+   ],
+   "n_graphs": 600
   }
  },
  "tau=0.9,judge_reliability=0.97": {
   "priority_cell": {
-   "spend": 48.27,
-   "wrong_settlements_per_goal": 0.023
+   "spend": [
+    50.7667,
+    1.4392
+   ],
+   "wrong_per_goal": [
+    0.015,
+    0.005
+   ],
+   "wrong_per_node_worked": [
+    0.0037,
+    0.0014
+   ],
+   "nodes_worked": [
+    2.8633,
+    0.0824
+   ],
+   "n_graphs": 600
   },
   "ratio_cell": {
-   "spend": 35.03,
-   "wrong_settlements_per_goal": 0.005
+   "spend": [
+    35.9,
+    1.141
+   ],
+   "wrong_per_goal": [
+    0.0067,
+    0.0033
+   ],
+   "wrong_per_node_worked": [
+    0.0008,
+    0.0004
+   ],
+   "nodes_worked": [
+    1.8433,
+    0.064
+   ],
+   "n_graphs": 600
   },
   "judge_first": {
-   "spend": 1.76,
-   "wrong_settlements_per_goal": 0.048
+   "spend": [
+    1.8,
+    0.0579
+   ],
+   "wrong_per_goal": [
+    0.0483,
+    0.0091
+   ],
+   "wrong_per_node_worked": [
+    0.0229,
+    0.0051
+   ],
+   "nodes_worked": [
+    1.8367,
+    0.0636
+   ],
+   "n_graphs": 600
   },
   "plan_value": {
-   "spend": 1.77,
-   "wrong_settlements_per_goal": 0.092
+   "spend": [
+    1.8,
+    0.0579
+   ],
+   "wrong_per_goal": [
+    0.0767,
+    0.0116
+   ],
+   "wrong_per_node_worked": [
+    0.0233,
+    0.0039
+   ],
+   "nodes_worked": [
+    2.7317,
+    0.0681
+   ],
+   "n_graphs": 600
+  },
+  "judge_first_at_plan_value_order": {
+   "spend": [
+    1.8,
+    0.0579
+   ],
+   "wrong_per_goal": [
+    0.0767,
+    0.0116
+   ],
+   "wrong_per_node_worked": [
+    0.0233,
+    0.0039
+   ],
+   "nodes_worked": [
+    2.7317,
+    0.0681
+   ],
+   "n_graphs": 600
+  },
+  "plan_value_at_judge_first_order": {
+   "spend": [
+    1.8,
+    0.0579
+   ],
+   "wrong_per_goal": [
+    0.0483,
+    0.0091
+   ],
+   "wrong_per_node_worked": [
+    0.0229,
+    0.0051
+   ],
+   "nodes_worked": [
+    1.8367,
+    0.0636
+   ],
+   "n_graphs": 600
+  }
+ },
+ "tau=0.99,judge_reliability=0.55": {
+  "priority_cell": {
+   "spend": [
+    56.5667,
+    1.6287
+   ],
+   "wrong_per_goal": [
+    0.0,
+    0.0
+   ],
+   "wrong_per_node_worked": [
+    0.0,
+    0.0
+   ],
+   "nodes_worked": [
+    2.8283,
+    0.0814
+   ],
+   "n_graphs": 600
+  },
+  "ratio_cell": {
+   "spend": [
+    36.8667,
+    1.2805
+   ],
+   "wrong_per_goal": [
+    0.0,
+    0.0
+   ],
+   "wrong_per_node_worked": [
+    0.0,
+    0.0
+   ],
+   "nodes_worked": [
+    1.8433,
+    0.064
+   ],
+   "n_graphs": 600
+  },
+  "judge_first": {
+   "spend": [
+    401.0867,
+    15.8734
+   ],
+   "wrong_per_goal": [
+    0.0167,
+    0.0052
+   ],
+   "wrong_per_node_worked": [
+    0.0092,
+    0.0033
+   ],
+   "nodes_worked": [
+    1.83,
+    0.063
+   ],
+   "n_graphs": 600
+  },
+  "plan_value": {
+   "spend": [
+    36.8667,
+    1.2805
+   ],
+   "wrong_per_goal": [
+    0.0,
+    0.0
+   ],
+   "wrong_per_node_worked": [
+    0.0,
+    0.0
+   ],
+   "nodes_worked": [
+    1.8433,
+    0.064
+   ],
+   "n_graphs": 600
+  },
+  "judge_first_at_plan_value_order": {
+   "spend": [
+    401.0867,
+    15.8734
+   ],
+   "wrong_per_goal": [
+    0.0167,
+    0.0052
+   ],
+   "wrong_per_node_worked": [
+    0.0092,
+    0.0033
+   ],
+   "nodes_worked": [
+    1.83,
+    0.063
+   ],
+   "n_graphs": 600
+  },
+  "plan_value_at_judge_first_order": {
+   "spend": [
+    36.8667,
+    1.2805
+   ],
+   "wrong_per_goal": [
+    0.0,
+    0.0
+   ],
+   "wrong_per_node_worked": [
+    0.0,
+    0.0
+   ],
+   "nodes_worked": [
+    1.8433,
+    0.064
+   ],
+   "n_graphs": 600
+  }
+ },
+ "tau=0.99,judge_reliability=0.6": {
+  "priority_cell": {
+   "spend": [
+    56.5667,
+    1.6287
+   ],
+   "wrong_per_goal": [
+    0.0,
+    0.0
+   ],
+   "wrong_per_node_worked": [
+    0.0,
+    0.0
+   ],
+   "nodes_worked": [
+    2.8283,
+    0.0814
+   ],
+   "n_graphs": 600
+  },
+  "ratio_cell": {
+   "spend": [
+    36.8667,
+    1.2805
+   ],
+   "wrong_per_goal": [
+    0.0,
+    0.0
+   ],
+   "wrong_per_node_worked": [
+    0.0,
+    0.0
+   ],
+   "nodes_worked": [
+    1.8433,
+    0.064
+   ],
+   "n_graphs": 600
+  },
+  "judge_first": {
+   "spend": [
+    101.35,
+    4.0118
+   ],
+   "wrong_per_goal": [
+    0.02,
+    0.0062
+   ],
+   "wrong_per_node_worked": [
+    0.0115,
+    0.004
+   ],
+   "nodes_worked": [
+    1.825,
+    0.0628
+   ],
+   "n_graphs": 600
+  },
+  "plan_value": {
+   "spend": [
+    36.6867,
+    1.2536
+   ],
+   "wrong_per_goal": [
+    0.0017,
+    0.0017
+   ],
+   "wrong_per_node_worked": [
+    0.0002,
+    0.0002
+   ],
+   "nodes_worked": [
+    1.8433,
+    0.064
+   ],
+   "n_graphs": 600
+  },
+  "judge_first_at_plan_value_order": {
+   "spend": [
+    101.35,
+    4.0118
+   ],
+   "wrong_per_goal": [
+    0.02,
+    0.0062
+   ],
+   "wrong_per_node_worked": [
+    0.0115,
+    0.004
+   ],
+   "nodes_worked": [
+    1.825,
+    0.0628
+   ],
+   "n_graphs": 600
+  },
+  "plan_value_at_judge_first_order": {
+   "spend": [
+    36.6867,
+    1.2536
+   ],
+   "wrong_per_goal": [
+    0.0017,
+    0.0017
+   ],
+   "wrong_per_node_worked": [
+    0.0002,
+    0.0002
+   ],
+   "nodes_worked": [
+    1.8433,
+    0.064
+   ],
+   "n_graphs": 600
+  }
+ },
+ "tau=0.99,judge_reliability=0.7": {
+  "priority_cell": {
+   "spend": [
+    56.5667,
+    1.6287
+   ],
+   "wrong_per_goal": [
+    0.0,
+    0.0
+   ],
+   "wrong_per_node_worked": [
+    0.0,
+    0.0
+   ],
+   "nodes_worked": [
+    2.8283,
+    0.0814
+   ],
+   "n_graphs": 600
+  },
+  "ratio_cell": {
+   "spend": [
+    36.8667,
+    1.2805
+   ],
+   "wrong_per_goal": [
+    0.0,
+    0.0
+   ],
+   "wrong_per_node_worked": [
+    0.0,
+    0.0
+   ],
+   "nodes_worked": [
+    1.8433,
+    0.064
+   ],
+   "n_graphs": 600
+  },
+  "judge_first": {
+   "spend": [
+    25.4983,
+    1.0511
+   ],
+   "wrong_per_goal": [
+    0.015,
+    0.005
+   ],
+   "wrong_per_node_worked": [
+    0.0098,
+    0.0038
+   ],
+   "nodes_worked": [
+    1.8483,
+    0.066
+   ],
+   "n_graphs": 600
+  },
+  "plan_value": {
+   "spend": [
+    25.615,
+    1.0504
+   ],
+   "wrong_per_goal": [
+    0.015,
+    0.005
+   ],
+   "wrong_per_node_worked": [
+    0.0098,
+    0.0038
+   ],
+   "nodes_worked": [
+    1.85,
+    0.0655
+   ],
+   "n_graphs": 600
+  },
+  "judge_first_at_plan_value_order": {
+   "spend": [
+    25.615,
+    1.0504
+   ],
+   "wrong_per_goal": [
+    0.015,
+    0.005
+   ],
+   "wrong_per_node_worked": [
+    0.0098,
+    0.0038
+   ],
+   "nodes_worked": [
+    1.85,
+    0.0655
+   ],
+   "n_graphs": 600
+  },
+  "plan_value_at_judge_first_order": {
+   "spend": [
+    25.4983,
+    1.0511
+   ],
+   "wrong_per_goal": [
+    0.015,
+    0.005
+   ],
+   "wrong_per_node_worked": [
+    0.0098,
+    0.0038
+   ],
+   "nodes_worked": [
+    1.8483,
+    0.066
+   ],
+   "n_graphs": 600
   }
  },
  "tau=0.99,judge_reliability=0.8": {
   "priority_cell": {
-   "spend": 53.57,
-   "wrong_settlements_per_goal": 0.0
+   "spend": [
+    56.5667,
+    1.6287
+   ],
+   "wrong_per_goal": [
+    0.0,
+    0.0
+   ],
+   "wrong_per_node_worked": [
+    0.0,
+    0.0
+   ],
+   "nodes_worked": [
+    2.8283,
+    0.0814
+   ],
+   "n_graphs": 600
   },
   "ratio_cell": {
-   "spend": 35.73,
-   "wrong_settlements_per_goal": 0.0
+   "spend": [
+    36.8667,
+    1.2805
+   ],
+   "wrong_per_goal": [
+    0.0,
+    0.0
+   ],
+   "wrong_per_node_worked": [
+    0.0,
+    0.0
+   ],
+   "nodes_worked": [
+    1.8433,
+    0.064
+   ],
+   "n_graphs": 600
   },
   "judge_first": {
-   "spend": 10.27,
-   "wrong_settlements_per_goal": 0.007
+   "spend": [
+    10.71,
+    0.4058
+   ],
+   "wrong_per_goal": [
+    0.01,
+    0.0041
+   ],
+   "wrong_per_node_worked": [
+    0.0063,
+    0.003
+   ],
+   "nodes_worked": [
+    1.8483,
+    0.065
+   ],
+   "n_graphs": 600
   },
   "plan_value": {
-   "spend": 10.58,
-   "wrong_settlements_per_goal": 0.015
+   "spend": [
+    10.7883,
+    0.407
+   ],
+   "wrong_per_goal": [
+    0.0117,
+    0.0044
+   ],
+   "wrong_per_node_worked": [
+    0.0067,
+    0.003
+   ],
+   "nodes_worked": [
+    1.8717,
+    0.0661
+   ],
+   "n_graphs": 600
+  },
+  "judge_first_at_plan_value_order": {
+   "spend": [
+    10.7883,
+    0.407
+   ],
+   "wrong_per_goal": [
+    0.0117,
+    0.0044
+   ],
+   "wrong_per_node_worked": [
+    0.0067,
+    0.003
+   ],
+   "nodes_worked": [
+    1.8717,
+    0.0661
+   ],
+   "n_graphs": 600
+  },
+  "plan_value_at_judge_first_order": {
+   "spend": [
+    10.71,
+    0.4058
+   ],
+   "wrong_per_goal": [
+    0.01,
+    0.0041
+   ],
+   "wrong_per_node_worked": [
+    0.0063,
+    0.003
+   ],
+   "nodes_worked": [
+    1.8483,
+    0.065
+   ],
+   "n_graphs": 600
   }
  },
  "tau=0.99,judge_reliability=0.97": {
   "priority_cell": {
-   "spend": 53.57,
-   "wrong_settlements_per_goal": 0.0
+   "spend": [
+    56.5667,
+    1.6287
+   ],
+   "wrong_per_goal": [
+    0.0,
+    0.0
+   ],
+   "wrong_per_node_worked": [
+    0.0,
+    0.0
+   ],
+   "nodes_worked": [
+    2.8283,
+    0.0814
+   ],
+   "n_graphs": 600
   },
   "ratio_cell": {
-   "spend": 35.73,
-   "wrong_settlements_per_goal": 0.0
+   "spend": [
+    36.8667,
+    1.2805
+   ],
+   "wrong_per_goal": [
+    0.0,
+    0.0
+   ],
+   "wrong_per_node_worked": [
+    0.0,
+    0.0
+   ],
+   "nodes_worked": [
+    1.8433,
+    0.064
+   ],
+   "n_graphs": 600
   },
   "judge_first": {
-   "spend": 3.67,
-   "wrong_settlements_per_goal": 0.002
+   "spend": [
+    3.78,
+    0.1226
+   ],
+   "wrong_per_goal": [
+    0.0,
+    0.0
+   ],
+   "wrong_per_node_worked": [
+    0.0,
+    0.0
+   ],
+   "nodes_worked": [
+    1.8433,
+    0.064
+   ],
+   "n_graphs": 600
   },
   "plan_value": {
-   "spend": 3.63,
-   "wrong_settlements_per_goal": 0.007
+   "spend": [
+    3.81,
+    0.1249
+   ],
+   "wrong_per_goal": [
+    0.0,
+    0.0
+   ],
+   "wrong_per_node_worked": [
+    0.0,
+    0.0
+   ],
+   "nodes_worked": [
+    1.8867,
+    0.0673
+   ],
+   "n_graphs": 600
+  },
+  "judge_first_at_plan_value_order": {
+   "spend": [
+    3.81,
+    0.1249
+   ],
+   "wrong_per_goal": [
+    0.0,
+    0.0
+   ],
+   "wrong_per_node_worked": [
+    0.0,
+    0.0
+   ],
+   "nodes_worked": [
+    1.8867,
+    0.0673
+   ],
+   "n_graphs": 600
+  },
+  "plan_value_at_judge_first_order": {
+   "spend": [
+    3.78,
+    0.1226
+   ],
+   "wrong_per_goal": [
+    0.0,
+    0.0
+   ],
+   "wrong_per_node_worked": [
+    0.0,
+    0.0
+   ],
+   "nodes_worked": [
+    1.8433,
+    0.064
+   ],
+   "n_graphs": 600
   }
  }
 }

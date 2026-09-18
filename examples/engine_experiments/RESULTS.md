@@ -164,19 +164,28 @@ on the rest is what the rule has shown on other people's text. After the review'
 quantities, parentheticals inside the negation window, double negation) the split is unchanged within one item.
 
 **One currency for probing and working (e16, SIMULATION; 8 open nodes, one goal, cheap judge cost 1 with reliability r, cell
-cost 20 exact, 600 graphs).** Spend per goal / wrong settlements per goal at admission level τ = 0.99, r = 0.8: existing `priority`
-with cells only 53.6 / 0.000; (1 − p)/c order with cells only 35.7 / 0.000; judge first then cell 10.3 / 0.007; plan_value 10.6 /
-0.015. At τ = 0.9 the cheap judge settles most nodes on one answer and wrong settlements rise to 0.05–0.15 per goal: cost alone is
-gameable, τ is the knob. Negative: choosing the instrument per node by the settle-cost programme gives nothing over "judge first"
-in this range, because the judge is always worth trying here; the programme skips a cheap instrument only when it cannot leave the
-band or costs more than the cell (test). A first version scored probes by criticality × E[Δp]; that quantity is identically zero
-(martingale) and was replaced before any number was produced.
+cost 20 exact, 600 graphs per cell, common random numbers).** Spend per goal / wrong settlements per node worked, τ = 0.99: existing
+`priority` with cells only 50.8 / 0; (1 − p)/c order with cells only 35.9 / 0; judge first then cell at r = 0.8: 10.7 / 0.006; plan_value
+10.8 / 0.007. Review found the first version's comparison to be an ordering artefact (work stops at the first failure, so different orders
+work different node sets, and "wrong per goal" is not normalized by nodes worked). Redone with fixed-order arms: at r ≥ 0.7 the two
+instrument rules are the same policy (the settle-cost programme also picks the judge first everywhere), so the instrument choice is
+neutral there. At low judge reliability the programme is what matters: τ = 0.90, r = 0.55: judge first 142 / 0.086, plan_value 35.7 /
+0.011 (8× fewer wrong settlements per node worked, 4× cheaper); τ = 0.99, r = 0.55: 401 / 0.009 against 36.9 / 0.000. Cost alone is
+still gameable: at τ = 0.9 the cheap judge settles nodes on one answer and wrong settlements rise; τ is the knob. The settle-cost
+programme itself had a fixed horizon of 6 steps with an infinite terminal value; it now doubles the horizon until the value converges
+(from below). A first version scored probes by criticality × E[Δp]; that quantity is identically zero (martingale) and was replaced
+before any number was produced.
 
 **Record admission with a guarantee (test; e12's simulated judge, 4 fields, 10 % shared misreading → 0.64 of records entirely
 right).** The product gate Π max(p, 1−p) ≥ 0.9 admits records that are right ~0.65 of the time (level broken in 20 of 20 splits).
-`record_guarantee` at α = 0.1 admits nothing (the level cannot be certified), at α = 0.45 admits 30 %+ and holds the level in 20 of
-20 splits (calibration 600 records, δ = 0.05). Two wrong versions were caught by the held-out test: scanning from the most certain
-record admitted nothing; scanning until a threshold passed broke the level in 8 of 20 splits. Bonferroni over the quantile grid fixed it.
+`record_guarantee` at α = 0.1 admits nothing (the level cannot be certified). At α = 0.45 it admits 99.8 % — every score bin of that
+population has error 0.35–0.39, so no threshold selects and "holds the level" there only says the base rate is below α (a first draft
+wrote "30 %+", which understated the coverage by 3× and made the demonstration look like a gate; found in review). On a heterogeneous
+population (half a strong judge with 2 % shared misreading, half a weak one with 12 %; base error 0.40, best bin 0.07) the threshold
+is interior: α = 0.20 read off the calibration data admits 0.52 (0.45–0.62 over 20 splits) with admitted error 0.117 mean, 0.172 max,
+level held 20 of 20 (calibration 600 records, δ = 0.05). Two wrong versions were caught by the held-out test: scanning from the most
+certain record admitted nothing; scanning until a threshold passed broke the level in 8 of 20 splits. Bonferroni over the quantile
+grid (the unique quantiles of the calibration scores; valid because the labels are independent of the grid given the scores) fixed it.
 
 **Per-origin reliability (test; 300 questions, five origins with planted accuracies 0.9 / 0.85 / 0.8 / 0.55 / 0.5, no labels).**
 Recovered within 0.07 of the planted values; fused signs with the estimated per-origin weights are 1.3–12 points (mean 7 over 10 seeds) more accurate than

@@ -8,8 +8,13 @@ independent (e12: a misreading shared by the fields breaks that). Here the gate 
 
   score        s(record) = 1 − min_f max(p_f, 1 − p_f)      (the least certain field; any score works, this one is monotone)
   calibration  n labelled records with (s_k, ok_k), ok = every field right
-  threshold    λ̂ = the largest of `n_grid` candidate values (quantiles of the calibration scores) whose Clopper–Pearson upper
-               (1 − δ/n_grid) confidence bound on the error rate among calibration records with s ≤ λ is ≤ α. The Bonferroni
+  threshold    λ̂ = the largest candidate value whose Clopper–Pearson upper confidence bound on the error rate among
+               calibration records with s ≤ λ is ≤ α. The candidates are the UNIQUE values of `n_grid` evenly spaced
+               quantiles of the calibration scores, so the grid is data-dependent and ties collapse it: the Bonferroni
+               factor is the number of distinct candidates, G = len(grid) ≤ n_grid, and each bound is taken at level
+               1 − δ/G (not δ/n_grid). Choosing the grid from the scores alone is harmless here because the level is
+               controlled conditionally on the scores: given s, the labels ok are independent of the grid, so each
+               candidate's bound is a valid (1 − δ/G) bound and the union over the G candidates costs δ. The Bonferroni
                split of δ over the candidates is what makes picking the largest passing one valid (Learn-then-Test,
                Angelopoulos, Bates, Candès, Jordan, Lei 2021/2022). Two earlier versions were wrong and were caught by the
                held-out test: scanning upward from the most certain record admitted nothing (one record's bound is 0.95), and
@@ -37,8 +42,11 @@ def _ucb(errors: int, n: int, delta: float) -> float:
 
 
 def fit_threshold(scores: np.ndarray, all_right: np.ndarray, alpha: float = 0.1, delta: float = 0.05, n_grid: int = 20) -> dict:
-    """Largest candidate λ (quantiles of the calibration scores, `n_grid` of them) whose Clopper–Pearson upper (1 − δ/n_grid)
-    bound on the admitted error rate is ≤ α. Bonferroni over the grid makes the selection valid (Learn-then-Test)."""
+    """Largest candidate λ whose Clopper–Pearson upper bound on the admitted error rate is ≤ α. The candidates are the
+    UNIQUE values of `n_grid` evenly spaced quantiles of the calibration scores (duplicates collapse, so G = len(grid) may
+    be < n_grid), and each bound is taken at level 1 − δ/G — the Bonferroni factor is the GRID SIZE, not n_grid. The
+    data-dependent grid is fine because, conditionally on the scores, the labels are independent of it. The returned
+    `n_grid` is G. Bonferroni over the grid makes selecting the largest passing candidate valid (Learn-then-Test)."""
     s = np.asarray(scores, float); ok = np.asarray(all_right, bool)
     grid = np.unique(np.quantile(s, np.linspace(0, 1, n_grid + 1)[1:]))
     best = {"threshold": -1.0, "admitted_in_calibration": 0, "ucb_at_threshold": 1.0}
