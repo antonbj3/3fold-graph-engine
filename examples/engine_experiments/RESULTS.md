@@ -71,6 +71,7 @@ corpus the gate abstains on all 57 papers from title and abstract. The modules b
 | `provenance_rules` | who a report derives from, out of the text itself | copy / derived / shared / cites → `derives_from` or `shares`; abstains when a marker names no source |
 | `regime_markov` | the sign along x as a telegraph process: any number of transitions in one code path | forward–backward on the fixed partition, exact; majority box claims exact by block enumeration; P(N = k) from the same pass |
 | `next_actions` | one list of what to do next, from every channel, in the contract's form; a runner that routes the outcome back | bits per cost across regimes, margins and the precision form; priority / χ² / EVPI channels listed apart, never mixed in; `apply` returns the fold-ledger row with predicted and realized bits |
+| `claim_types` | the checker layer: dimensions, certificates, link typecheck | unit grammar → dimension vector; a claim carries a certificate (deductive from a model over its box, statistical from a fitted guarantee, or none) and readers take r from it; a two-step link must resolve one concept, intersect boxes, agree on scale and dimension |
 | `closed_loop` | the engine choosing probes against a world with known sign structure, scored against the truth | world of ≤ 1-transition sign functions with sourced, copied, unreliable claims; policies engine / copies / random / oracle; wrong measure and believed wrong measure |
 | `polarity_rules` | the sign a sentence asserts between two quantities, symbolically | one direction word per quantity per clause, negation flips, last clause wins, composition by product; abstains outside its lexicon (English only) |
 | `representation_probe` | a second reader: a linear direction in a frozen model's mid layers, trained on the rule's labels, with its own lineage | reads text that contradicts the model's prior where the token output does not; inherits the genre of its training sentences (e22) |
@@ -401,6 +402,17 @@ above random (3×); a DPP set on a 150-node subsample 0.5 %; an OED-style point 
 Reading: decoding a point of the continuum to nodes is a 10× candidate generator for co-citation, but the label rewards locality
 (as e3b and e19 said), so near midpoints win; the chain is what makes a long throw pay at all. Throws are late-decoded points now;
 what x* should be is open — the design point that maximizes variance found nothing here.
+
+**The checker layer (e30, `claim_types`; seed: proof checking blocks mistakes before they enter).** Dimensions over the raw numeric
+extractions of both corpora: hep-ex 1 761 records, 6.9 % rejected (unknown unit 52, mass without unit 29, dimension mismatch 18);
+PubMed 14 467 records, 10.4 % rejected (duration without unit 530, dimension mismatch 355, unknown unit 338, a ratio with a unit 143,
+blood pressure without unit 102). Hand check against the sentences: 18 of 20 rejections right, 19 of 20 acceptances right; the
+rejections mostly expose extractor defects ("mm Hg" split into metres, "years" refused, fb⁻¹ losing its exponent, "vs"/"LHC" read as
+units). Certificates: a deductive certificate for Y = hK(1 − h/r) holds sign + on h ∈ [0.2, 0.4] over the declared parameter box and
+fails on [0.2, 0.8] with a counterexample at h ≥ r/2 and the verified sub-interval; a reader takes r = 1 − 1e-6 from a deductive
+certificate inside its box, 1 − α from a statistical one, the profile's default from none. Link typecheck rejects a two-step inference
+whose shared variable is log on one side and linear on the other unless both declare it. Caveat: the modal acceptance is "no type
+claim was made" — a dimension check cannot see a lost per-cent sign.
 
 **Label-free calibration (e18; same 320 sentences).** Raw pooled 0.591; subtracting each lens's batch-mean log-odds (Batch Calibration) 0.572;
 per sentence form 0.603; per-form Platt on the rule's answers 0.927; on true labels 0.927. The option prior is not the fault; the

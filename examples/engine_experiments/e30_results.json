@@ -1,0 +1,1026 @@
+{
+ "seed": 30,
+ "corpora": {
+  "hep-ex": {
+   "files": [
+    "arxiv_hepex.jsonl"
+   ],
+   "n_docs": 7201,
+   "n_records": 1761,
+   "n_rejected": 121,
+   "share_rejected": 0.0687,
+   "reject_reasons": {
+    "unknown_unit": 52,
+    "missing_unit_for_mass": 29,
+    "dimension_mismatch": 18,
+    "missing_unit_for_cross_section": 9,
+    "missing_unit_for_energy": 3,
+    "missing_unit_for_width": 3,
+    "missing_unit_for_integrated_luminosity": 3,
+    "missing_unit_for_length": 2,
+    "missing_unit_for_pressure": 1,
+    "missing_unit_for_duration": 1
+   },
+   "accept_reasons": {
+    "unchecked_quantity": 1218,
+    "dimension_ok": 384,
+    "dimensionless_no_unit": 38
+   },
+   "reject_reason_by_extractor_flag": {
+    "unknown_unit+unknown_unit": 52,
+    "missing_unit_for_mass+no_unit": 29,
+    "unknown_unit+range_uniform": 20,
+    "unknown_unit+asymmetric": 12,
+    "missing_unit_for_mass+quadrature": 10,
+    "dimension_mismatch+range_uniform": 9,
+    "missing_unit_for_cross_section+no_unit": 9,
+    "dimension_mismatch+unknown_unit": 7,
+    "unknown_unit+quadrature": 6,
+    "missing_unit_for_cross_section+quadrature": 4,
+    "dimension_mismatch+-": 4,
+    "missing_unit_for_energy+no_unit": 3,
+    "dimension_mismatch+quadrature": 3,
+    "missing_unit_for_width+no_unit": 3,
+    "missing_unit_for_integrated_luminosity+no_unit": 3,
+    "missing_unit_for_cross_section+asymmetric": 3,
+    "missing_unit_for_length+no_unit": 2,
+    "dimension_mismatch+power_of_ten": 2,
+    "missing_unit_for_mass+asymmetric": 2,
+    "unknown_unit+power_of_ten": 1
+   },
+   "hand_check_rejected": [
+    {
+     "doc": "arxiv_hepex.jsonl:4872",
+     "span": [
+      360,
+      380
+     ],
+     "value": 7.96,
+     "sigma": 0.48,
+     "unit": null,
+     "quantity": "neutrino mass-squared difference \u0394m^2_21",
+     "log_scale": false,
+     "flags": [
+      "asymmetric",
+      "no_unit"
+     ],
+     "ok": false,
+     "reason": "missing_unit_for_mass",
+     "quantity_kind": "mass",
+     "dimension": null,
+     "context": "tes were fitted to obtain the second-most precise determination of the neutrino mass-squared difference $\u0394m^2_{21}$ = ($7.96^{+0.48}_{-0.42}$) $\\times$ 10$^{-5}$ eV$^2$. Constraini",
+     "key": "hep-ex|R0",
+     "hand": "agree: Delta m^2_21 = 7.96e-5 eV^2 \u2014 the extractor lost 'eV$^2$', so the record really has no unit; the label 'mass' is imprecise (it is a mass squared), the verdict is not"
+    },
+    {
+     "doc": "arxiv_hepex.jsonl:6358",
+     "span": [
+      458,
+      472
+     ],
+     "value": 174.95,
+     "sigma": 0.4,
+     "unit": null,
+     "quantity": "m_t",
+     "log_scale": false,
+     "flags": [
+      "no_unit"
+     ],
+     "ok": false,
+     "reason": "missing_unit_for_mass",
+     "quantity_kind": "mass",
+     "dimension": null,
+     "context": "rresponding to integrated luminosities of 0.1 fb$^{-1}$ and 9.7 fb$^{-1}$, respectively. The combined result is: $m_t = 174.95 \\pm0.40\\,{\\rm(stat)} \\pm 0.64\\,{\\rm(syst)}\\,{\\r",
+     "key": "hep-ex|R1",
+     "hand": "agree: m_t = 174.95 GeV with the unit macro lost by the extractor; a mass with no unit cannot enter"
+    },
+    {
+     "doc": "arxiv_hepex.jsonl:2032",
+     "span": [
+      664,
+      674
+     ],
+     "value": 5.699999999999999,
+     "sigma": 0.9237604307034013,
+     "unit": "Gy",
+     "quantity": "TGC frontend electronics",
+     "log_scale": false,
+     "flags": [
+      "range_uniform",
+      "unknown_unit"
+     ],
+     "ok": false,
+     "reason": "unknown_unit",
+     "quantity_kind": null,
+     "dimension": null,
+     "context": "her radiation levels in detector electronics. The radiation levels for the TGC frontend electronics are estimated to be 4.1-7.3 Gy in terms of Total Ionizing Dose (TID) a",
+     "key": "hep-ex|R2",
+     "hand": "agree: Gy (gray) is outside the grammar \u2014 abstaining is the right move, and it is a grammar gap, not a defect of the record"
+    },
+    {
+     "doc": "arxiv_hepex.jsonl:5718",
+     "span": [
+      389,
+      407
+     ],
+     "value": 186.0,
+     "sigma": 6.5,
+     "unit": "nb",
+     "quantity": "integrated luminosity",
+     "log_scale": false,
+     "flags": [
+      "unknown_unit"
+     ],
+     "ok": false,
+     "reason": "dimension_mismatch:integrated luminosity_expects_L^-2_got_L^2",
+     "quantity_kind": "integrated luminosity",
+     "dimension": "L^2",
+     "context": "pair of 8.16 TeV. The data were obtained with the CMS detector at the LHC and correspond to an integrated luminosity of 186.0 $\\pm$ 6.5 nb$^{-1}$. A significant azimuthal depende",
+     "key": "hep-ex|R3",
+     "hand": "agree: integrated luminosity 186 nb^{-1}, the extractor dropped the ^{-1}; L^2 against L^-2 catches exactly that"
+    },
+    {
+     "doc": "arxiv_hepex.jsonl:150",
+     "span": [
+      58,
+      65
+     ],
+     "value": 1.5,
+     "sigma": 0.2886751345948129,
+     "unit": "LHC",
+     "quantity": "LHCb VELO sensors during Run",
+     "log_scale": false,
+     "flags": [
+      "range_uniform",
+      "unknown_unit"
+     ],
+     "ok": false,
+     "reason": "unknown_unit",
+     "quantity_kind": null,
+     "dimension": null,
+     "context": "Leakage current evolution in LHCb VELO sensors during Run 1-2 LHC data taking period Silicon detectors op",
+     "key": "hep-ex|R4",
+     "hand": "agree: 'LHC' read as a unit out of 'Run 1-2 LHC data taking' \u2014 a spurious record, rightly blocked"
+    },
+    {
+     "doc": "arxiv_hepex.jsonl:5723",
+     "span": [
+      680,
+      706
+     ],
+     "value": -0.25,
+     "sigma": 0.14422205101855956,
+     "unit": "fm",
+     "quantity": "physical pion mass",
+     "log_scale": false,
+     "flags": [
+      "quadrature",
+      "unknown_unit"
+     ],
+     "ok": false,
+     "reason": "dimension_mismatch:mass_expects_M_got_L",
+     "quantity_kind": "mass",
+     "dimension": "L",
+     "context": "hannel. The $S$-wave isovector $DD$ scattering length and effective range, extrapolated to the physical pion mass, are $(-0.25\\pm0.08\\pm 0.12)$ fm and $(-5.7\\pm4.5\\pm 1.7)$ fm, respectiv",
+     "key": "hep-ex|R5",
+     "hand": "DISAGREE: the quantity is a scattering length in fm, 'extrapolated to the physical pion mass' only ends in the word mass; surface-phrase matching fails here"
+    },
+    {
+     "doc": "arxiv_hepex.jsonl:5854",
+     "span": [
+      374,
+      384
+     ],
+     "value": 139.0,
+     "sigma": 0.5773502691896258,
+     "unit": "fb",
+     "quantity": "integrated luminosities",
+     "log_scale": false,
+     "flags": [
+      "range_uniform",
+      "unknown_unit"
+     ],
+     "ok": false,
+     "reason": "dimension_mismatch:integrated luminosity_expects_L^-2_got_L^2",
+     "quantity_kind": "integrated luminosity",
+     "dimension": "L^2",
+     "context": "ss energy of 13 TeV, recorded during Run 2 at the Large Hadron Collider and corresponding to integrated luminosities of 138-140 fb$^{-1}$. Searches are carried out for ch",
+     "key": "hep-ex|R6",
+     "hand": "agree: same dropped ^{-1} on fb, integrated luminosity"
+    },
+    {
+     "doc": "arxiv_hepex.jsonl:6361",
+     "span": [
+      1326,
+      1348
+     ],
+     "value": 172.22,
+     "sigma": 0.18,
+     "unit": null,
+     "quantity": "top quark mass",
+     "log_scale": false,
+     "flags": [
+      "no_unit"
+     ],
+     "ok": false,
+     "reason": "missing_unit_for_mass",
+     "quantity_kind": "mass",
+     "dimension": null,
+     "context": "es to the value of M[t] is investigated using a Fisher information density method. The top quark mass is measured to be 172.22 +/- 0.18 (stat) +0.89/-0.93 (syst) GeV.",
+     "key": "hep-ex|R7",
+     "hand": "agree: 'top quark mass ... GeV' with the unit not captured after the asymmetric term"
+    },
+    {
+     "doc": "arxiv_hepex.jsonl:1530",
+     "span": [
+      501,
+      541
+     ],
+     "value": 0.95,
+     "sigma": 0.09848857801796104,
+     "unit": "Bq/m",
+     "quantity": "internal Rn222 activity",
+     "log_scale": false,
+     "flags": [
+      "quadrature",
+      "unknown_unit"
+     ],
+     "ok": false,
+     "reason": "unknown_unit",
+     "quantity_kind": null,
+     "dimension": null,
+     "context": "s from both the internal and external airborne radon have been evaluated. The internal \\Rn{222} activity is found to be (0.95$\\pm$0.04(stat)$\\pm$0.09(sys)) Bq/m$^3$, while no traces of \\Rn{220} have b",
+     "key": "hep-ex|R8",
+     "hand": "agree: Bq/m^3 truncated to 'Bq/m' by the extractor; the grammar does not know Bq either"
+    },
+    {
+     "doc": "arxiv_hepex.jsonl:1893",
+     "span": [
+      537,
+      604
+     ],
+     "value": 1.0,
+     "sigma": 0.14142135623730953,
+     "unit": null,
+     "quantity": "flux-averaged cross section",
+     "log_scale": false,
+     "flags": [
+      "no_unit",
+      "quadrature"
+     ],
+     "ok": false,
+     "reason": "missing_unit_for_cross_section",
+     "quantity_kind": "cross section",
+     "dimension": null,
+     "context": " protons on target yielded a total number of observed counts of $124^{+14}_{-12}$ and a flux-averaged cross section of $1.00 \\pm 0.10 \\mathrm{(statistical)} \\pm 0.10 \\mathrm{(systematic)}$ relative to the standard-model expecta",
+     "key": "hep-ex|R9",
+     "hand": "DISAGREE: a cross section quoted RELATIVE to the standard model is dimensionless; the checker demanded an area unit"
+    }
+   ],
+   "hand_check_accepted": [
+    {
+     "doc": "arxiv_hepex.jsonl:2429",
+     "span": [
+      1002,
+      1012
+     ],
+     "value": 1.64e-07,
+     "sigma": 2.078460969082653e-08,
+     "unit": "m",
+     "quantity": "VUV",
+     "log_scale": false,
+     "flags": [
+      "range_uniform"
+     ],
+     "ok": true,
+     "reason": "unchecked_quantity",
+     "quantity_kind": null,
+     "dimension": "L",
+     "context": "ials -- aluminum field cage profiles and stainless steel cryostat membranes -- in both the UV-VIS (300-500 nm) and VUV (128-200 nm) ranges. In the UV-VIS region, we confi",
+     "key": "hep-ex|A0",
+     "hand": "agree: 'VUV' resolves to nothing, so no type claim is made \u2014 accepted as unchecked, not as verified"
+    },
+    {
+     "doc": "arxiv_hepex.jsonl:230",
+     "span": [
+      1402,
+      1413
+     ],
+     "value": 7.6,
+     "sigma": 4.272391992003231,
+     "unit": "GeV",
+     "quantity": "axion-like particles covering the",
+     "log_scale": false,
+     "flags": [
+      "range_uniform"
+     ],
+     "ok": true,
+     "reason": "unchecked_quantity",
+     "quantity_kind": null,
+     "dimension": "M\u00b7L^2\u00b7T^-2*",
+     "context": "tor concept, and projected sensitivities to heavy neutral leptons, dark scalars, and axion-like particles covering the $0.2-15$ GeV mass range with 3 $\\mathrm{ab}^{-1}$ of",
+     "key": "hep-ex|A1",
+     "hand": "agree: unchecked; the quantity phrase is prose debris, which is an extractor defect the checker says nothing about"
+    },
+    {
+     "doc": "arxiv_hepex.jsonl:702",
+     "span": [
+      569,
+      598
+     ],
+     "value": 1.52753,
+     "sigma": 0.11137999999999999,
+     "unit": "GeV",
+     "quantity": "masses",
+     "log_scale": false,
+     "flags": [],
+     "ok": true,
+     "reason": "dimension_ok",
+     "quantity_kind": "mass",
+     "dimension": "M\u00b7L^2\u00b7T^-2*",
+     "context": ", $1P$, $2S$ and $2P$ configurations as possible low lying spin-$\\frac{3}{2}$ cascade states. The extracted masses are $1527.53\\pm111.38~\\mathrm{MeV}$, $1615.30\\pm50.98~\\mathrm{MeV}$, $1727",
+     "key": "hep-ex|A2",
+     "hand": "agree: masses in MeV, dimension matches M under natural units"
+    },
+    {
+     "doc": "arxiv_hepex.jsonl:1664",
+     "span": [
+      1715,
+      1727
+     ],
+     "value": 0.0066500000000000005,
+     "sigma": 0.0036084391824351613,
+     "unit": "GeV",
+     "quantity": "track continuity across the energy range studied",
+     "log_scale": false,
+     "flags": [
+      "range_uniform"
+     ],
+     "ok": true,
+     "reason": "dimension_ok",
+     "quantity_kind": "energy",
+     "dimension": "M\u00b7L^2\u00b7T^-2*",
+     "context": "n species and energies. Notably, we find that a significant change in track continuity across the energy range studied (0.4-12.9 MeV) is indicative of the transition betwee",
+     "key": "hep-ex|A3",
+     "hand": "agree: an energy range in MeV"
+    },
+    {
+     "doc": "arxiv_hepex.jsonl:6143",
+     "span": [
+      331,
+      345
+     ],
+     "value": 172.6,
+     "sigma": 1.4,
+     "unit": "GeV",
+     "quantity": "mtop",
+     "log_scale": false,
+     "flags": [],
+     "ok": true,
+     "reason": "dimension_ok",
+     "quantity_kind": "mass",
+     "dimension": "M\u00b7L^2\u00b7T^-2*",
+     "context": "ibed. The world average of the top quark mass based on some of these new results combined with previous results is mtop=172.6+-1.4 GeV.",
+     "key": "hep-ex|A4",
+     "hand": "agree: mtop = 172.6 GeV"
+    },
+    {
+     "doc": "arxiv_hepex.jsonl:5760",
+     "span": [
+      786,
+      795
+     ],
+     "value": 3.1,
+     "sigma": 0.7,
+     "unit": null,
+     "quantity": "left",
+     "log_scale": false,
+     "flags": [
+      "no_unit"
+     ],
+     "ok": true,
+     "reason": "unchecked_quantity",
+     "quantity_kind": null,
+     "dimension": null,
+     "context": "ld. Moreover, we confirm the presence of an isovector partner state, $W_{c1}$. It is found as a virtual state at $\\left(3.1\\pm0.7+ 1.3^{+1.9}_{-0.6}\\,i\\right)\\ \\rm MeV$ ",
+     "key": "hep-ex|A5",
+     "hand": "agree: '\\left' is debris, unchecked"
+    },
+    {
+     "doc": "arxiv_hepex.jsonl:4212",
+     "span": [
+      643,
+      674
+     ],
+     "value": 0.8,
+     "sigma": 0.030000000000000002,
+     "unit": null,
+     "quantity": "fracBF(B^0_s rightarrow J/\u03c8\u03b7^prime)BF(B^0_s rightarrow J/\u03c8\u03b7)",
+     "log_scale": false,
+     "flags": [
+      "no_unit",
+      "quadrature"
+     ],
+     "ok": true,
+     "reason": "unchecked_quantity",
+     "quantity_kind": null,
+     "dimension": null,
+     "context": " 0.48 \\pm 0.06 \\pm 0.02 \\pm 0.01$ and $\\frac{BF(B^{0}_{s} \\rightarrow J/\u03c8\u03b7^{\\prime})}{BF(B^{0}_{s} \\rightarrow J/\u03c8\u03b7)} = 0.80 \\pm 0.02 \\pm 0.02 \\pm 0.01$, where the uncertainties are statistic",
+     "key": "hep-ex|A6",
+     "hand": "agree: a ratio of branching fractions, no unit, unchecked"
+    },
+    {
+     "doc": "arxiv_hepex.jsonl:6398",
+     "span": [
+      859,
+      902
+     ],
+     "value": 172.08,
+     "sigma": 0.9080198235721508,
+     "unit": "GeV",
+     "quantity": "m_top",
+     "log_scale": false,
+     "flags": [
+      "quadrature"
+     ],
+     "ok": true,
+     "reason": "dimension_ok",
+     "quantity_kind": "mass",
+     "dimension": "M\u00b7L^2\u00b7T^-2*",
+     "context": "scale factor and a relative $b$-to-light-jet energy scale factor. The mass of the top quark is measured to be $m_{top}= 172.08 \\pm 0.39 (stat) \\pm 0.82 (syst)$ GeV. A combination with previous ATLAS $m_{",
+     "key": "hep-ex|A7",
+     "hand": "agree: m_top in GeV"
+    },
+    {
+     "doc": "arxiv_hepex.jsonl:3630",
+     "span": [
+      797,
+      814
+     ],
+     "value": 0.2,
+     "sigma": 0.2,
+     "unit": null,
+     "quantity": "pm",
+     "log_scale": false,
+     "flags": [
+      "asymmetric",
+      "no_unit"
+     ],
+     "ok": true,
+     "reason": "unchecked_quantity",
+     "quantity_kind": null,
+     "dimension": null,
+     "context": "s ${\\cal B}(D_s^+ \\to \u03c3_0 a_0^+) = (1.0 \\pm 0.2^{+0.1}_{-0.2}) \\times 10^{-2}$, ${\\cal B}(D^+ \\to \u03c3_0 a_0^+) = (1.1 \\pm 0.2^{+0.1}_{-0.2}) \\times 10^{-3}$, and ${\\cal B}(D^0 \\to",
+     "key": "hep-ex|A8",
+     "hand": "agree: '\\pm' is debris, unchecked"
+    },
+    {
+     "doc": "arxiv_hepex.jsonl:5824",
+     "span": [
+      544,
+      569
+     ],
+     "value": 37.4,
+     "sigma": 0.5608029957123981,
+     "unit": null,
+     "quantity": "achieve an effective tagging efficiency",
+     "log_scale": false,
+     "flags": [
+      "no_unit",
+      "quadrature"
+     ],
+     "ok": true,
+     "reason": "dimensionless_no_unit",
+     "quantity_kind": "fraction",
+     "dimension": null,
+     "context": "{\u03a5(4S)}$ resonance with the Belle II detector at the SuperKEKB collider. We achieve an effective tagging efficiency of $(37.40 \\pm 0.43 \\pm 0.36) \\%$, where the first uncertainty is sta",
+     "key": "hep-ex|A9",
+     "hand": "agree on the type (an efficiency is dimensionless) \u2014 but note the checker cannot see that the % was lost, so 37.4 stands where 0.374 belongs: a SCALE error no dimension check catches"
+    }
+   ]
+  },
+  "pubmed": {
+   "files": [
+    "pubmed_bp_intensive_meta.jsonl",
+    "pubmed_bp_outcomes.jsonl",
+    "pubmed_bp_ratio.jsonl",
+    "pubmed_bp_secondary.jsonl",
+    "pubmed_bp_target.jsonl",
+    "pubmed_intensive_hr.jsonl",
+    "pubmed_sprint.jsonl"
+   ],
+   "n_docs": 6886,
+   "n_records": 14467,
+   "n_rejected": 1509,
+   "share_rejected": 0.1043,
+   "reject_reasons": {
+    "missing_unit_for_duration": 530,
+    "dimension_mismatch": 355,
+    "unknown_unit": 338,
+    "ratio_quantity_with_unit": 143,
+    "missing_unit_for_blood_pressure": 102,
+    "missing_unit_for_concentration": 18,
+    "missing_unit_for_heart_rate": 8,
+    "missing_unit_for_body_mass_index": 6,
+    "missing_unit_for_length": 4,
+    "missing_unit_for_pressure": 4,
+    "missing_unit_for_dose": 1
+   },
+   "accept_reasons": {
+    "ratio_dimensionless": 8949,
+    "unchecked_quantity": 3824,
+    "dimension_ok": 142,
+    "dimensionless_no_unit": 43
+   },
+   "reject_reason_by_extractor_flag": {
+    "missing_unit_for_duration+no_unit": 530,
+    "unknown_unit+unknown_unit": 338,
+    "dimension_mismatch+range_uniform": 283,
+    "ratio_quantity_with_unit+ci": 134,
+    "ratio_quantity_with_unit+unknown_unit": 125,
+    "ratio_quantity_with_unit+log_scale": 124,
+    "missing_unit_for_blood_pressure+no_unit": 102,
+    "unknown_unit+range_uniform": 65,
+    "unknown_unit+ci": 53,
+    "missing_unit_for_blood_pressure+ci": 48,
+    "dimension_mismatch+-": 45,
+    "dimension_mismatch+unknown_unit": 29,
+    "missing_unit_for_duration+ci": 23,
+    "missing_unit_for_concentration+no_unit": 18,
+    "missing_unit_for_concentration+ci": 10,
+    "dimension_mismatch+ci": 10,
+    "missing_unit_for_heart_rate+no_unit": 8,
+    "dimension_mismatch+asymmetric": 7,
+    "dimension_mismatch+quadrature": 7,
+    "ratio_quantity_with_unit+ci_implied": 7
+   },
+   "hand_check_rejected": [
+    {
+     "doc": "pubmed_bp_target.jsonl:272",
+     "span": [
+      864,
+      874
+     ],
+     "value": 139.7,
+     "sigma": 15.6,
+     "unit": null,
+     "quantity": "DBP",
+     "log_scale": false,
+     "flags": [
+      "no_unit"
+     ],
+     "ok": false,
+     "reason": "missing_unit_for_blood_pressure",
+     "quantity_kind": "blood pressure",
+     "dimension": null,
+     "context": " examined whether the effects of the SBP intervention differed by baseline DBP. RESULTS: Mean baseline SBP and DBP were 139.7\u00b115.6 and 78.1\u00b111.9 mm Hg, respectively. Rega",
+     "key": "pubmed|R0",
+     "hand": "agree: DBP with 'mm Hg' written with a space, so the record carries no unit at all"
+    },
+    {
+     "doc": "pubmed_bp_ratio.jsonl:438",
+     "span": [
+      1034,
+      1047
+     ],
+     "value": 0.1345,
+     "sigma": 0.002598076211353316,
+     "unit": "m",
+     "quantity": "patients who achieved average SBP",
+     "log_scale": false,
+     "flags": [
+      "range_uniform"
+     ],
+     "ok": false,
+     "reason": "dimension_mismatch:blood pressure_expects_M\u00b7L^-1\u00b7T^-2_got_L",
+     "quantity_kind": "blood pressure",
+     "dimension": "L",
+     "context": "iables compared cardiac and all-cause mortality and other prespecified end points for patients who achieved average SBP 130 to 139 mm Hg (No-LVH group n=4863; ECG-LVH group ",
+     "key": "pubmed|R1",
+     "hand": "agree: 'mm Hg' split, the record claims metres for a blood pressure \u2014 the mismatch is real"
+    },
+    {
+     "doc": "pubmed_intensive_hr.jsonl:303",
+     "span": [
+      1027,
+      1035
+     ],
+     "value": 67.9,
+     "sigma": 9.4,
+     "unit": null,
+     "quantity": "Participants' average age",
+     "log_scale": false,
+     "flags": [
+      "no_unit"
+     ],
+     "ok": false,
+     "reason": "missing_unit_for_duration",
+     "quantity_kind": "duration",
+     "dimension": null,
+     "context": "cardiovascular SPRINT end point using multivariable proportional hazards models. RESULTS: Participants' average age was 67.9\u00b19.4 years, with 35.6% women and 57.8% White",
+     "key": "pubmed|R2",
+     "hand": "agree: age in years, but numeric_rules refuses lowercase words of 4+ letters as units, so the record has none"
+    },
+    {
+     "doc": "pubmed_bp_outcomes.jsonl:121",
+     "span": [
+      720,
+      736
+     ],
+     "value": 47.04,
+     "sigma": 22.06,
+     "unit": "vs",
+     "quantity": "similarly elevated pACE2",
+     "log_scale": false,
+     "flags": [
+      "unknown_unit"
+     ],
+     "ok": false,
+     "reason": "unknown_unit",
+     "quantity_kind": null,
+     "dimension": null,
+     "context": "al blood mononuclear cells. RESULTS: Incident PA and essential hypertension (EH) patients had similarly elevated pACE2 (47.04 \u00b1 22.06 vs 46.73 \u00b1 21.06 ng/mL; P = .937). Age was",
+     "key": "pubmed|R3",
+     "hand": "agree: 'vs' read as a unit"
+    },
+    {
+     "doc": "pubmed_intensive_hr.jsonl:419",
+     "span": [
+      1440,
+      1446
+     ],
+     "value": 73.0,
+     "sigma": 9.0,
+     "unit": null,
+     "quantity": "Mean age",
+     "log_scale": false,
+     "flags": [
+      "no_unit"
+     ],
+     "ok": false,
+     "reason": "missing_unit_for_duration",
+     "quantity_kind": "duration",
+     "dimension": null,
+     "context": "h incident probable dementia and mild cognitive impairment, adjudicated by prespecified criteria. RESULTS: Mean age was 73 \u00b1 9 years, 41% were women, mean eGFR was 48",
+     "key": "pubmed|R4",
+     "hand": "agree: same missing 'years' on an age"
+    },
+    {
+     "doc": "pubmed_sprint.jsonl:195",
+     "span": [
+      1002,
+      1012
+     ],
+     "value": 67.4,
+     "sigma": 9.2,
+     "unit": null,
+     "quantity": "mean age",
+     "log_scale": false,
+     "flags": [
+      "no_unit"
+     ],
+     "ok": false,
+     "reason": "missing_unit_for_duration",
+     "quantity_kind": "duration",
+     "dimension": null,
+     "context": "ipants enrolled in SPRINT, we included 5020, of whom 1959 were on a dihydropyridine CCB and 3061 were not; mean age was 67.4 \u00b1 9.2 years, 34.5% were men, 65.9% were white",
+     "key": "pubmed|R5",
+     "hand": "agree: same missing 'years' on an age"
+    },
+    {
+     "doc": "pubmed_bp_outcomes.jsonl:1722",
+     "span": [
+      1224,
+      1234
+     ],
+     "value": 23.0,
+     "sigma": 11.0,
+     "unit": "vs",
+     "quantity": "larger",
+     "log_scale": false,
+     "flags": [
+      "unknown_unit"
+     ],
+     "ok": false,
+     "reason": "unknown_unit",
+     "quantity_kind": null,
+     "dimension": null,
+     "context": "vs 30%, p <0.001) and lower LVEF (43 \u00b1 9% vs 48 \u00b1 8%, p <0.001) than their counterparts. Left atrial volume was larger (23 \u00b1 11 vs 18 \u00b1 6 ml/m(2), p = 0.006), and moderat",
+     "key": "pubmed|R6",
+     "hand": "agree: 'vs' read as a unit"
+    },
+    {
+     "doc": "pubmed_bp_ratio.jsonl:186",
+     "span": [
+      2033,
+      2042
+     ],
+     "value": 5.9,
+     "sigma": 2.8,
+     "unit": null,
+     "quantity": "ICH recurrence during a mean follow-up",
+     "log_scale": false,
+     "flags": [
+      "no_unit"
+     ],
+     "ok": false,
+     "reason": "missing_unit_for_duration",
+     "quantity_kind": "duration",
+     "dimension": null,
+     "context": " mean follow-up LDL-C = 2.2 \u00b1 0.6 mmol/L, 28% with LDL-C <1.8 mmol/L), 44 had ICH recurrence during a mean follow-up of 5.9 \u00b1 2.8 years. Statin use after ICH was not ass",
+     "key": "pubmed|R7",
+     "hand": "agree: mean follow-up with 'years' dropped"
+    },
+    {
+     "doc": "pubmed_bp_outcomes.jsonl:298",
+     "span": [
+      488,
+      497
+     ],
+     "value": 52.9,
+     "sigma": 12.6,
+     "unit": null,
+     "quantity": "About 900 consecutive essential hypertensive patients (mean age",
+     "log_scale": false,
+     "flags": [
+      "no_unit"
+     ],
+     "ok": false,
+     "reason": "missing_unit_for_duration",
+     "quantity_kind": "duration",
+     "dimension": null,
+     "context": "-C ratio on essential hypertensive patients is unclear. About 900 consecutive essential hypertensive patients (mean age 52.9\u00b112.6 years, 54.2% male) who visited our outp",
+     "key": "pubmed|R8",
+     "hand": "agree: mean age with 'years' dropped"
+    },
+    {
+     "doc": "pubmed_bp_ratio.jsonl:1515",
+     "span": [
+      3821,
+      3856
+     ],
+     "value": -0.62,
+     "sigma": 0.30867914143941566,
+     "unit": "but",
+     "quantity": "MD",
+     "log_scale": false,
+     "flags": [
+      "ci",
+      "unknown_unit"
+     ],
+     "ok": false,
+     "reason": "unknown_unit",
+     "quantity_kind": null,
+     "dimension": null,
+     "context": "(6 studies, 138 participants) slightly improved SCr (MD -0.43 mg/dL, 95% CI -0.86 to -0.01) and total kidney volume (MD -0.62 L, 95% CI -1.22 to -0.01) but had no definite effects on GFR (MD 9.50",
+     "key": "pubmed|R9",
+     "hand": "agree: 'but' read as a unit on a mean difference"
+    }
+   ],
+   "hand_check_accepted": [
+    {
+     "doc": "pubmed_bp_outcomes.jsonl:813",
+     "span": [
+      1453,
+      1476
+     ],
+     "value": 2.7,
+     "sigma": 0.2627759955395152,
+     "unit": null,
+     "quantity": "HR",
+     "log_scale": true,
+     "flags": [
+      "ci",
+      "log_scale",
+      "no_unit"
+     ],
+     "ok": true,
+     "reason": "ratio_dimensionless",
+     "quantity_kind": "ratio measure",
+     "dimension": null,
+     "context": "I): 1.39- 2.52; p < 0.001), prior MI (HR = 1.44, 95% CI: 1.03-2.01; p= 0.033) and presentation of ST elevation MI (HR = 2.70, 95% CI: 1.61-4.51; p < 0.001) or non-ST elevation MI (HR ",
+     "key": "pubmed|A0",
+     "hand": "agree: HR, no unit"
+    },
+    {
+     "doc": "pubmed_bp_secondary.jsonl:1103",
+     "span": [
+      1051,
+      1080
+     ],
+     "value": -1.38,
+     "sigma": 0.23724925746996411,
+     "unit": null,
+     "quantity": "CagriSema significantly reduced percent weight loss (Cohen's d",
+     "log_scale": false,
+     "flags": [
+      "ci",
+      "no_unit"
+     ],
+     "ok": true,
+     "reason": "unchecked_quantity",
+     "quantity_kind": null,
+     "dimension": null,
+     "context": "ma: 3,055; control: 1,364). Pooled analysis showed that CagriSema significantly reduced percent weight loss (Cohen's d: -1.38; 95% CI: -1.84 to -0.91; I\u00b2 = 94.8%). CagriSema also resulted i",
+     "key": "pubmed|A1",
+     "hand": "agree: Cohen's d is not in the table, unchecked"
+    },
+    {
+     "doc": "pubmed_bp_secondary.jsonl:56",
+     "span": [
+      1271,
+      1295
+     ],
+     "value": 0.53,
+     "sigma": 0.2718984823833985,
+     "unit": null,
+     "quantity": "HR",
+     "log_scale": true,
+     "flags": [
+      "ci",
+      "log_scale",
+      "no_unit"
+     ],
+     "ok": true,
+     "reason": "ratio_dimensionless",
+     "quantity_kind": "ratio measure",
+     "dimension": null,
+     "context": "0.32-0.95) using the IPTW Cox model. The associations remained consistent across multivariable Cox regression model (HR 0.53, 95% CI, 0.31-0.90) and overlap weighting model (HR 0.55, 9",
+     "key": "pubmed|A2",
+     "hand": "agree: HR, no unit"
+    },
+    {
+     "doc": "pubmed_bp_ratio.jsonl:645",
+     "span": [
+      1404,
+      1430
+     ],
+     "value": 1.0,
+     "sigma": 0.027950055045842446,
+     "unit": null,
+     "quantity": "relative risk",
+     "log_scale": true,
+     "flags": [
+      "ci",
+      "log_scale",
+      "no_unit"
+     ],
+     "ok": true,
+     "reason": "ratio_dimensionless",
+     "quantity_kind": "ratio measure",
+     "dimension": null,
+     "context": "rimary preventive antihypertensive treatment was associated with a neutral effect on all-cause mortality (relative risk 1.00, 95% CI 0.95 to 1.06) and major cardiovascular events (1.01, ",
+     "key": "pubmed|A3",
+     "hand": "agree: relative risk, no unit"
+    },
+    {
+     "doc": "pubmed_bp_target.jsonl:577",
+     "span": [
+      4100,
+      4117
+     ],
+     "value": 1.75,
+     "sigma": 0.4457764256274874,
+     "unit": null,
+     "quantity": "OR",
+     "log_scale": true,
+     "flags": [
+      "ci",
+      "ci_implied",
+      "log_scale",
+      "no_unit"
+     ],
+     "ok": true,
+     "reason": "ratio_dimensionless",
+     "quantity_kind": "ratio measure",
+     "dimension": null,
+     "context": "[0.37, 0.95]). May slightly increase nevirapine prophylaxis in infants of HIV+ve mothers (1 study, 609 participants; OR 1.75 [0.73, 4.19]) Data quality In pregnant women (1 stud",
+     "key": "pubmed|A4",
+     "hand": "agree: OR, no unit"
+    },
+    {
+     "doc": "pubmed_bp_ratio.jsonl:165",
+     "span": [
+      1690,
+      1714
+     ],
+     "value": 1.87,
+     "sigma": 0.04591921112321884,
+     "unit": null,
+     "quantity": "per 1 SD",
+     "log_scale": false,
+     "flags": [
+      "ci",
+      "no_unit"
+     ],
+     "ok": true,
+     "reason": "unchecked_quantity",
+     "quantity_kind": null,
+     "dimension": null,
+     "context": "nts in the intensive treatment group and standard treatment group, respectively. Older age (hazard ratio [HR] per 1 SD, 1.87 [95% CI, 1.78-1.96]), Medicare enrollment (HR per 1 SD, 1.4",
+     "key": "pubmed|A5",
+     "hand": "agree: 'per 1 SD' makes the phrase a product, on which the table abstains"
+    },
+    {
+     "doc": "pubmed_bp_secondary.jsonl:130",
+     "span": [
+      1200,
+      1210
+     ],
+     "value": 0.006200000000000001,
+     "sigma": 0.0027,
+     "unit": "m",
+     "quantity": "indapamide SR/amlodipine vs enalapril/amlodipine",
+     "log_scale": false,
+     "flags": [],
+     "ok": true,
+     "reason": "unchecked_quantity",
+     "quantity_kind": null,
+     "dimension": "L",
+     "context": "weeks, mean systolic BP (\u00b1SE) reduction was significantly greater with indapamide SR/amlodipine vs enalapril/amlodipine 6.2\u00b12.7 mm Hg (P=.02). Indapamide SR/amlodipine wa",
+     "key": "pubmed|A6",
+     "hand": "DISAGREE: 6.2 mm Hg with 'mm Hg' split, so the unit is metres \u2014 but the quantity phrase is a drug comparison that resolves to nothing, so the checker accepts it as unchecked. The same defect R1 catches goes through here"
+    },
+    {
+     "doc": "pubmed_bp_outcomes.jsonl:150",
+     "span": [
+      1695,
+      1719
+     ],
+     "value": 2.23,
+     "sigma": 0.4796006495091747,
+     "unit": null,
+     "quantity": "cardiovascular",
+     "log_scale": false,
+     "flags": [
+      "ci",
+      "no_unit"
+     ],
+     "ok": true,
+     "reason": "unchecked_quantity",
+     "quantity_kind": null,
+     "dimension": null,
+     "context": "d an elevated stroke (hazard ratio, 2.33 [95% CI, 1.19-4.55]), coronary (2.04 [95% CI, 1.20-3.45]), and cardiovascular (2.23 [95% CI, 1.48-3.36]) risk, and increased baseline CAC, but ",
+     "key": "pubmed|A7",
+     "hand": "agree: 'cardiovascular' resolves to nothing, unchecked"
+    },
+    {
+     "doc": "pubmed_bp_ratio.jsonl:644",
+     "span": [
+      936,
+      957
+     ],
+     "value": 2.4,
+     "sigma": 0.3371888081638645,
+     "unit": null,
+     "quantity": "odds ratio",
+     "log_scale": true,
+     "flags": [
+      "ci",
+      "log_scale",
+      "no_unit"
+     ],
+     "ok": true,
+     "reason": "ratio_dimensionless",
+     "quantity_kind": "ratio measure",
+     "dimension": null,
+     "context": "ively. In multivariate analysis, the higher baseline serum creatinine (\u2265110 \u03bcmol/L) was associated with AKI (odds ratio 2.4 [95% CI, 1.2-4.5]) and renal AEs (odds ratio 3.1 [95% CI,",
+     "key": "pubmed|A8",
+     "hand": "agree: odds ratio, no unit"
+    },
+    {
+     "doc": "pubmed_bp_intensive_meta.jsonl:169",
+     "span": [
+      3903,
+      3928
+     ],
+     "value": 0.99,
+     "sigma": 0.06895288175495246,
+     "unit": null,
+     "quantity": "RR",
+     "log_scale": true,
+     "flags": [
+      "ci",
+      "log_scale",
+      "no_unit"
+     ],
+     "ok": true,
+     "reason": "ratio_dimensionless",
+     "quantity_kind": "ratio measure",
+     "dimension": null,
+     "context": "te-certainty evidence). For any ICH, intensive SBP management does not increase or reduce neurologic adverse events (RR 0.99, 95% CI 0.87 to 1.14; I\u00b2 = 30%; 9 studies, 4304 participants",
+     "key": "pubmed|A9",
+     "hand": "agree: RR, no unit"
+    }
+   ]
+  }
+ },
+ "hand_check_agreement": {
+  "hep-ex|accepted|agree": 10,
+  "hep-ex|rejected|agree": 8,
+  "hep-ex|rejected|disagree": 2,
+  "pubmed|accepted|agree": 9,
+  "pubmed|accepted|disagree": 1,
+  "pubmed|rejected|agree": 10
+ }
+}
