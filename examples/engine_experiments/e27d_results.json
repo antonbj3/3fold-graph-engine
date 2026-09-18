@@ -1,0 +1,175 @@
+{
+ "_note": "cit-HepTh, T=95, horizon 24; label rho_ij = R_ij(T+H)/R_ij(T) from resistance sketches (k=128) of the undirected citation graph at each time; pairs leaving the giant component dropped. <= 600 sets per arm.",
+ "n_nodes_T": 16936,
+ "n_nodes_TH": 23180,
+ "share_T_nodes_still_in_giant_TH": 1.0,
+ "sketch_check": {
+  "k": 128,
+  "subgraph_nodes": 948,
+  "n_pairs": 200,
+  "median_rel_err": 0.069,
+  "p90_rel_err": 0.1873
+ },
+ "rho_distribution_random_pairs": {
+  "n": 600,
+  "median": 0.8658,
+  "deciles": [
+   0.5715,
+   0.673,
+   0.762,
+   0.8245,
+   0.8658,
+   0.9183,
+   0.9716,
+   1.0414,
+   1.1226
+  ],
+  "share_lt_0.5": 0.055,
+  "share_gt_1": 0.255
+ },
+ "degree_control": {
+  "spearman_logrho_vs_mean_log_deg_random_pairs": -0.1052,
+  "near_midpoint": {
+   "raw_corr_arm_vs_logrho": 0.0856,
+   "partial_given_mean_log_deg": 0.2254
+  },
+  "far_midpoint": {
+   "raw_corr_arm_vs_logrho": 0.149,
+   "partial_given_mean_log_deg": 0.1382
+  },
+  "chain_far": {
+   "raw_corr_arm_vs_logrho": 0.0417,
+   "partial_given_mean_log_deg": 0.0507
+  },
+  "dpp_150_exact_kernel": {
+   "raw_corr_arm_vs_logrho": -0.0153,
+   "partial_given_mean_log_deg": -0.0184
+  },
+  "wbl_top_decile": {
+   "raw_corr_arm_vs_logrho": -0.0653,
+   "partial_given_mean_log_deg": -0.115
+  },
+  "wbl_bottom_decile": {
+   "raw_corr_arm_vs_logrho": 0.0365,
+   "partial_given_mean_log_deg": 0.1148
+  },
+  "R_top_decile_at_T": {
+   "raw_corr_arm_vs_logrho": -0.0961,
+   "partial_given_mean_log_deg": -0.1367
+  },
+  "R_bottom_decile_at_T": {
+   "raw_corr_arm_vs_logrho": 0.0681,
+   "partial_given_mean_log_deg": 0.1049
+  }
+ },
+ "arms": {
+  "random_pairs": {
+   "n_sets": 600,
+   "n_pairs": 600,
+   "n_pairs_scored": 600,
+   "dropped_share": 0.0,
+   "mean_log_rho": -0.189,
+   "se_clustered": 0.0123,
+   "median_rho": 0.8658,
+   "bridged_share_rho_lt_0.5": 0.055,
+   "mean_R_at_T": 0.5352,
+   "mean_log_deg_endpoints": 2.458
+  },
+  "near_midpoint": {
+   "n_sets": 600,
+   "n_pairs": 1800,
+   "n_pairs_scored": 1800,
+   "dropped_share": 0.0,
+   "mean_log_rho": -0.1207,
+   "se_clustered": 0.0076,
+   "median_rho": 0.9,
+   "bridged_share_rho_lt_0.5": 0.0178,
+   "mean_R_at_T": 0.0273,
+   "mean_log_deg_endpoints": 5.277
+  },
+  "far_midpoint": {
+   "n_sets": 600,
+   "n_pairs": 1800,
+   "n_pairs_scored": 1800,
+   "dropped_share": 0.0,
+   "mean_log_rho": -0.0996,
+   "se_clustered": 0.0092,
+   "median_rho": 0.9555,
+   "bridged_share_rho_lt_0.5": 0.0411,
+   "mean_R_at_T": 0.3638,
+   "mean_log_deg_endpoints": 2.921
+  },
+  "chain_far": {
+   "n_sets": 600,
+   "n_pairs": 1847,
+   "n_pairs_scored": 1847,
+   "dropped_share": 0.0,
+   "mean_log_rho": -0.2191,
+   "se_clustered": 0.0132,
+   "median_rho": 0.9144,
+   "bridged_share_rho_lt_0.5": 0.124,
+   "mean_R_at_T": 1.2455,
+   "mean_log_deg_endpoints": 2.037
+  },
+  "dpp_150_exact_kernel": {
+   "n_sets": 600,
+   "n_pairs": 1800,
+   "n_pairs_scored": 1800,
+   "dropped_share": 0.0,
+   "mean_log_rho": -0.1987,
+   "se_clustered": 0.0101,
+   "median_rho": 0.8569,
+   "bridged_share_rho_lt_0.5": 0.0461,
+   "mean_R_at_T": 0.5712,
+   "mean_log_deg_endpoints": 2.386
+  },
+  "wbl_top_decile": {
+   "n_sets": 600,
+   "n_pairs": 600,
+   "n_pairs_scored": 600,
+   "dropped_share": 0.0,
+   "mean_log_rho": -0.2902,
+   "se_clustered": 0.0181,
+   "median_rho": 0.8662,
+   "bridged_share_rho_lt_0.5": 0.1567,
+   "mean_R_at_T": 1.9928,
+   "mean_log_deg_endpoints": 1.549
+  },
+  "wbl_bottom_decile": {
+   "n_sets": 600,
+   "n_pairs": 600,
+   "n_pairs_scored": 600,
+   "dropped_share": 0.0,
+   "mean_log_rho": -0.1525,
+   "se_clustered": 0.0098,
+   "median_rho": 0.8769,
+   "bridged_share_rho_lt_0.5": 0.025,
+   "mean_R_at_T": 0.0653,
+   "mean_log_deg_endpoints": 3.653
+  },
+  "R_top_decile_at_T": {
+   "n_sets": 600,
+   "n_pairs": 600,
+   "n_pairs_scored": 600,
+   "dropped_share": 0.0,
+   "mean_log_rho": -0.3244,
+   "se_clustered": 0.0189,
+   "median_rho": 0.8651,
+   "bridged_share_rho_lt_0.5": 0.1783,
+   "mean_R_at_T": 2.0157,
+   "mean_log_deg_endpoints": 1.528
+  },
+  "R_bottom_decile_at_T": {
+   "n_sets": 600,
+   "n_pairs": 600,
+   "n_pairs_scored": 600,
+   "dropped_share": 0.0,
+   "mean_log_rho": -0.1322,
+   "se_clustered": 0.0091,
+   "median_rho": 0.8937,
+   "bridged_share_rho_lt_0.5": 0.0117,
+   "mean_R_at_T": 0.0617,
+   "mean_log_deg_endpoints": 3.71
+  }
+ }
+}

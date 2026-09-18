@@ -423,6 +423,18 @@ random non-co-cited pairs: future co-citation is MONOTONE DECREASING in would-be
 time the same answer from three different scores (raw resistance, midpoint decode, would-be leverage): on citation data the label
 rewards what is already almost connected. The quantity stays in `throws` as an exact bridge measure; it is not a link predictor.
 
+**The label was the problem, not the throws (e27d).** Co-citation within 24 months rewards predictable proximity. The engine's claim is
+densification: a throw is right if the field later BUILDS a route where there was none. Label: ρ_ij = R_ij(T + 24) / R_ij(T) from a
+k = 128 sketch of the later graph (median sketch error 6.9 %, no pairs lost). Random pairs: median ρ 0.87, 5.5 % bridged (ρ < 0.5).
+Under this label the ranking of e27–e27c INVERTS: the co-citation winner (near midpoint, 7.2 % there) is the worst densifier — mean
+log ρ −0.12, 1.8 % bridged, below random, because its pairs sit at R ≈ 0.03 and have nothing left to lose; the pairs the field builds
+routes to are the FAR ones: top resistance decile at T mean log ρ −0.32, 17.8 % bridged (3.2× random), would-be-leverage top decile the
+same arm, chain between far pairs −0.22 / 12.4 % (the only structured rule above random), DPP on the exact kernel = random. The
+degree control of e19 does not remove it: the far arms keep their sign and grow after conditioning on endpoint degree (partial −0.14),
+the near arm turns worse than random (+0.23). So "far in the graph" is the right first coordinate of a throw — for densification,
+which is what the engine is for — and the cheapest correct rule is the plain resistance top decile; the structured rules do not beat
+it yet. e3b/e19/e27/e27c measured prediction of the next co-citation; that is a different question with the opposite answer.
+
 **The checker layer (e30, `claim_types`; seed: proof checking blocks mistakes before they enter).** Dimensions over the raw numeric
 extractions of both corpora: hep-ex 1 761 records, 6.9 % rejected (unknown unit 52, mass without unit 29, dimension mismatch 18);
 PubMed 14 467 records, 10.4 % rejected (duration without unit 530, dimension mismatch 355, unknown unit 338, a ratio with a unit 143,
