@@ -17,15 +17,18 @@ selection finds the most links during the run but the model fitted on those outc
 AP 0.130, against 0.162 for uniformly random throws; softmax draws (T = 0.5) with a 1/π-weighted fit reach 0.163 while finding
 4.7 times as many links as random (on the second graph: 2.9 times, 0.190 against 0.192). Top-K gives π ∈ {0, 1}: no weight can correct for pairs that could never be drawn.
 
-Measured after this module was written (e19, real citation data): what predicts the impact of a paper that connects things is a TIGHT
-core of references plus ONE far element, not far pairs. A far pair alone predicts lower impact. The next version should score a
-candidate SET (core diameter small, one element far) rather than a pair; this module still scores pairs.
+Sets. A first reading of e19 (real citation data) said a TIGHT core of references plus ONE far element predicts impact. Controlled for
+the references' degree it does not (resistance distance ≈ 1/deg + 1/deg, so "tight core" was "cites hubs"), and e24's set value
+½ log det(I + H C Hᵀ/σ²) (precision_form) picks three far elements with low mutual coherence over any core-plus-one triple. So a throw
+as a SET is drawn here by the determinantal rule below: sets ∝ det(K_S), the volume the members span in the resistance geometry —
+far apart AND in independent directions — with EXACT inclusion probabilities from the marginal kernel K(I + K)⁻¹, which is what a
+1/π-weighted fit needs (e8b) and what softmax-with-floor only approximated. Continuous geometry, discrete outcome, decoded late.
 """
 from __future__ import annotations
 
 import numpy as np
 
-__all__ = ["throw_scores", "draw", "draw_pairs", "inclusion_probabilities"]
+__all__ = ["throw_scores", "draw", "draw_pairs", "inclusion_probabilities", "draw_set_dpp", "dpp_inclusion_probabilities", "throw_from_continuum"]
 
 
 def throw_scores(mechanism: np.ndarray, graph: np.ndarray, subject: np.ndarray | None = None,
@@ -75,3 +78,66 @@ def draw(scores: np.ndarray, k: int, exclude: np.ndarray | None = None, temperat
     """`draw_pairs` over the upper triangle of an n×n score matrix; `exclude` masks pairs that are already linked."""
     iu = np.triu_indices(len(scores), 1); ok = np.ones(len(iu[0]), bool) if exclude is None else ~exclude[iu]
     return draw_pairs(iu[0][ok], iu[1][ok], scores[iu][ok], k, temperature, floor, seed)
+
+
+# -- throws as SETS: determinantal draws in the resistance geometry ----------------------------------------------------
+def _dpp_kernel(Z: np.ndarray, quality: np.ndarray | None = None) -> np.ndarray:
+    """L-ensemble kernel L = Q Φ Φᵀ Q with Φ = rows of Z (resistance-sketch coordinates, unit-normalized) and Q = diag(quality)."""
+    Phi = Z / (np.linalg.norm(Z, axis=1, keepdims=True) + 1e-12)
+    q = np.ones(len(Z)) if quality is None else np.asarray(quality, float)
+    return (q[:, None] * Phi) @ (q[:, None] * Phi).T
+
+
+def dpp_inclusion_probabilities(Z: np.ndarray, quality: np.ndarray | None = None) -> np.ndarray:
+    """P(i ∈ S) under the L-ensemble: diag(L (I + L)⁻¹). Exact; sums to E|S|."""
+    L = _dpp_kernel(Z, quality)
+    return np.diag(L @ np.linalg.inv(np.eye(len(L)) + L))
+
+
+def draw_set_dpp(Z: np.ndarray, quality: np.ndarray | None = None, seed: int = 0) -> tuple[np.ndarray, np.ndarray]:
+    """One set S ~ DPP(L) by the spectral algorithm (Hough et al. 2006; Kulesza & Taskar 2012, alg. 1). Returns (members,
+    inclusion probabilities of the members). P(S) ∝ det(L_S): members far apart in resistance geometry and spanning independent
+    directions are favoured jointly; two near-duplicates are almost never drawn together."""
+    rng = np.random.default_rng(seed)
+    L = _dpp_kernel(Z, quality); lam, V = np.linalg.eigh(L); lam = np.clip(lam, 0, None)
+    keep = rng.random(len(lam)) < lam / (1 + lam)
+    Vk = V[:, keep]; chosen = []
+    while Vk.shape[1] > 0:
+        p = (Vk ** 2).sum(1); p /= p.sum()
+        i = int(rng.choice(len(p), p=p)); chosen.append(i)
+        # project the remaining eigenvectors onto the orthogonal complement of e_i
+        j = int(np.argmax(np.abs(Vk[i])))
+        v = Vk[:, j] / Vk[i, j]
+        Vk = Vk - np.outer(v, Vk[i]); Vk = np.delete(Vk, j, axis=1)
+        if Vk.shape[1]:
+            Vk, _ = np.linalg.qr(Vk)
+    chosen = np.array(sorted(chosen), int)
+    return chosen, dpp_inclusion_probabilities(Z, quality)[chosen]
+
+
+# -- throws from the continuum: OED point, dither, decode at the corners -----------------------------------------------
+def throw_from_continuum(Z: np.ndarray, x_star: np.ndarray, k: int = 3, dither: float | None = None, n_draws: int = 1,
+                         n_pi: int = 2000, seed: int = 0) -> list[tuple[np.ndarray, np.ndarray]]:
+    """A throw as a point in the resistance geometry, decoded late. `x_star` is the point an experimental-design rule chose
+    (a hole: where the posterior variance is largest, or a midpoint between weakly connected regions); the throw is the set of
+    the k nodes nearest to x_star + dither·ε, ε ~ N(0, I). Without dither the decode is deterministic (π ∈ {0, 1}: the same
+    corners every time, and no 1/π weight can correct for a node that can never be drawn). With dither on the scale of the
+    node spacing every node within reach has π > 0, the quantization error is independent of where x_star sits (Schuchman's
+    condition for dithered quantizers), and the decoded set's centroid is unbiased for x_star. Default dither = the median
+    distance from x_star to its 2k nearest nodes. Returns [(members, their inclusion probabilities)] for n_draws throws;
+    inclusion probabilities are estimated by n_pi Monte-Carlo decodes of the same dithered point (exact in the limit)."""
+    rng = np.random.default_rng(seed)
+    d0 = np.linalg.norm(Z - x_star, axis=1)
+    if dither is None:
+        dither = float(np.median(np.sort(d0)[: 2 * k]))
+    def decode(x):
+        return np.argsort(np.linalg.norm(Z - x, axis=1), kind="stable")[:k]
+    counts = np.zeros(len(Z))
+    for _ in range(n_pi):
+        counts[decode(x_star + dither * rng.standard_normal(Z.shape[1]))] += 1
+    pi = counts / n_pi
+    out = []
+    for _ in range(n_draws):
+        S = np.sort(decode(x_star + dither * rng.standard_normal(Z.shape[1])))
+        out.append((S, pi[S]))
+    return out

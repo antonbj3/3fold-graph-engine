@@ -58,3 +58,30 @@ def test_pair_list_form_needs_no_dense_matrix_and_agrees_with_the_matrix_form():
     assert np.allclose(s_list - s_list.mean(), s_mat - s_mat.mean())          # same ranking; the median reference may differ by a constant
     a = draw_pairs(iu[0][ok], iu[1][ok], s_mat, 30, seed=4); b = draw(throw_scores(M, R, subj), 30, linked, seed=4)
     assert a == b
+
+
+def test_dpp_set_draws_match_the_exact_inclusion_probabilities_and_avoid_duplicates():
+    """Frequencies of membership over many draws equal diag(L(I+L)⁻¹); two identical rows (a duplicate node) are drawn together
+    with probability 0 under the determinantal rule (det of a singular block)."""
+    from graph_engine.throws import draw_set_dpp, dpp_inclusion_probabilities
+    rng = np.random.default_rng(0); Z = rng.standard_normal((12, 6)); Z[11] = Z[0]        # node 11 duplicates node 0
+    pi = dpp_inclusion_probabilities(Z); n = 3000
+    counts = np.zeros(12); both = 0
+    for s in range(n):
+        S, pS = draw_set_dpp(Z, seed=s); counts[S] += 1
+        both += (0 in S) and (11 in S)
+        assert np.allclose(pS, pi[S])
+    assert np.abs(counts / n - pi).max() < 0.03, (counts / n, pi)
+    assert both == 0
+
+
+def test_continuum_throw_without_dither_is_deterministic_and_with_dither_is_unbiased():
+    from graph_engine.throws import throw_from_continuum
+    rng = np.random.default_rng(1); Z = rng.standard_normal((40, 4)); x = Z[:2].mean(0) + 0.3 * rng.standard_normal(4)
+    fixed = throw_from_continuum(Z, x, k=3, dither=0.0, n_draws=5, n_pi=50, seed=0)
+    assert all(np.array_equal(fixed[0][0], s) for s, _ in fixed) and set(fixed[0][1].tolist()) == {1.0}
+    dith = throw_from_continuum(Z, x, k=3, n_draws=400, n_pi=400, seed=0)
+    members = np.concatenate([s for s, _ in dith]); assert len(np.unique(members)) > 3          # every corner within reach is reachable
+    centroid = np.mean([Z[s].mean(0) for s, _ in dith], axis=0)
+    assert np.linalg.norm(centroid - x) < np.linalg.norm(Z[fixed[0][0]].mean(0) - x) + 0.35     # not pulled away from x_star by the grid
+    pis = np.concatenate([p for _, p in dith]); assert 0 < pis.min() and pis.max() <= 1
