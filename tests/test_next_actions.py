@@ -243,3 +243,29 @@ def test_wrong_shaped_outcomes_raise():
         next_actions(st, k=0)
     with pytest.raises(ValueError, match="guard_share"):
         next_actions(st, k=3, guard_share=1.5)
+
+
+# -- N10 ------------------------------------------------------------------------------------------
+def test_decisions_add_flip_actions_named_after_the_decision():
+    """`decisions=` adds "flip" actions ranked by P(the outcome flips that decision's certificate) / cost. They
+    carry value_unit "p_flip", so they stay in `.other` and out of the bits ranking."""
+    from graph_engine.decision_cert import Decision, certify
+
+    st = _state()
+    d_pair = Decision("sign_low", "sign", alpha=0.5, pair=PAIR_A, box=(0.0, 0.3), sign=+1)
+    d_edge = Decision("beam_margin", "margin", alpha=0.05, edge="e.beam", z_req=1.0)
+    plain = next_actions(st, k=8)
+    acts = next_actions(st, k=8, decisions=[d_pair, d_edge])
+
+    assert [a.id for a in acts] == [a.id for a in plain]              # the bits ranking is untouched
+    flips = [a for a in acts.other if a.kind == "flip"]
+    assert flips and acts.by_kind("flip") == flips
+    assert all(a.value_unit == "p_flip" and 0.0 < a.value_bits <= 1.0 for a in flips)
+    assert all(a.value_per_cost == pytest.approx(a.value_bits / a.cost) for a in flips)
+    assert [a.value_per_cost for a in flips] == sorted((a.value_per_cost for a in flips), reverse=True)
+    assert {a.meta["decision"] for a in flips} <= {"sign_low", "beam_margin"}
+    for a in flips:                                                    # `how` names the decision and its status
+        assert a.meta["decision"] in a.how and "p_flip" in a.how
+        assert a.meta["holds"] == certify(d_pair if a.meta["decision"] == "sign_low" else d_edge, st)["holds"]
+    assert {a.target for a in flips} <= {PAIR_A, "e.beam"}             # only what the decisions read
+    assert next_actions(st, k=8, decisions=None).other == plain.other

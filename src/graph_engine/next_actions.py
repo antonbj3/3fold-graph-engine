@@ -268,10 +268,15 @@ def _federation_actions(state: EngineState) -> list[Action]:
 
 
 # -- the list ---------------------------------------------------------------------------------------
-def next_actions(state: EngineState, profile: Any = None, k: int = 10, guard_share: float | None = None) -> Actions:
+def next_actions(state: EngineState, profile: Any = None, k: int = 10, guard_share: float | None = None,
+                 decisions: Any = None) -> Actions:
     """Top-k actions by value per cost, in bits, with `guard_share` of the slots reserved for `model_check`
     actions when any exist. Channels whose value is not in bits (unlock_value: priority; hidden_variable: χ² drop;
-    claim_federation: EVPI) are returned in `.other`, in their own order, never mixed into the ranking."""
+    claim_federation: EVPI) are returned in `.other`, in their own order, never mixed into the ranking.
+
+    `decisions` (a list of decision_cert.Decision) adds "flip" actions to `.other`, ranked by P(the outcome flips
+    that decision's certificate) / cost — the measurement that can change a DECISION, which is not in general the
+    one with the largest entropy drop. Their value_unit is "p_flip", so they never enter the bits ranking."""
     if k <= 0:
         raise ValueError(f"k must be ≥ 1: {k}")
     if guard_share is None:
@@ -283,6 +288,9 @@ def next_actions(state: EngineState, profile: Any = None, k: int = 10, guard_sha
                  + _hidden_variable_actions(state) + _unlock_actions(state) + _federation_actions(state))
     in_bits = sorted((a for a in collected if a.value_unit == BITS), key=lambda a: -a.value_per_cost)
     other = [a for a in collected if a.value_unit != BITS]
+    if decisions:
+        from .decision_cert import flip_actions
+        other = other + flip_actions(state, decisions)
 
     guards = [a for a in in_bits if a.kind == "model_check"]
     rest = [a for a in in_bits if a.kind != "model_check"]
