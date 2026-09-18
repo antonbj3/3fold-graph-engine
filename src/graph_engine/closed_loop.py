@@ -239,15 +239,15 @@ def _flags(policy: str) -> set:
     f = set(parts[1:])
     if "all" in f:
         f = {"guard", "reliability", "replay"}
-    if f - {"guard", "guard2", "reliability", "replay", "majority"}:
+    if f - {"guard", "guard2", "burst", "reliability", "replay", "majority"}:
         raise ValueError(policy)
-    if "guard" in f and "guard2" in f:
+    if len(f & {"guard", "guard2", "burst"}) > 1:
         raise ValueError(policy)
     return f
 
 
 def run(world: World, policy: str, budget: float, instruments=((1.0, 0.8), (4.0, 0.99)), seed: int = 0,
-        record_every: float = 5.0, guard: float = 0.2, rel_bins: int = 3, rel_every: float = 1.0,
+        record_every: float = 5.0, guard: float = 0.2, burst_n: int = 6, rel_bins: int = 3, rel_every: float = 1.0,
         replay_prior: dict | None = None, **kw) -> dict:
     """Returns {"cost": [...], "wrong": [...]} sampled every `record_every` cost units, plus the final state.
 
@@ -276,7 +276,7 @@ def run(world: World, policy: str, budget: float, instruments=((1.0, 0.8), (4.0,
     next_rec, next_rel = record_every, rel_every
     while spent < budget:
         kind = "value"
-        if ("guard" in flags or "guard2" in flags) and spent_guard < guard * budget:
+        if ("guard" in flags or "guard2" in flags or "burst" in flags) and spent_guard < guard * budget:
             k = 2 if "guard2" in flags else 1                  # +guard2 buys the PAIR of probes back to back
             fits = [(c, r) for c, r in instruments if spent_guard + k * c <= guard * budget + 1.0]
             if fits:
@@ -320,6 +320,15 @@ def run(world: World, policy: str, budget: float, instruments=((1.0, 0.8), (4.0,
             raise ValueError(policy)
         if kind != "model":
             xs_now = [x]
+        if kind == "model" and "burst" in flags:              # +burst: commit a run of probes to the chosen pair, each placed by
+            xs_now = []                                        # the family-entropy rule AFTER the previous answer (e28: 12 probes
+            for _ in range(burst_n):                           # on one pair find the second transition; 2-3 do not)
+                if spent_guard + c > guard * budget + 1.0:
+                    break
+                x, _g = posts[p].model_check_probe(r); xs_now.append(x)
+                ans = world.probe(p, x, r, rng); posts[p].add_probe(x, ans, r); probe_log[p].append((float(x), int(ans), float(r)))
+                spent += c; spent_guard += c
+            xs_now = []
         for x in xs_now:
             ans = world.probe(p, x, r, rng)
             posts[p].add_probe(x, ans, r)
