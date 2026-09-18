@@ -73,6 +73,7 @@ corpus the gate abstains on all 57 papers from title and abstract. The modules b
 | `next_actions` | one list of what to do next, from every channel, in the contract's form; a runner that routes the outcome back | bits per cost across regimes, margins and the precision form; priority / χ² / EVPI channels listed apart, never mixed in; `apply` returns the fold-ledger row with predicted and realized bits |
 | `claim_types` | the checker layer: dimensions, certificates, link typecheck | unit grammar → dimension vector; a claim carries a certificate (deductive from a model over its box, statistical from a fitted guarantee, or none) and readers take r from it; a two-step link must resolve one concept, intersect boxes, agree on scale and dimension |
 | `decision_cert` | trust relative to a DECISION, not global (from the Hollow project's decision certificates): p_flip of a predicate over the beliefs, and which measurement can flip it | sign-on-box (exact posterior mass), margin (Φ), chain (declared independence); `flip_attribution` ranks candidates by P(flip)/cost; listed in `next_actions` as a separate currency |
+| `guarantees` | what is proved about the probe rule and what is not | cell identity Δ_U = Σ w_c I(Z_c; Y); adaptive monotone (proved); NOT adaptive submodular with noisy answers (counter-example); bounds f, g of the allocation lemma; greedy vs adaptive optimum by enumeration |
 | `closed_loop` | the engine choosing probes against a world with known sign structure, scored against the truth | world of ≤ 1-transition sign functions with sourced, copied, unreliable claims; policies engine / copies / random / oracle; wrong measure and believed wrong measure |
 | `polarity_rules` | the sign a sentence asserts between two quantities, symbolically | one direction word per quantity per clause, negation flips, last clause wins, composition by product; abstains outside its lexicon (English only) |
 | `representation_probe` | a second reader: a linear direction in a frozen model's mid layers, trained on the rule's labels, with its own lineage | reads text that contradicts the model's prior where the token output does not; inherits the genre of its training sentences (e22) |
@@ -487,6 +488,21 @@ the exact route when every candidate is a single probe on an uncoupled belief at
 image with a residual that does not shrink with the set (15 % low on e24's T6 example). e24's ranking is unchanged; its Bernoulli
 bits move to the exact values (0.43 → 0.71 for the r = 0.95 probe). Expected information gain is monotone submodular for conditionally
 independent observations (Krause–Guestrin): 0 violations in 500 checks, so the greedy probe set is within 1 − 1/e of optimal.
+
+**What is proved about the probe rule (e33, `guarantees`).** Identity: the expected drop of the entropy potential from a probe is
+Σ_c w_c I(Z_c; Y), a Jensen gap per cell. Adaptive MONOTONE for any concave potential (martingale + Jensen; measured min −4e-16). NOT
+adaptive submodular with noisy answers, for either potential — a counter-example, not a failed search: a BSC(r) read of a Bernoulli(p)
+has one-step gain h(a) − h(r), increasing toward p = ½, so a contradicting answer moves p back toward ½ and makes the SAME probe worth
+more (0.051 → 0.228 bits after one − answer; 4.5×). The Golovin–Krause 1 − 1/e bound therefore does not cover this loop — withdrawn,
+not assumed. Measured instead: diminishing returns violated in 7–15 % of random sub-realizations (worst 60×); greedy against the
+adaptive optimum by full decision-tree enumeration on 50 small cases: mean 0.991 (entropy) / 0.977 (error), min 0.96 / 0.91, never
+below 1 − 1/e, strictly suboptimal in 33 / 40 of 50. Guarantee absent, performance fine, at ≤ 3 probes on ≤ 10 cells. The allocation
+lemma, proved as bounds: when the one-transition family explains the claims with mass ≥ 1 − δ, any probe's entropy drop is ≤
+12.3·δ(1 − δ) bits (r = 0.95) while the family-entropy drop is ≥ 2.34·q(1 − q) at the right cell; both hold 200/200. Measured on the
+closure-filled gap: as δ falls 0.26 → 0.003 the entropy value falls 300× and the family value 2.3×, ratio 0.08 → 9.9, monotone. And a
+correction: the two rules name DIFFERENT cells only 63 % of the time — in the concentrated regime they often name the same cell and
+the value rule prices it ~10× too low. e21's hole is the price, not the location: the budget is allocated across pairs by expected
+drop, and a correctly priced collision probe would win it.
 
 **Label-free calibration (e18; same 320 sentences).** Raw pooled 0.591; subtracting each lens's batch-mean log-odds (Batch Calibration) 0.572;
 per sentence form 0.603; per-form Platt on the rule's answers 0.927; on true labels 0.927. The option prior is not the fault; the
