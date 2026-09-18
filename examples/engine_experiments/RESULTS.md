@@ -315,6 +315,11 @@ Three additions to the loop, same 40 worlds, paired against `engine` (1.24 at bu
   measured: collisions found only when the prior p_two is learned from history and the box claims are read as majority reports, so
   the single-transition family is no longer forced to fit. e28 explains the rest of the hole: with 12 probes on one pair both readers
   find the second transition in 31 of 40; the loop gives each pair ~3. The remaining 18 of 25 are an allocation problem.
+- **burst allocation (e21b): negative.** Committing a run of 6 (or 4) model-check probes to the pair the guard picks, each placed
+  after the previous answer: 5 of 25 with 0 (or 3) false flags, wrong 1.08 / 1.11 — not better than pairs (7 of 25). The guard's
+  20 % of a 40-unit budget is 8 probes: one burst per world, on one pair. Allocation is not fixable inside a budget of 2–3 probes
+  per pair; a second transition costs ~12 probes and the budget has to be raised for it or a cheaper instrument (a sweep from a
+  computation cell: many probes per run) has to exist. Recorded as the limit, not as a rule to tune.
 
 **One quadratic form (e24, `precision_form`).** Exact to machine precision: effective resistance = (e_i−e_j)ᵀJ⁺(e_i−e_j) (1e-16);
 the GLS estimate and variance of `margin_net` = posterior mean and variance of the observation block (0.0 / 4e-18, including a

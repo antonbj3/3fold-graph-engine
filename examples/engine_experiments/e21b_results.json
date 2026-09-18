@@ -1,0 +1,42 @@
+{
+ "engine+guard2+replay+majority": {
+  "wrong": 1.08,
+  "se": 0.069,
+  "gap": -0.08,
+  "tp_fn_fp": [
+   7,
+   18,
+   2
+  ]
+ },
+ "engine+burst+replay+majority (burst_n=6)": {
+  "wrong": 1.082,
+  "se": 0.068,
+  "gap": -0.046,
+  "tp_fn_fp": [
+   5,
+   20,
+   0
+  ]
+ },
+ "engine+burst+replay+majority (burst_n=4)": {
+  "wrong": 1.114,
+  "se": 0.068,
+  "gap": -0.011,
+  "tp_fn_fp": [
+   5,
+   20,
+   3
+  ]
+ },
+ "engine+burst+majority (burst_n=6)": {
+  "wrong": 1.326,
+  "se": 0.078,
+  "gap": 0.255,
+  "tp_fn_fp": [
+   5,
+   20,
+   0
+  ]
+ }
+}
