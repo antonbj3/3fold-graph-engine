@@ -45,6 +45,7 @@ class EngineProfile:
     p_two_transitions: float = 0.05          # prior P(twice): the collision family; 0 = assume it away
     regime_grid: int = 48                    # fixed cells; probes never add cells
     potential: str = "entropy"               # "entropy" or "error" (= min(p, 1−p), piecewise linear)
+    claim_model: str = "pointwise"           # "pointwise" or "majority" (a box claim = the source's majority sign; halves the e21 calibration gap)
     guard_share: float = 0.2                 # share of a probing budget spent against the model error (closed_loop)
     # -- margins (margin_net) --------------------------------------------------------------------
     default_sigma: float = 0.1
@@ -83,6 +84,8 @@ class EngineProfile:
             raise ValueError("regime_grid must be ≥ 4")
         if self.potential not in ("entropy", "error"):
             raise ValueError("potential must be 'entropy' or 'error'")
+        if self.claim_model not in ("pointwise", "majority"):
+            raise ValueError("claim_model must be 'pointwise' or 'majority'")
         between("guard_share", 0.0, 1.0)
         if self.default_sigma <= 0:
             raise ValueError("default_sigma must be > 0 (a report without uncertainty cannot be combined)")
@@ -127,7 +130,7 @@ class EngineProfile:
     def regime_posterior(self, lo: float, hi: float, **kw):
         from .regime_posterior import RegimePosterior
         return RegimePosterior(lo, hi, reliability=self.claim_reliability, p_flip=self.p_transition, potential=self.potential,
-                               n_grid=self.regime_grid, p_two=self.p_two_transitions, **kw)
+                               n_grid=self.regime_grid, p_two=self.p_two_transitions, claim_model=self.claim_model, **kw)
 
     def guarantee_threshold(self, scores, all_right):
         from .record_guarantee import fit_threshold
@@ -219,7 +222,7 @@ class EngineProfile:
         "claim_reliability": "claim_federation, regime_posterior", "transitivity": "claim_federation", "use_lineage": "claim_federation",
         "use_validity": "claim_federation", "reliability_by_root": "claim_federation", "reliability_prior": "source_reliability",
         "p_transition": "regime_posterior", "p_two_transitions": "regime_posterior", "regime_grid": "regime_posterior",
-        "potential": "regime_posterior", "guard_share": "closed_loop", "default_sigma": "margin_net", "stressed_below_z": "margin_net",
+        "potential": "regime_posterior", "claim_model": "regime_posterior", "guard_share": "closed_loop", "default_sigma": "margin_net", "stressed_below_z": "margin_net",
         "disagree_p": "margin_net", "copy_tolerance": "margin_net", "admission_tau": "plan_value", "guarantee_alpha": "record_guarantee",
         "guarantee_delta": "record_guarantee", "guarantee_grid": "record_guarantee", "throw_temperature": "throws", "throw_floor": "throws",
         "direction_lexicon": "polarity_rules", "abstain_below": "paper_graph.pipeline", "log_scale_variables": "claim_federation (boxes)",

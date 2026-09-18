@@ -77,6 +77,10 @@ class RegimePosterior:
     potential: str = "entropy"               # "entropy" (strictly concave) or "error" = min(p, 1−p)
     n_grid: int = 48                         # fixed uniform cells; with the claim edges they are the ONLY places a
                                              # transition can sit. Probes never add cells (see FIXED HYPOTHESIS SPACE).
+    claim_model: str = "pointwise"           # how a box claim is read: "pointwise" (r-accurate at every point of the box, likelihood
+                                             # r^{n f}(1−r)^{n(1−f)}) or "majority" (the source reported the majority sign of its box:
+                                             # likelihood r·S(k(f−½)) + (1−r)(1−S(k(f−½))), S logistic, k = 20). e21 found the
+                                             # loop's over-confidence lives in the pointwise reading, not in r (see closed_loop).
     p_two: float = 0.05                      # prior P(TWO transitions): the collision family, kept in
                                              # the hypothesis space so the data can speak for it. 0 = assume it away.
     claims: list = field(default_factory=list)   # (a, b, sign, n_eff)
@@ -153,7 +157,11 @@ class RegimePosterior:
             ov = ov / ov.sum()
             fplus = F @ ov
             f = fplus if sg > 0 else 1 - fplus
-            logp += n * (f * lr + (1 - f) * lq)
+            if self.claim_model == "majority":
+                sm = 1.0 / (1.0 + np.exp(-20.0 * (f - 0.5)))
+                logp += n * np.log(rel * sm + (1 - rel) * (1 - sm))
+            else:
+                logp += n * (f * lr + (1 - f) * lq)
         post = np.exp(logp - logp.max()); post /= post.sum()
         self._cache = (cells, w, F, post, logp)
         return self._cache

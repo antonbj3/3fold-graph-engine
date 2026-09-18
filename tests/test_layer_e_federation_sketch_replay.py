@@ -385,3 +385,12 @@ def test_per_claim_reliability_changes_the_reading():
         a.add_claim(0.2, 0.4, 1, 1, reliability=0.3); assert False
     except ValueError:
         pass
+
+
+def test_majority_claim_model_is_less_sure_at_the_far_end_of_a_wide_box():
+    """A + claim over [0, 0.9]: read pointwise, every point is r-accurate; read as a majority report, a transition inside the
+    box is still compatible with the report, so P₊ at the far end is lower (the e21 over-confidence)."""
+    from graph_engine.regime_posterior import RegimePosterior
+    a, b = RegimePosterior(0.0, 1.0), RegimePosterior(0.0, 1.0, claim_model="majority")
+    a.add_claim(0.0, 0.9, 1, 3); b.add_claim(0.0, 0.9, 1, 3)
+    assert b.p_plus(0.85) < a.p_plus(0.85) and b.p_plus(0.1) > 0.7

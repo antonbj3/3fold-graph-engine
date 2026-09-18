@@ -259,6 +259,27 @@ single-transition reading explains the claims. The oracle policy is implemented 
 This is the first measurement in this package of the engine choosing experiments end to end; the world is functions with the sign
 structure of e17's mechanisms, not a simulator.
 
+Three additions to the loop, same 40 worlds, paired against `engine` (1.24 at budget 40):
+- **guard** (a share of the budget bought against the model error with `model_check_probe`): the first collision flags in this
+  package — 3 of 25 two-transition pairs at share 0.2 or 0.3 with 0–1 false flags (0 of 25 before), accuracy cost +0.04 ± 0.04.
+  Share 0.1 is worse on both counts. Kept, default 0.2.
+- **online reliability** (Dawid–Skene per root with the probes as pinned truths): HARMFUL, +0.085 ± 0.036 wrong and the calibration gap
+  grows 0.21 → 0.56. It refuted its own premise: the estimated root reliabilities are 0.80–0.93, above the fixed 0.75, so honest
+  per-source weights make the engine more confident while the truth does not move. The over-confidence is not in r — it is in the
+  pointwise reading of a box claim (a source that reports the majority sign of a wide box is read as r-accurate at every point). The
+  estimator itself works (a planted 0.5 source is ranked under a planted 0.98 one after 20 probes, test).
+- **replay** (empirical Bayes on the loop's own history: p_two, reliability and p_flip re-estimated from the posterior family masses
+  of earlier worlds and used as the next world's priors): −0.085 ± 0.037 (22 of 40), growing with history — first 10 worlds −0.08,
+  last 10 −0.26 — and the calibration gap 0.28 → 0.12 while the fixed-prior engine's stays at 0.27–0.29. Learned after 40 worlds:
+  p_two 0.052 (true 0.05), reliability 0.82 (true 0.88), p_flip 0.49 (true 0.63; a transition no probe brackets keeps its family at
+  prior mass, so the fixed point sits low — pinned in a test, not asserted away). This is the recursion that works: not on which
+  episodes to replay (e3, zero), not on the residual alone (e3c, +0.01–0.02), but on the loop's own priors from its own outcomes.
+- all three together: collision 4 of 25 with 0 false flags, accuracy +0.03 ± 0.05; the reliability part eats replay's calibration gain.
+- **reading a box claim as a majority report** (`RegimePosterior(claim_model="majority")`: the source reported the majority sign of its
+  box, likelihood r·S(k(f−½)) instead of r-accurate at every point): the calibration gap halves, 0.23 ± 0.10 → 0.12 ± 0.08, and the
+  wrong measure is not worse (1.20 → 1.17; 12 worlds). This is the fix the reliability experiment pointed at. Kept as an option,
+  exposed in the profile; the default stays pointwise so the earlier e4 numbers remain reproducible.
+
 **One quadratic form (e24, `precision_form`).** Exact to machine precision: effective resistance = (e_i−e_j)ᵀJ⁺(e_i−e_j) (1e-16);
 the GLS estimate and variance of `margin_net` = posterior mean and variance of the observation block (0.0 / 4e-18, including a
 singular Σ from declared copies); a report is a rank-1 update (Sherman–Morrison, 2e-15; an update in the Laplacian's null space is
