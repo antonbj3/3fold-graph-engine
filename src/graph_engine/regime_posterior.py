@@ -251,6 +251,59 @@ class RegimePosterior:
                 best = (float(cells[c].mean()), now - after)
         return best
 
+    def model_check_pair(self, reliability: float = 0.95) -> tuple[tuple[float, float], float]:
+        """((x1, x2), expected drop of H(P(two transitions)) over the FOUR joint outcomes) — the two probes bought
+        together. `model_check_probe` buys one probe at a time, and a second transition is only exposed by probes on
+        both sides of both transitions: after one answer the single-transition family usually still explains everything,
+        so the next guard probe goes to another pair (e21: the guard share flags 3-4 of 25 two-transition pairs, 21 are
+        missed). Exact on the fixed partition — the same point likelihood as `model_check_probe`, applied twice, so the
+        predicted gain is the realized expectation (test). Cost: cells² × 4 outcomes, so the candidates are the top-12
+        cells by single-probe model-check gain. Zero when the collision family is off (p_two = 0)."""
+        cells, w, F, post = self._with_probes()
+        mid = 0.5 * (self.lo + self.hi)
+        if len(post) == self._n_one:
+            return ((mid, mid), 0.0)
+        two = np.zeros(len(post)); two[self._n_one:] = 1.0
+        h = lambda p: 0.0 if p <= 0 or p >= 1 else -(p * math.log2(p) + (1 - p) * math.log2(1 - p))
+        now = h(float(post @ two))
+
+        def like_of(f, sg):
+            ff = f if sg > 0 else 1 - f
+            return ff * reliability + (1 - ff) * (1 - reliability)
+
+        single = []
+        for c in range(len(cells)):
+            f = F[:, c]; after = 0.0
+            for sg in (1, -1):
+                like = like_of(f, sg)
+                pout = float(post @ like)
+                if pout <= 0:
+                    continue
+                after += pout * h(float((post * like / pout) @ two))
+            single.append((now - after, c))
+        cand = [c for _, c in sorted(single, reverse=True)[:12]]
+        best = ((float(cells[cand[0]].mean()), float(cells[cand[0]].mean())), -1.0)
+        for i, c1 in enumerate(cand):
+            f1 = F[:, c1]
+            for c2 in cand[i + 1:]:
+                f2 = F[:, c2]; after = 0.0
+                for s1 in (1, -1):
+                    l1 = like_of(f1, s1)
+                    p1 = float(post @ l1)
+                    if p1 <= 0:
+                        continue
+                    q1 = post * l1 / p1
+                    for s2 in (1, -1):
+                        l2 = like_of(f2, s2)
+                        p2 = float(q1 @ l2)
+                        if p2 <= 0:
+                            continue
+                        after += p1 * p2 * h(float((q1 * l2 / p2) @ two))
+                if now - after > best[1]:
+                    x1, x2 = float(cells[c1].mean()), float(cells[c2].mean())
+                    best = ((min(x1, x2), max(x1, x2)), now - after)
+        return best
+
     def collision(self, flag_at: float = 0.5) -> dict:
         """Posterior mass on the collision family (two transitions) and the Bayes factor against
         the declared single-transition reading. A pair is flagged when that mass passes `flag_at`:

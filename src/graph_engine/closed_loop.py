@@ -27,6 +27,16 @@ random numbers (`engine+guard`, `engine+reliability`, `engine+replay`, `engine+a
                 rule flagged 0 of 25 two-transition pairs, because a probe that would expose a second transition lowers
                 no sign potential while the single-transition reading still fits. Guard spending is capped so that it
                 stays within one cost unit of `guard` × budget.
+  +guard2       the same share, spent on PAIRS: regime_posterior.model_check_pair per unit cost of both probes, which
+                are then executed back to back on that pair. Motivated by what +guard leaves on the table: a second
+                transition is only exposed by probes on both sides of both transitions, and model_check_probe buys one
+                at a time — after one answer the single-transition family usually still explains everything, so the next
+                guard probe goes to another pair (3-4 of 25 collisions flagged, 21 missed). Mutually exclusive with
+                +guard, same cap on the guard spend. Measured: alone it is WORSE than +guard (1 of 25); it pays only
+                together with +replay and +majority (6 and 7 of 25) — see the numbers below.
+  +majority     the box claims are read as majority reports (RegimePosterior claim_model="majority") instead of
+                pointwise r-accurate labels — the reading the +reliability result points at as the seat of the loop's
+                over-confidence.
   +reliability  claims stop entering at the fixed 0.75. After each probe the loop asks, per (pair, bin) question, every
                 claim's ROOT source to vote its sign (copies collapse onto their parent's root, which is what the World's
                 frozenset carries), pins the truth of the questions a probe has landed in (majority of the probe signs in
@@ -53,7 +63,15 @@ Measured (e21, 40 worlds, budget 40; wrong measure at 40, calibration gap = actu
   the gap falls 0.28 (first 10) → 0.12 (last 10) against the engine's own 0.27 → 0.29. The learned priors after 40 worlds:
   p_two 0.052 (true 0.05), mean source reliability 0.82 (true 0.88 over the five reporting roots), p_flip 0.49 against a
   true 0.63 — p_flip keeps a downward bias, because a transition no probe brackets leaves its family at prior mass.
-  +all: 1.27, gap 0.31, 4 tp of 25 with 0 false flags — the best collision detection measured here.
+  +all: 1.27, gap 0.31, 4 tp of 25 with 0 false flags.
+  +guard2 (re-run of e21, same 40 worlds): ALONE it is worse than +guard — 1.38 (+0.135 ± 0.040 paired), 1 tp of 25:
+  the pair of probes is bought at twice the cost and the two answers mostly confirm one transition, so the guard share
+  buys half as many chances. Combined it is the opposite: +guard2+replay 1.19 (−0.056 ± 0.048, 24 of 40 worlds),
+  gap 0.03, 6 tp 1 fp; +guard2+replay+majority 1.08 (−0.164 ± 0.053, 27 of 40), gap −0.08, 7 tp 2 fp of 25 — the best
+  configuration measured here on BOTH axes. The reason the combination works is the prior: with the default p_two = 0.05
+  a pair needs a large likelihood ratio to pass flag_at 0.5, and replay's learned p_two (0.052–0.070) plus the majority
+  reading of the box claims (which no longer force the single-transition family to fit) let the pair's evidence land.
+  Collision detection is 7 of 25, not 25 of 25: budget 40 over 12 pairs is 2–3 guard probes per pair.
 
 The world's sign functions are the one-transition mechanisms of e17 in normalized coordinates (a peak: resonance amplitude
 against drive frequency, harvested yield against effort, Hall–Petch strength against inverse grain size with its reversal;
@@ -221,7 +239,9 @@ def _flags(policy: str) -> set:
     f = set(parts[1:])
     if "all" in f:
         f = {"guard", "reliability", "replay"}
-    if f - {"guard", "reliability", "replay"}:
+    if f - {"guard", "guard2", "reliability", "replay", "majority"}:
+        raise ValueError(policy)
+    if "guard" in f and "guard2" in f:
         raise ValueError(policy)
     return f
 
@@ -241,6 +261,9 @@ def run(world: World, policy: str, budget: float, instruments=((1.0, 0.8), (4.0,
     flags = _flags(policy)
     base = policy.split("+")[0]
     rng = np.random.default_rng(seed)
+    if "majority" in flags:
+        kw = dict(kw)
+        kw.setdefault("claim_model", "majority")
     if "replay" in flags and replay_prior:
         kw = dict(kw)
         kw.setdefault("p_flip", float(replay_prior["p_flip"]))
@@ -253,17 +276,23 @@ def run(world: World, policy: str, budget: float, instruments=((1.0, 0.8), (4.0,
     next_rec, next_rel = record_every, rel_every
     while spent < budget:
         kind = "value"
-        if "guard" in flags and spent_guard < guard * budget:
-            fits = [(c, r) for c, r in instruments if spent_guard + c <= guard * budget + 1.0]
+        if ("guard" in flags or "guard2" in flags) and spent_guard < guard * budget:
+            k = 2 if "guard2" in flags else 1                  # +guard2 buys the PAIR of probes back to back
+            fits = [(c, r) for c, r in instruments if spent_guard + k * c <= guard * budget + 1.0]
             if fits:
                 kind = "model"
                 best = (-1.0, None)
                 for p in range(world.n_pairs):
                     for c, r in fits:
-                        x, gain = posts[p].model_check_probe(r)
-                        if gain / c > best[0]:
-                            best = (gain / c, (p, x, c, r))
-                p, x, c, r = best[1]
+                        if k == 2:
+                            (x1, x2), gain = posts[p].model_check_pair(r)
+                            xs_now = [x1, x2]
+                        else:
+                            x, gain = posts[p].model_check_probe(r)
+                            xs_now = [x]
+                        if gain / (k * c) > best[0]:
+                            best = (gain / (k * c), (p, xs_now, c, r))
+                p, xs_now, c, r = best[1]
         if kind == "model":
             pass
         elif base == "random":
@@ -289,12 +318,15 @@ def run(world: World, policy: str, budget: float, instruments=((1.0, 0.8), (4.0,
             p, x, c, r = best[1]
         else:
             raise ValueError(policy)
-        ans = world.probe(p, x, r, rng)
-        posts[p].add_probe(x, ans, r)
-        probe_log[p].append((float(x), int(ans), float(r)))
-        spent += c
-        if kind == "model":
-            spent_guard += c
+        if kind != "model":
+            xs_now = [x]
+        for x in xs_now:
+            ans = world.probe(p, x, r, rng)
+            posts[p].add_probe(x, ans, r)
+            probe_log[p].append((float(x), int(ans), float(r)))
+            spent += c
+            if kind == "model":
+                spent_guard += c
         if "reliability" in flags and spent >= next_rel:
             _push_reliabilities(posts, roots_of, _estimate_roots(world, posts, roots_of, probe_log, rel_bins), default_rel)
             next_rel = spent + rel_every

@@ -85,3 +85,26 @@ def test_replay_learns_the_worlds_priors_from_its_own_history():
     assert abs(state["reliability"] - float(np.mean(World().source_reliability[:5]))) < 0.15, state
     assert state["p_flip"] > DEFAULT_PRIOR["p_flip"] + 0.10, state            # it does move toward the truth
     assert abs(state["p_flip"] - World().p_transition) < 0.25, state          # but keeps a downward bias of ~0.15
+
+
+def test_guard2_spends_its_share_on_pairs_of_probes_bought_together():
+    """+guard2 buys model_check_pair: both probes are executed back to back on the same pair and both are charged to
+    the guard share, which is never exceeded by more than one cost unit. A pair costs twice an instrument, so the
+    guard spend is even; the last pair that does not fit is not bought (share 0.1 on budget 20 buys one pair)."""
+    w = World(seed=5, n_pairs=4)
+    for share in (0.1, 0.25, 0.5):
+        r = run(w, "engine+guard2", budget=20, seed=5, guard=share)
+        assert 0 < r["spent_guard"] <= share * 20 + 1.0, (share, r["spent_guard"])
+        assert r["spent_guard"] % 2 == 0, (share, r["spent_guard"])
+    assert run(w, "engine+guard2+replay+majority", budget=20, seed=5)["spent_guard"] > 0
+    for bad in ("engine+guard+guard2", "engine+guard3"):
+        try:
+            run(w, bad, budget=4, seed=0); assert False, bad
+        except ValueError:
+            pass
+
+
+def test_majority_flag_reads_claims_as_majority_reports():
+    w = World(seed=5, n_pairs=4)
+    r = run(w, "engine+majority", budget=8, seed=5)
+    assert r["believed_wrong"] > run(w, "engine", budget=8, seed=5)["believed_wrong"]   # less sure inside wide boxes

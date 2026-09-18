@@ -306,6 +306,13 @@ Three additions to the loop, same 40 worlds, paired against `engine` (1.24 at bu
   box, likelihood r·S(k(f−½)) instead of r-accurate at every point): the calibration gap halves, 0.23 ± 0.10 → 0.12 ± 0.08, and the
   wrong measure is not worse (1.20 → 1.17; 12 worlds). This is the fix the reliability experiment pointed at. Kept as an option,
   exposed in the profile; the default stays pointwise so the earlier e4 numbers remain reproducible.
+- **pairs of model-check probes + replay + majority** (`model_check_pair`: the two cells whose joint answers drop the family entropy
+  most, exact over four outcomes): pairs ALONE regress (1 of 25, wrong +0.135 — a pair costs twice as much and the two answers usually
+  confirm one transition); with replay 6 of 25; with replay and the majority reading **7 of 25 with 2 false flags, wrong measure 1.08
+  (−0.164 ± 0.053 against the engine, 27 of 40 wins), calibration gap −0.08** (slightly under-confident). This is the best configuration
+  measured: collisions found only when the prior p_two is learned from history and the box claims are read as majority reports, so
+  the single-transition family is no longer forced to fit. e28 explains the rest of the hole: with 12 probes on one pair both readers
+  find the second transition in 31 of 40; the loop gives each pair ~3. The remaining 18 of 25 are an allocation problem.
 
 **One quadratic form (e24, `precision_form`).** Exact to machine precision: effective resistance = (e_i−e_j)ᵀJ⁺(e_i−e_j) (1e-16);
 the GLS estimate and variance of `margin_net` = posterior mean and variance of the observation block (0.0 / 4e-18, including a

@@ -6,11 +6,13 @@ spent. Policies: engine (expected potential drop per cost, lineage-weighted clai
 independent), random. Also: are the two-transition pairs flagged by the collision family, and how often is a
 one-transition pair falsely flagged.
 
-Three additions, each a variant of the same run so every policy sees the same worlds and the same random stream:
-  engine+guard        a share of the budget (0.1 / 0.2 / 0.3) spent on model_check_probe instead of best_probe
-  engine+reliability  per-source reliability estimated online from agreement + probe anchors, pushed into the claims
+Additions, each a variant of the same run so every policy sees the same worlds and the same random stream:
+  engine+guard        a share (0.2) of the budget spent on model_check_probe instead of best_probe: one probe at a time
+  engine+guard2       the same share spent on model_check_pair: the two probes that jointly expose a second transition,
+                      bought and executed together (the 21 of 25 collisions +guard misses are pairs where one answer
+                      leaves the single-transition family explaining everything)
   engine+replay       the priors of world k come from the realized outcomes of worlds 1..k−1 (empirical Bayes)
-  engine+all          the three together
+  engine+guard2+replay, engine+guard2+replay+majority (majority = the box claims read as majority reports, claim_model)
 Reported per policy: wrong measure at cost 0 / 20 / 40, believed wrong at 40, the calibration gap (actual − believed),
 collision tp/fn/fp, and the paired difference against `engine` at the end of the budget."""
 import json, sys
@@ -21,8 +23,8 @@ from graph_engine.closed_loop import World, run, DEFAULT_PRIOR
 
 N, BUDGET = 40, 40
 POLICIES = {"random": {}, "copies": {}, "engine": {},
-            "engine+guard": {"guard": 0.2}, "engine+guard0.1": {"guard": 0.1}, "engine+guard0.3": {"guard": 0.3},
-            "engine+reliability": {}, "engine+replay": {}, "engine+all": {"guard": 0.2}}
+            "engine+guard": {"guard": 0.2}, "engine+guard2": {"guard": 0.2}, "engine+replay": {},
+            "engine+guard2+replay": {"guard": 0.2}, "engine+guard2+replay+majority": {"guard": 0.2}}
 REPLAY = [p for p in POLICIES if "replay" in p or p.endswith("all")]
 
 curves = {p: [] for p in POLICIES}
@@ -38,7 +40,7 @@ out_path = Path(__file__).parent / "e21_results.json"
 for s in range(N):
     w = World(seed=s)
     for pol, kw in POLICIES.items():
-        name = "engine+guard" if pol.startswith("engine+guard") else pol      # guard0.1 / guard0.3 are the same policy
+        name = pol
         if pol in REPLAY:
             prior_trace[pol].append(dict(state[pol]))
         r = run(w, name, BUDGET, seed=s, replay_prior=state.get(pol), **kw)
