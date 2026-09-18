@@ -356,3 +356,32 @@ def test_guards_found_in_review():
     assert np.allclose(exact, np.diag(np.linalg.inv(L0.toarray()[6:, 6:])), atol=1e-9)             # exact by default
     est = GraphInterface.export(L0, np.arange(6), estimate_g_with=4096).g
     assert 0.0 < np.median(np.abs(est - exact) / exact) < 0.1                                       # an estimate only on request
+
+
+def test_model_check_probe_targets_the_gap_the_value_rule_ignores():
+    """Two + claims at both ends: the sign potential is nearly settled by closure, but a − in between would mean two
+    transitions. The model-check probe goes between the claims and its realized information about the family is the
+    expectation it predicted (exact Bayes on the fixed partition)."""
+    from graph_engine.regime_posterior import RegimePosterior
+    rp = RegimePosterior(0.0, 1.0); rp.add_claim(0.05, 0.25, 1, 3); rp.add_claim(0.75, 0.95, 1, 3)
+    x, gain = rp.model_check_probe(0.95)
+    assert 0.25 < x < 0.75 and gain > 0
+    h = lambda p: -(p * np.log2(p) + (1 - p) * np.log2(1 - p))
+    before = h(rp.collision()["p_two_transitions"]); realized = 0.0
+    for sg in (1, -1):
+        cells, _, F, post = rp._with_probes(); c = min(int(np.searchsorted(cells[:, 1], x, side="left")), len(cells) - 1)
+        f = F[:, c]; like = (f if sg > 0 else 1 - f) * 0.95 + (1 - (f if sg > 0 else 1 - f)) * 0.05; pout = float(post @ like)
+        trial = RegimePosterior(0.0, 1.0); trial.claims = list(rp.claims); trial.add_probe(x, sg, 0.95)
+        realized += pout * h(trial.collision()["p_two_transitions"])
+    assert abs((before - realized) - gain) < 1e-9
+
+
+def test_per_claim_reliability_changes_the_reading():
+    from graph_engine.regime_posterior import RegimePosterior
+    a, b = RegimePosterior(0.0, 1.0), RegimePosterior(0.0, 1.0)
+    a.add_claim(0.2, 0.4, 1, 1, reliability=0.55); b.add_claim(0.2, 0.4, 1, 1, reliability=0.95)
+    assert a.p_plus(0.3) < b.p_plus(0.3)
+    try:
+        a.add_claim(0.2, 0.4, 1, 1, reliability=0.3); assert False
+    except ValueError:
+        pass

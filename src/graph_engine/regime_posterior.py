@@ -83,8 +83,18 @@ class RegimePosterior:
     probes: list = field(default_factory=list)   # (x, sign, reliability)
     _cache: tuple | None = None
 
-    def add_claim(self, a: float, b: float, sign: int, n_eff: float = 1.0) -> None:
-        self.claims.append((max(a, self.lo), min(b, self.hi), 1 if sign > 0 else -1, float(n_eff)))
+    def add_claim(self, a: float, b: float, sign: int, n_eff: float = 1.0, reliability: float | None = None) -> None:
+        """reliability: this claim's own (e.g. from source_reliability); None = the posterior's default."""
+        r = self.reliability if reliability is None else float(reliability)
+        if not 0.5 <= r < 1.0:
+            raise ValueError(f"claim reliability must be in [0.5, 1): {r}")
+        self.claims.append((max(a, self.lo), min(b, self.hi), 1 if sign > 0 else -1, float(n_eff), r))
+        self._cache = None
+
+    def set_claim_reliabilities(self, rs: list[float]) -> None:
+        """Replace every claim's reliability in order (used when reliabilities are re-estimated during a loop)."""
+        assert len(rs) == len(self.claims)
+        self.claims = [(a, b, sg, n, float(r)) for (a, b, sg, n, _), r in zip(self.claims, rs)]
         self._cache = None
 
     def add_probe(self, x: float, sign: int, reliability: float = 0.95, weight: float = 1.0) -> None:
@@ -98,7 +108,7 @@ class RegimePosterior:
         if self._cache is not None:
             return self._cache
         pts = {self.lo, self.hi}
-        for a, b, _, _ in self.claims:
+        for a, b, *_ in self.claims:
             pts.update((a, b))
         pts.update(np.linspace(self.lo, self.hi, self.n_grid + 1).tolist())
         edges = np.array(sorted(pts))
@@ -135,8 +145,8 @@ class RegimePosterior:
         logp[2:n_one] = math.log(max(p1, 1e-12) / (2 * max(nt, 1)))
         self._n_one = n_one
         w = cells[:, 1] - cells[:, 0]
-        lr, lq = math.log(self.reliability), math.log(1 - self.reliability)
-        for a, b, sg, n in self.claims:
+        for a, b, sg, n, rel in self.claims:
+            lr, lq = math.log(rel), math.log(1 - rel)
             ov = np.clip(np.minimum(cells[:, 1], b) - np.maximum(cells[:, 0], a), 0, None)
             if ov.sum() <= 0:                                     # zero-width claim: use the containing cell
                 ov = ((cells[:, 0] <= a) & (a <= cells[:, 1])).astype(float)
@@ -205,6 +215,32 @@ class RegimePosterior:
                 after += pout * float(self._u(qq) @ w)
             if now - after > best[1]:
                 best = (float(x), now - after)
+        return best
+
+    def model_check_probe(self, reliability: float = 0.95) -> tuple[float, float]:
+        """(x, expected drop of the entropy of the FAMILY indicator one-vs-two transitions). The value rule `best_probe`
+        buys probes that lower the sign potential; when the one-transition family already explains the claims it never
+        buys the probes that would expose a second transition (e21: 0 of 25 two-transition pairs flagged). This probe is
+        bought against the model error instead: the expected drop of H(P(two transitions)) over the two outcomes, exact
+        on the fixed partition. Zero when the collision family is off (p_two = 0)."""
+        cells, w, F, post = self._with_probes()
+        if len(post) == self._n_one:
+            return (0.5 * (self.lo + self.hi), 0.0)
+        two = np.zeros(len(post)); two[self._n_one:] = 1.0
+        h = lambda p: 0.0 if p <= 0 or p >= 1 else -(p * math.log2(p) + (1 - p) * math.log2(1 - p))
+        now = h(float(post @ two))
+        best = (float(cells[0].mean()), -1.0)
+        for c in range(len(cells)):
+            f = F[:, c]; after = 0.0
+            for sg in (1, -1):
+                like = (f if sg > 0 else 1 - f) * reliability + (1 - (f if sg > 0 else 1 - f)) * (1 - reliability)
+                pout = float(post @ like)
+                if pout <= 0:
+                    continue
+                q = post * like / pout
+                after += pout * h(float(q @ two))
+            if now - after > best[1]:
+                best = (float(cells[c].mean()), now - after)
         return best
 
     def collision(self, flag_at: float = 0.5) -> dict:
