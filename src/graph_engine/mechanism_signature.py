@@ -12,6 +12,10 @@ reduced to a short signature of how the solution behaves where it stops being un
     odd            F(−x, μ) = −F(x, μ) on a grid of (x, μ), not only on the branch: a symmetric (pitchfork-type) model, which also has order 2 but keeps the
                    x = 0 branch for every μ
     x_c, mu_c      where it happens (NOT part of the distance: location is field-specific, the mechanism is not)
+    converged      the discretization was refined (n doubled / ds halved, bounded) until n_limit AND the exponents
+                   repeated. converged = False + n_limit = 0 means "nothing found at this resolution", which is NOT the
+                   same statement as a fold-free model (converged = True, n_limit = 0): a sharp fold is stepped over
+                   entirely at a coarse step and reads as a clean zero. Read n_limit together with converged.
 
 Two models with the same (n_limit > 0, order, gamma, odd) lose uniqueness the same way, whatever their subject.
 `distance` compares only those entries. The three textbook cases named in this repository's README — thermal runaway,
@@ -44,10 +48,40 @@ class Signature:
     odd: bool
     x_c: float
     mu_c: float
+    converged: bool = True          # the discretization was refined and the count + exponents repeated (see _adaptive)
+
+
+def _agree(a: Signature, b: Signature, tol_order: float = 0.15, tol_gamma: float = 0.1) -> bool:
+    """Same mechanism read at two resolutions: same number of limit points and, if there is one, the same exponents.
+    A MISSED fold (n_limit = 0 at a coarse step, 1 at the finer one) fails here, which is the whole point."""
+    if a.n_limit != b.n_limit:
+        return False
+    if a.n_limit == 0:
+        return True
+    if not (np.isfinite(a.order) and np.isfinite(b.order) and np.isfinite(a.gamma) and np.isfinite(b.gamma)):
+        return False
+    return abs(a.order - b.order) < tol_order and abs(a.gamma - b.gamma) < tol_gamma
+
+
+def _adaptive(at_resolution: Callable[[int], Signature], max_refinements: int = 4) -> Signature:
+    """Refine the discretization (halve ds / double n) until two successive resolutions read the SAME signature.
+    Returns the finest result; if the readings never repeat, returns it with converged = False instead of silently
+    reporting whatever the coarse grid happened to show (a sharp fold is missed entirely at a coarse step)."""
+    coarse = at_resolution(0)
+    for level in range(1, max_refinements + 1):
+        fine = at_resolution(level)
+        if _agree(coarse, fine) and coarse.converged and fine.converged:
+            fine.converged = True
+            return fine
+        coarse = fine
+    coarse.converged = False
+    return coarse
 
 
 def signature(F: Callable[[float, float], float], x_range: tuple[float, float], mu_bracket: tuple[float, float],
-              n: int = 4001, window: tuple[float, float] = (1e-3, 3e-2)) -> Signature:
+              n: int = 4001, window: tuple[float, float] = (1e-3, 3e-2), adaptive: bool = True) -> Signature:
+    if adaptive:
+        return _adaptive(lambda lvl: signature(F, x_range, mu_bracket, n=(n - 1) * 2 ** lvl + 1, window=window, adaptive=False))
     xs = np.linspace(*x_range, n); mu = np.full(n, np.nan)
     for k, x in enumerate(xs):
         a, b = F(x, mu_bracket[0]), F(x, mu_bracket[1])
@@ -69,6 +103,8 @@ def signature(F: Callable[[float, float], float], x_range: tuple[float, float], 
         return Signature(0, float("nan"), float("nan"), float("nan"), odd, float("nan"), float("nan"))
     k0 = idx[0]; sl = slice(max(k0 - 3, 0), k0 + 4); c = np.polyfit(xs[sl], mu[sl], 2); xc = -c[1] / (2 * c[0]); muc = float(np.polyval(c, xc))
     span = xs[-1] - xs[0]; dx = np.abs(xs - xc); dm = np.abs(muc - mu); m = (dx > window[0] * span) & (dx < window[1] * span) & (dm > 0)
+    if int(m.sum()) < 4:
+        return Signature(len(idx), float("nan"), float("nan"), float("nan"), odd, float(xc), muc, False)
     order = float(np.polyfit(np.log(dx[m]), np.log(dm[m]), 1)[0])
     h = 1e-6 * span; stiff = np.array([abs(F(x + h, mm) - F(x - h, mm)) / (2 * h) for x, mm in zip(xs[m], mu[m])]); g = stiff > 0
     gamma = float(np.polyfit(np.log(dm[m][g]), np.log(stiff[g]), 1)[0])
@@ -85,13 +121,22 @@ def distance(a: Signature, b: Signature) -> float:
 
 
 def signature_vector(F: Callable[[np.ndarray, float], np.ndarray], x0: np.ndarray, mu0: float, ds: float = 0.01, n_steps: int = 3000,
-                     mu_stop: tuple[float, float] = (-np.inf, np.inf), window: tuple[float, float] = (1e-3, 3e-2)) -> Signature:
+                     mu_stop: tuple[float, float] = (-np.inf, np.inf), window: tuple[float, float] = (1e-3, 3e-2),
+                     direction: int = 1, adaptive: bool = True) -> Signature:
     """The same signature for a VECTOR state x ∈ ℝⁿ, F(x, μ) = 0 traced by pseudo-arclength continuation (Keller 1977).
     A limit point is where the tangent's μ-component changes sign; there σ_min(∂F/∂x) → 0 and the curve turns back.
     order:  μ_c − μ ∝ |x − x_c|^order along the curve (x measured by arclength from the fold)
     gamma:  σ_min(∂F/∂x) ∝ |μ_c − μ|^gamma
     odd:    F(−x, μ) = −F(x, μ) on a grid.
+    direction: +1 traces the branch in the direction of increasing μ at the start, −1 the other way (the fold need not lie
+    on the increasing-μ side).
+    Step control: every corrector step is checked (fsolve ier); a failed step is retried with ds/2 up to 6 times before the
+    branch is stopped. The STEP SIZE itself is then refined (ds, ds/2, ... ds/16) until the limit-point count and the
+    exponents repeat: a sharp fold is stepped over at a coarse ds and would otherwise be reported as "no limit point".
     Scalar models give the same numbers as `signature` (test); the fold of a coupled two-state model reads order 2, γ = 1/2."""
+    if adaptive:
+        return _adaptive(lambda lvl: signature_vector(F, x0, mu0, ds=ds / 2 ** lvl, n_steps=n_steps * 2 ** lvl, mu_stop=mu_stop,
+                                                      window=window, direction=direction, adaptive=False))
     from scipy.optimize import fsolve
     x = np.asarray(x0, float); n = len(x); mu = float(mu0)
     x = fsolve(lambda v: F(v, mu), x, xtol=1e-12)
@@ -100,17 +145,29 @@ def signature_vector(F: Callable[[np.ndarray, float], np.ndarray], x0: np.ndarra
         for k in range(n):
             e = np.zeros(n); e[k] = h; Jx[:, k] = (F(x + e, mu) - F(x - e, mu)) / (2 * h)
         Jm[:] = (F(x, mu + h) - F(x, mu - h)) / (2 * h); return Jx, Jm
-    Jx, Jm = J(x, mu); t = np.linalg.lstsq(np.c_[Jx, Jm], -np.zeros(n), rcond=None)[0]
-    null = np.linalg.svd(np.c_[Jx, Jm])[2][-1]; t = null / np.linalg.norm(null); t = t if t[-1] > 0 else -t
+    Jx, Jm = J(x, mu)
+    null = np.linalg.svd(np.c_[Jx, Jm])[2][-1]; t = null / np.linalg.norm(null); t = t if t[-1] * direction > 0 else -t
     xs, mus, sig = [x.copy()], [mu], [np.linalg.svd(Jx, compute_uv=False)[-1]]
+    step_failed = False
     for _ in range(n_steps):
-        guess = np.r_[x, mu] + ds * t
-        def G(v):
-            return np.r_[F(v[:n], v[n]), t @ (v - np.r_[x, mu]) - ds]
-        v = fsolve(G, guess, xtol=1e-12); x, mu = v[:n], float(v[n])
+        h, v = ds, None
+        for _retry in range(7):                      # the corrector may fail near a sharp fold: retry with ds/2, 6 times
+            base = np.r_[x, mu]
+            def G(w, h=h, base=base, t=t):
+                return np.r_[F(w[:n], w[n]), t @ (w - base) - h]
+            w, _info, ier, _msg = fsolve(G, base + h * t, xtol=1e-12, full_output=True)
+            if ier == 1 and np.all(np.isfinite(w)) and np.max(np.abs(G(w))) < 1e-8:
+                v = w; break
+            h *= 0.5
+        if v is None:                                # corrector will not converge here: stop the branch, flag it
+            step_failed = True; break
+        x, mu = v[:n], float(v[n])
         if not (mu_stop[0] <= mu <= mu_stop[1]) or not np.all(np.isfinite(v)):
             break
-        Jx, Jm = J(x, mu); null = np.linalg.svd(np.c_[Jx, Jm])[2][-1]; tn = null / np.linalg.norm(null)
+        Jx, Jm = J(x, mu)
+        if not (np.all(np.isfinite(Jx)) and np.all(np.isfinite(Jm))):   # F is not defined next to this point (domain edge)
+            step_failed = True; break                                   # -> stop the branch here, do not hand NaN to svd
+        null = np.linalg.svd(np.c_[Jx, Jm])[2][-1]; tn = null / np.linalg.norm(null)
         t = tn if tn @ t > 0 else -tn
         xs.append(x.copy()); mus.append(mu); sig.append(np.linalg.svd(Jx, compute_uv=False)[-1])
     xs, mus, sig = np.array(xs), np.array(mus), np.array(sig)
@@ -120,9 +177,19 @@ def signature_vector(F: Callable[[np.ndarray, float], np.ndarray], x0: np.ndarra
     gx = np.linspace(0.05, 1.0, 7)[:, None] * (np.abs(xs).max(0) + 1e-9)[None, :]; gm = np.linspace(mus.min(), mus.max(), 5)
     odd = all(np.allclose(F(-g, m), -np.asarray(F(g, m)), atol=1e-9 * (1 + np.abs(F(g, m)).max())) for g in gx for m in gm)
     if not idx:
-        return Signature(0, float("nan"), float("nan"), float("nan"), odd, float("nan"), float("nan"))
+        # no limit point in what was traced; if the trace was cut short by a failed corrector step that is NOT the same
+        # statement as "this model has no fold" — say so instead of returning a clean zero
+        return Signature(0, float("nan"), float("nan"), float("nan"), odd, float("nan"), float("nan"), not step_failed)
     k0 = idx[0]; sl = slice(max(k0 - 3, 0), k0 + 4); c = np.polyfit(s_arc[sl], mus[sl], 2); sc = -c[1] / (2 * c[0]); muc = float(np.polyval(c, sc))
     span = s_arc[-1] - s_arc[0]; dxs = np.abs(s_arc - sc); dm = np.abs(muc - mus); m = (dxs > window[0] * span) & (dxs < window[1] * span) & (dm > 0) & (sig > 0)
+    if int(m.sum()) < 6:
+        # a SHARP fold occupies a small fraction of the traced arclength, so a window measured in % of the span can be
+        # empty (silently NaN before). Fall back to a band measured in STEPS from the fold: it shrinks with ds, so
+        # refining ds moves the fit into the quadratic region instead of leaving it wherever the span put it.
+        k = np.arange(len(mus)); dk = np.abs(k - k0)
+        m = (dk >= 3) & (dk <= 30) & (dm > 0) & (sig > 0)
+    if int(m.sum()) < 4:                     # too few points next to the fold to fit a slope: unreadable, not "order NaN"
+        return Signature(len(idx), float("nan"), float("nan"), float("nan"), bool(odd), float("nan"), muc, False)
     order = float(np.polyfit(np.log(dxs[m]), np.log(dm[m]), 1)[0]); gamma = float(np.polyfit(np.log(dm[m]), np.log(sig[m]), 1)[0])
     xc = xs[np.argmin(np.abs(s_arc - sc))]
     return Signature(len(idx), order, 1.0 / order, gamma, bool(odd), float(np.linalg.norm(xc)), muc)
