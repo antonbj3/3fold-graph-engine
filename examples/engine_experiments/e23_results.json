@@ -1,0 +1,416 @@
+{
+ "corpus": {
+  "n_abstracts": 7201,
+  "n_recent_hepex": 6000,
+  "years": [
+   1994,
+   2026
+  ],
+  "source": "arXiv API export.arxiv.org, queries cat:hep-ex; cat:hep-ex+AND+abs:%22Higgs+boson+mass%22; cat:hep-ex+AND+abs:%22W+boson+mass%22; cat:hep-ex+AND+abs:%22mass+of+the+Higgs+boson%22; cat:hep-ex+AND+abs:%22top+quark+mass%22"
+ },
+ "coverage": {
+  "fraction_with_at_least_one_claim_recent_sample": 0.117,
+  "fraction_whole_corpus": 0.146,
+  "claims_total": 1728,
+  "claims_per_abstract_mean": 0.24
+ },
+ "quantities": {
+  "top_quark_mass": {
+   "n_reports": 93,
+   "collaborations": {
+    "CDF": 37,
+    "ATLAS": 21,
+    "D0": 17,
+    "CMS": 12,
+    "(none)": 6
+   },
+   "per_paper": {
+    "m_hat": 172.7337,
+    "s": 0.1085,
+    "n_eff": 93.0,
+    "chi2_Q": 63.55,
+    "dof": 92,
+    "p_agree": 0.99,
+    "kind": "OK"
+   },
+   "per_collaboration": {
+    "m_hat": 172.7533,
+    "s": 0.6404,
+    "n_eff": 10.0,
+    "chi2_Q": 1.54,
+    "dof": 9,
+    "p_agree": 0.0,
+    "kind": "CONTRADICTION"
+   },
+   "pdg": {
+    "value": 172.6,
+    "sigma": 0.27,
+    "node": "Q007TP",
+    "note": "OUR AVERAGE, LHC+Tevatron; TEVEWWG Tevatron average quoted there is 174.30 +- 0.35 +- 0.54"
+   },
+   "values_min_max": [
+    164.5,
+    179.0
+   ]
+  },
+  "W_boson_mass": {
+   "n_reports": 35,
+   "collaborations": {
+    "CDF": 11,
+    "D0": 10,
+    "(none)": 6,
+    "LHCb": 2,
+    "ATLAS": 2,
+    "OPAL": 1,
+    "ALEPH": 1,
+    "DELPHI": 1,
+    "CMS": 1
+   },
+   "per_paper": {
+    "m_hat": 80.375,
+    "s": 0.0032,
+    "n_eff": 35.0,
+    "chi2_Q": 81.48,
+    "dof": 34,
+    "p_agree": 8.97e-06,
+    "kind": "CONTRADICTION"
+   },
+   "per_collaboration": {
+    "m_hat": 80.364,
+    "s": 0.0051,
+    "n_eff": 14.0,
+    "chi2_Q": 9.93,
+    "dof": 13,
+    "p_agree": 0.0,
+    "kind": "CONTRADICTION"
+   },
+   "pdg": {
+    "value": 80.3625,
+    "sigma": 0.0077,
+    "node": "S043M",
+    "note": "OUR EVALUATION, LHC-TeVatron M_W Working Group"
+   },
+   "values_min_max": [
+    80.26,
+    80.483
+   ]
+  },
+  "Higgs_boson_mass": {
+   "n_reports": 9,
+   "collaborations": {
+    "ATLAS": 8,
+    "(none)": 1
+   },
+   "per_paper": {
+    "m_hat": 125.2313,
+    "s": 0.0701,
+    "n_eff": 9.0,
+    "chi2_Q": 6.84,
+    "dof": 8,
+    "p_agree": 0.553,
+    "kind": "OK"
+   },
+   "per_collaboration": {
+    "m_hat": 125.3519,
+    "s": 0.283,
+    "n_eff": 2.0,
+    "chi2_Q": 0.13,
+    "dof": 1,
+    "p_agree": 0.0,
+    "kind": "CONTRADICTION"
+   },
+   "pdg": {
+    "value": 125.13,
+    "sigma": 0.11,
+    "node": "S126M",
+    "note": "OUR AVERAGE, error includes scale factor 1.5"
+   },
+   "values_min_max": [
+    124.97,
+    125.5
+   ]
+  }
+ },
+ "top_mass_by_era": {
+  "upto_2011_tevatron_era": {
+   "m_hat": 172.8623,
+   "s": 0.2983,
+   "n_eff": 50.0,
+   "chi2_Q": 19.12,
+   "dof": 49,
+   "p_agree": 1.0,
+   "kind": "OK",
+   "n": 50
+  },
+  "from_2012_lhc_era": {
+   "m_hat": 172.7141,
+   "s": 0.1165,
+   "n_eff": 43.0,
+   "chi2_Q": 44.22,
+   "dof": 42,
+   "p_agree": 0.378,
+   "kind": "OK",
+   "n": 43
+  },
+  "median_tevatron_era": 173.0,
+  "median_lhc_era": 173.06
+ },
+ "hand_check": {
+  "n_abstracts": 30,
+  "seed": 24,
+  "counts": {
+   "right": 2,
+   "wrong": 1,
+   "abstained_should_have": 3,
+   "correct_abstention": 24,
+   "unjudged": 0
+  },
+  "n_extractions_in_sample": 3,
+  "verdicts": {
+   "http://arxiv.org/abs/2502.03277v2": [
+    "right",
+    "(0.49^{+1.56}_{-0.38}) nb -> 0.49 +- 1.56 nb, quantity 'total cross sections', asymmetric flagged"
+   ],
+   "http://arxiv.org/abs/2602.01759v1": [
+    "right",
+    "'mass ranges 1.6-3.1 GeV' -> midpoint 2.35 +- 0.43 GeV, range_uniform flagged"
+   ],
+   "http://arxiv.org/abs/2609.00152v1": [
+    "wrong",
+    "numbers right (0.2-15 GeV range) but the quantity phrase is junk: 'axion-like particles covering the'"
+   ],
+   "http://arxiv.org/abs/1109.1490v1": [
+    "abstained_should_have",
+    "custom macro $\\mtop = \\gevcc{\\measStatSyst{172.3}{2.4}{1.0}}$ \u2014 paper-private macros are not covered"
+   ],
+   "http://arxiv.org/abs/2006.13251v2": [
+    "abstained_should_have",
+    "'$\\mu_\\mathrm{H}$ $=$ 3.7 $\\pm$ 1.2 (stat)...': the quantity is a single Greek letter with a subscript, which the phrase rule rejects"
+   ],
+   "http://arxiv.org/abs/2507.12598v2": [
+    "abstained_should_have",
+    "'$\\mu=0.9^{+0.7}_{-0.6}$': same single-Greek-letter quantity"
+   ]
+  },
+  "note": "every sampled abstract was read; 'correct_abstention' = no number with a stated uncertainty in the text and the extractor produced nothing"
+ },
+ "hand_check_items": [
+  {
+   "id": "http://arxiv.org/abs/2501.16105v1",
+   "abstract": "In a modified chromomagnetic interaction model, assuming $X(4140)$ to be the lowest $1^{++}$ $cs\\bar{c}\\bar{s}$ tetraquark and treating it as the reference state, we systematically investigated the masses of the triply-heavy tetraquark states $QQ\\bar{Q}\\bar{q}$ ($Q=c,b;q=u,d,s$). Because of their higher masses, no stable tetraquarks were found. Using a simple scheme, we also estimated the partial widths of the rearrangement decay channels and relevant ratios. A compact triply heavy tetraquark candidate would be favored if its observed mass and partial width ratios were comparable with our predictions. We hope that the present work will be helpful for further studies.",
+   "extractions": [],
+   "spans": []
+  },
+  {
+   "id": "http://arxiv.org/abs/2511.09283v3",
+   "abstract": "The ALICE and CMS Collaborations have analyzed a number of cumulants mixing elliptic flow ($v_2$) and triangular flow ($v_3$), involving up to $8$ particles, in Pb+Pb collisions at the LHC. We unravel an unexpected simplicity in these complex mathematical quantities for collisions at fixed impact parameter. We show that as one increases the order in $v_2$, for a given order in $v_3$, the changes in the cumulants are solely determined by the mean elliptic flow in the reaction plane, which originates from the almond-shaped geometry of the overlap area between the colliding nuclei. We derive simple analytic relations between cumulants of different orders on this basis. These relations are in good agreement with recent data from the CMS Collaboration. We argue that agreement will be further improved if the analysis is repeated with a finer centrality binning. We make quantitative predictions for cumulants of order 10 which have not yet been analyzed.",
+   "extractions": [],
+   "spans": []
+  },
+  {
+   "id": "http://arxiv.org/abs/1203.4443v2",
+   "abstract": "We present a search for the standard model Higgs boson in final states with an electron or muon and a hadronically decaying tau lepton in association with zero, one, or two or more jets using data corresponding to an integrated luminosity of up to 7.3 fb^{-1} collected with the D0 detector at the Fermilab Tevatron collider. The analysis is sensitive to Higgs boson production via gluon gluon fusion, associated vector boson production, and vector boson fusion, and to Higgs boson decays to tau lepton pairs or W boson pairs. Observed (expected) limits are set on the ratio of 95% C.L. upper limits on the cross section times branching ratio, relative to those predicted by the Standard Model, of 14 (22) at a Higgs boson mass of 115 GeV and 7.7 (6.8) at 165 GeV.",
+   "extractions": [],
+   "spans": []
+  },
+  {
+   "id": "http://arxiv.org/abs/2505.11955v2",
+   "abstract": "The LHCb collaboration presents a novel suite of heavy-flavour jet substructure measurements at forward rapidity in proton-proton collisions at a centre-of-mass energy of $\\sqrt{s} = 13$ TeV. The jet mass is a perturbatively calculable probe of the virtuality of hard-scattered quarks and gluons, connecting small-distance quantum chromodynamics (QCD) with long-distance experimental measurement. It becomes dominated by nonperturbative corrections at small values, presenting an excellent test of QCD across a broad range of energies. Measuring heavy-flavour jet mass with a theoretically unambiguous flavour definition for the first time probes the gluon splitting mechanism for heavy-flavour production and pushes tests of perturbative QCD to unprecedented theoretical precision. Utilising the soft drop jet-grooming technique to access the perturbative jet core further enhances constraints on first-principles theory. Measurements of the jet mass for jets containing fully reconstructed $B^\\pm$ hadrons are reported with and without grooming. These results offer unparalleled tests of quark flavour and mass dependence in QCD and provide a baseline for future studies of heavy-flavour jet quenching in heavy-ion collisions.",
+   "extractions": [],
+   "spans": []
+  },
+  {
+   "id": "http://arxiv.org/abs/2604.21987v1",
+   "abstract": "This paper presents the first measurement of the forward-backward asymmetry, $A_{\\rm FB}$, and the flat term, $F_{H}$, that parameterise the angular distribution of the $B^+\\to\u03c0^+\u03bc^+\u03bc^-$ decay. The proton-proton collision dataset used in the analysis corresponds to an integrated luminosity of 9 fb$^{-1}$, collected with the LHCb experiment between 2011 and 2018. The analysis is performed in two intervals of dimuon mass squared, one above and one below the region containing the $J\\mskip -3mu/\\mskip -2mu\u03c8$ and $\u03c8(2S)$ narrow charmonium resonances. The Standard Model predictions lie within the obtained $68\\%$ confidence level interval in the high-mass and within the $99\\%$ interval in the low-mass region.",
+   "extractions": [],
+   "spans": []
+  },
+  {
+   "id": "http://arxiv.org/abs/2603.26230v1",
+   "abstract": "In this article, I trace the early historical developments that ultimately led to the creation of the atomic bomb. Even after the completion of weapons, many scientists continued to argue that nuclear armaments were indispensable for maintaining the global balance of political power [1]. This study focuses on several scientists who confronted profound moral dilemmas concerning the use of bombs against Japan. Some openly opposed its deployment. Others sought to warn a Japanese physicist in the hope of averting further devastation. Still, others expressed deep remorse in its aftermath. In addition, the experience of an individual directly affected by the bombing is discussed. By examining these episodes, this article aims to contribute to the ongoing discourse on how scientific research should be guided by ethical principles in the future.",
+   "extractions": [],
+   "spans": []
+  },
+  {
+   "id": "http://arxiv.org/abs/2605.04824v1",
+   "abstract": "The singlet-doublet dark matter (SDDM) model is a well-motivated WIMP framework that accommodates viable dark matter over a broad range of parameter space. In this work, we explore the possibility of TeV-scale leptogenesis within two realizations of the SDDM setup: Majorana SDDM scenario and Dirac SDDM scenario. The light neutrino mass, in either case, arises radiatively at one loop level. The particles running in the loop are responsible for Dark matter relic and TeV-scale leptogenesis while satisfying other phenomenological constraints. In the Majorana setup, the Standard Model is extended by three generations of singlet fermions $N_i$ and doublet fermions $\u03a8_i$, and a singlet scalar $\u03c6$. The \\textit{CP}-violating, out-of-equilibrium decays of the heavier singlets ($N_{2,3}$) generate baryon asymmetry via the leptogenesis route, while the first generation of singlet-doublet fermions give rise to the usual SD Majorana dark matter. In the Dirac setup, the standard model is extended by three generations of complex scalars ($\u03c6_i$) and right-handed Dirac partners ($\u03bd_{R_i}$) of SM neutrinos ($\u03bd_{L_i}$), along with a pair of singlet-doublet fermions $\u03c7$ and $\u03a8$. The \\textit{CP}-violating out-of-equilibrium decays of the scalar fields $\u03c6_i$ generate baryon asymmetry via the Dirac leptogenesis route. We show that in the Majorana setup, successful leptogenesis is possible even in the sub-TeV regime, while in the Dirac setup, the scale of leptogenesis is at a few TeV. With the particle mass at the TeV scale, the model remains promising for collider experiments, particularly through signatures such as prompt decays and displaced vertex searches. In addition, the presence of Dirac neutrinos can contribute to $\u0394N_{\\rm eff}$, providing complementary cosmological signatures.",
+   "extractions": [],
+   "spans": []
+  },
+  {
+   "id": "http://arxiv.org/abs/2604.14735v3",
+   "abstract": "We present the first comprehensive study of the rare Dalitz decay $K^*(892) \\rightarrow K \\ell^+ \\ell^- (\\ell = e, \u03bc)$, providing a prediction for the branching fraction and the dilepton mass spectrum. This decay involves the emission of a virtual photon which converts into a lepton pair, offering a probe of the transition form factor $F_{K^*K}(q^2)$ and underlying meson structure. Using a single pole approximation for the form factor, we present the calculation of the branching fraction for this rare decay channel for the first time. Furthermore, we also investigate the potential to search for a light $A^\\prime$ boson (dark photon) appearing as a narrow resonance in the dilepton spectrum, and discuss the experimental sensitivity and new physics opportunities at the dedicated BESIII experiment. Our results establish $K^*(892) \\rightarrow K \\ell^+ \\ell^- (l = e, \u03bc)$ as a new laboratory for hadronic structure and dark-sector searches.",
+   "extractions": [],
+   "spans": []
+  },
+  {
+   "id": "http://arxiv.org/abs/2605.03116v2",
+   "abstract": "The measurement of quartic gauge couplings (QGCs) provides a crucial test of the non-Abelian gauge structure of the Standard Model and offers sensitivity to new physics effects. In this work, we explore the potential of the proposed multi-TeV same-sign muon collider, $\u03bc$TRISTAN, to probe anomalous quartic gauge couplings (aQGCs) through vector boson scattering (VBS) processes. Owing to the same-sign initial state, s-channel contributions are absent, rendering VBS as the dominant production mode and thereby significantly enhancing the sensitivity to aQGCs. Using dimension-8 Standard Model Effective Field Theory (SMEFT) operators, we classify the relevant operator sets contributing to charged and neutral QGCs, and confront them with existing bounds from the LHC. A detailed collider analysis is performed across multiple final states: $2V2\u03bd$, $V\u03b3\\ell \u03bd$, $2V\\ell \u03bd$, $2\u03b32\\ell$, and $2V2\\ell$ ($V=$ reconstructed $W$ and $Z$ boson), applying optimized selection strategies. We present the projected sensitivities at the $\u03bc$TRISTAN with center-of-mass energies 2 TeV and 6 TeV, with integrated luminosities of 1 ab$^{-1}$ and 10 ab$^{-1}$, and demonstrate significant improvements over current experimental limits from the LHC. Our results establish $\u03bc$TRISTAN as a powerful probe of electroweak symmetry breaking dynamics and aQGCs in a model-independent framework.",
+   "extractions": [],
+   "spans": []
+  },
+  {
+   "id": "http://arxiv.org/abs/2503.04289v2",
+   "abstract": "This note presents an overview of current and potential future applications of machine-learning-based techniques in the study of the top quark. The research community has developed a diverse set of ideas and tools, including algorithms for the efficient reconstruction of recorded collision events and innovative methods for statistical inference. Recent applications of some techniques by the ATLAS and CMS collaborations are also highlighted.",
+   "extractions": [],
+   "spans": []
+  },
+  {
+   "id": "http://arxiv.org/abs/2502.18054v2",
+   "abstract": "This paper presents the measurement of the isolated prompt photon inclusive production cross section in pp and p-Pb collisions by the ALICE Collaboration at the LHC. The measurement is performed in p-Pb collisions at centre-of-mass energies per nucleon pair of $\\sqrt{s_{\\rm{NN}}} = 5.02$ TeV and $8.16$ TeV, as well as in pp collisions at $\\sqrt{s} = 5.02$ TeV and $8$ TeV. The cross section is obtained at midrapidity $(|y|<0.7)$ using a charged-track based isolation momentum $p_{\\rm T}^{\\rm{iso, ch}} < 1.5$ GeV/$c$ in a cone with radius $R=0.4$. The data for both collision systems are well reproduced by perturbative QCD (pQCD) calculations at next-to-leading order (NLO) using recent parton distribution functions for free (PDF) and bound (nPDF) nucleons. Furthermore, the nuclear modification factor $R_{\\text{pA}}$ for both collision energies is consistent with unity for $p_{\\rm T} > 20$ GeV/$c$. However, deviations from unity ($R_{\\rm pA}<1$) of up to 20% are observed for $p_{\\rm T} < 20$ GeV/$c$ with limited significance, indicating the possible presence of nuclear effects in the initial state of the collision. The suppression increases with decreasing \\pt with a significance of $2.3\u03c3$ for a non-zero slope and yields $R_{\\rm pA}<1$ with a significance of $1.8\u03c3$ at $\\sqrt{s_{\\rm NN}} = 8.16$ TeV for $p_{\\rm T} < 20$ GeV/$c$. In addition, a significance of $1.1\u03c3$ is observed for $R_{\\rm pA}<1$ at the lower collision energy $\\sqrt{s_{\\rm NN}} = 5.02$ TeV for $p_{\\rm T} < 14$ GeV/$c$. The magnitude and shape of the suppression are consistent with pQCD predictions at NLO using nPDFs that incorporate nuclear shadowing effects in the Pb nucleus.",
+   "extractions": [],
+   "spans": []
+  },
+  {
+   "id": "http://arxiv.org/abs/2607.08310v1",
+   "abstract": "We present a comprehensive three-dimensional atmospheric neutrino flux calculation based on the well-recognized simulation framework develeped by Honda and his collaborators, incorporating for the first time the muon propagation inside the Earth and its subsequent decay or nuclear capture. Other updates of essential input models include: the AMS02-based primary cosmic ray model, IGRF2020 geomagnetic field, and muon-recalibrated hadronic interaction model. The calculation covers seven detector sites across diverse geomagnetic environments, spanning 10~MeV to $10^4$~GeV. Significant site-dependent differences appear at $E_\u03bd< 10$~GeV, with $\u03bd_\u03bc$ flux at IceCube approximately twice that at JUNO below 1~GeV. Compared to HKKMS15, deviations of 2\\%--10\\% are attributed to the updated input models. Below 100~MeV, we present precise flux results, revealing that muon propagation contributes a globally significant component to the low-energy neutrino flux at all sites, with an approximately site-independent absolute increment. The hadronic uncertainty is re-estimated across the energy range using the updated hadronic interaction model, with significant reduction of the systematic error compared to previous calculations. These results provide essential inputs for neutrino oscillation and rare-event search experiments including JUNO, Super-Kamiokande/Hyper-Kamiokande, DUNE, KM3NeT/ORCA, and IceCube, as well as direct dark matter detection experiments facing the neutrino fog.",
+   "extractions": [],
+   "spans": []
+  },
+  {
+   "id": "http://arxiv.org/abs/2502.03277v2",
+   "abstract": "In the present work, we propose to investigate the productions of $\u039b_{c}(2910)$ and $\u039b_{c}(2940)$ in the $\u03c0^{-} p \\rightarrow D^{-} D^{0} p$ processes by utilizing an effective Lagrangian approach, where $\u039b_c(2910)$ and $\u039b_c(2940)$ are considered as $D^\\ast N$ molecular states with $J^P$ quantum numbers to be $1/2^-$ and $3/2^-$, respectively. With the cutoff parameter determined by the upper limit of the cross sections for $\u03c0^- p \\to D^{\\ast-} \u039b_c(2286)$, the ratios of the cross sections for $\u03c0^- p \\to D^{\\ast-} \u039b_c(2286)$, $\u03c0^- p \\to D^{-} \u039b_c(2286)$, $\u03c0^- p \\to D^{-} \u039b_c(2910)$, and $\u03c0^- p \\to D^{-} \u039b_c(2940)$ are estimated to be $1:4.8:1.42:0.26$ at $p_\u03c0=30$ GeV. Considering that the $\u039b_{c}(2910)$ and $\u039b_{c}(2940)$ state can further decay into $D^{0}p$, we estimate the cross sections for $\u03c0^{-} p \\rightarrow D^{-} D^{0} p$ process and the differential cross sections depending on the $D^0 p$ invariant mass spectrum. Our estimations indicate that the total cross sections are $(0.49^{+1.56}_{-0.38})$ nb when $p_\u03c0=15~\\mathrm{GeV}$, where the uncertainties result from the variation of the $\u039b_{r}$. By comparing the contributions of the $s$, $u$, and $t$-channels, we conclude that the $t$-channel plays the predominant role. Moreover, the present estimations suggest that the structure around 2.9 GeV in the $D^0 p$ invariant mass spectrum of the $\u03c0^{-} p \\rightarrow D^{-} D^{0} p$ process should correspond to $\u039b_c(2910)$ rather than $\u039b_c(2940)$, which can be tested by further experimental measurements at J-PARC in the future.",
+   "extractions": [
+    {
+     "value": 0.49,
+     "sigma": 1.56,
+     "unit": "nb",
+     "quantity": "total cross sections",
+     "flags": [
+      "asymmetric",
+      "unknown_unit"
+     ]
+    }
+   ],
+   "spans": [
+    "(0.49^{+1.56}_{-0.38})$ nb"
+   ]
+  },
+  {
+   "id": "http://arxiv.org/abs/1109.1490v1",
+   "abstract": "We present a measurement of the top-quark mass using a sample of $t\\bar{t}$ events in 5.7 fb$^{-1}$ of integrated luminosity from $p\\bar{p}$ collisions at the Fermilab Tevatron with $\\sqrt{s} =$ 1.96 TeV and collected by the CDF II Detector. We select events having no identified charged leptons, large missing transverse energy, and four, five, or six jets with at least one jet tagged as coming from a $b$ quark. This analysis considers events from the semileptonic \\ttbar decay channel, including events that contain tau leptons. The measurement is based on a multidimensional template method. We fit the data to signal templates of varying top-quark masses and background templates, and measure a top-quark mass of $\\mtop = \\gevcc{\\measStatSyst{172.3}{2.4}{1.0}}$.",
+   "extractions": [],
+   "spans": []
+  },
+  {
+   "id": "http://arxiv.org/abs/2605.19985v1",
+   "abstract": "We study the production of the conventional quarkonium states in ultrarelativistic heavy-ion collisions using an open quantum system framework based on the Lindblad equation. Starting from the complex-valued in-medium potential, we derive the dissociation temperature and thermal decay width for each state, and compute their survival probabilities for a system undergoing Bjorken expansion. We then extend the framework to include recombination from thermalized charm and bottom quarks in the quark-gluon plasma, deriving a coalescence model for quarkonia from the Lindblad equation under the adiabatic approximation. The methodology provides a unified, first-principles-inspired description of suppression and recombination for both charmonium and bottomonium.",
+   "extractions": [],
+   "spans": []
+  },
+  {
+   "id": "http://arxiv.org/abs/1910.04726v2",
+   "abstract": "We discuss the determination of electroweak parameters from hadron collider observables, focusing on the $W$ boson mass measurement. We revise the procedures adopted in the literature to include in the experimental analysis the uncertainty due to our imperfect knowledge of the proton structure. We show how the treatment of the proton parton density functions (PDFs) uncertainty as a source of systematic error, leads to the automatic inclusion in the fit of the bin-bin correlation of the kinematic distributions with respect to PDF variations. In the case of the determination of $M_W$ from the charged lepton transverse momentum distribution, we observe that the inclusion of this correlation factor yields a strong reduction of the PDF uncertainty, given a sufficiently good control over all the other error sources. This improvement depends on a systematic accounting of the features of the QCD-based PDF model, and it is achieved relying only on the information available in current PDF sets. While a realistic quantitative estimate requires to take into account the details of the experimental systematics, we argue that, in perspective, the proton PDF uncertainty will not be a bottleneck for precision measurements.",
+   "extractions": [],
+   "spans": []
+  },
+  {
+   "id": "http://arxiv.org/abs/2502.02894v1",
+   "abstract": "Approximately 60 years after the Milligan oil drop experiment in 1909, fractionally charged particles (FCPs) were reported to have been discovered in air-shower cores, and the search for FCPs continues to the present day in space, terrestrial and underground experiments. In this letter, relativistic FCPs are examined as lightly ionizing particles in underground direct detection on the basis of electron recoil data from XENON-nT. For FCPs from supernova shocks, the best results are obtained via direct detection, excluding the FCP charge of $\\left(3.6\\times10^{-9} - 1.0\\times10^{-2}\\right)\\cdot e$ corresponding to an FCP mass of 1 keV--556 GeV. For FCPs from general sources, the best limit is achieved, which is far ahead of other results in almost the entire parameter space, by excluding the FCP flux of $\\left(4.0\\times10^{-4} - 4.0\\times10^{-16}\\right)$ cm$^{-2}\\cdot$ s$^{-1}\\cdot$ sr$^{-1}$ corresponding to the FCP charge of $\\left(1\\times10^{-6} - 1\\right)\\cdot e$.",
+   "extractions": [],
+   "spans": []
+  },
+  {
+   "id": "http://arxiv.org/abs/2602.01759v1",
+   "abstract": "Motivated by the recently reported resonant structure $X(2300)$, a strong candidate for a fully strange tetraquark with positive parity, we perform a systematic study of fully strange tetra- and penta-quark systems within a chiral quark model. Low-lying $S$-wave configurations of the $ss\\bar s\\bar s$ and $ssss\\bar s$ systems are investigated using the Gaussian Expansion Method (GEM) combined with the Complex Scaling Method (CSM), which allows for a unified treatment of bound, resonant, and scattering states. For tetraquarks, all possible configurations: meson-meson, diquark-antidiquark, and K-type structures, with complete color bases, are incorporated, while baryon-meson and diquark-diquark-antiquark configurations are considered for pentaquarks. Several weakly bound states and narrow resonances are identified in both sectors. In particular, a compact fully strange tetraquark with $J^P=1^+$ is found near $2.3\\,\\text{GeV}$, providing a natural interpretation of the $X(2300)$ resonance. Additional exotic states with dominant hidden-color and K-type components are predicted in the mass ranges $1.6-3.1$ GeV for tetraquarks and $2.6-3.2$ GeV for pentaquarks. The internal structure of these states is analyzed through their sizes, magnetic moments, and wave-function compositions, highlighting the essential role of channel coupling and exotic color configurations. Finally, promising two-body strong decay channels are proposed to facilitate future experimental searches.",
+   "extractions": [
+    {
+     "value": 2.35,
+     "sigma": 0.43301270189221935,
+     "unit": "GeV",
+     "quantity": "mass ranges",
+     "flags": [
+      "range_uniform"
+     ]
+    }
+   ],
+   "spans": [
+    "1.6-3.1$ GeV"
+   ]
+  },
+  {
+   "id": "http://arxiv.org/abs/2501.08675v2",
+   "abstract": "We propose an efficient method for dissipative generation of magnonic cat states in a cavity-magnon-qubit hybrid system by exploiting a two-magnon driving and dissipation mechanism. When both the magnon and qubit are driven, a coherent nonlinear two-magnon interaction is induced, wherein the qubit and the magnon mode exchange energy through magnon pairs. The dissipation of the qubit is exploited to steer the magnon mode into a quantum superposition of distinct coherent states, where the magnon mode evolves into either an even or odd cat state, depending on the parity of the magnon initial state. For the case where the magnon initial state is a superposition state, e.g., of $\\ket{0}$ and $\\ket{1}$, the magnon mode can evolve into a weighted mixture of the even and odd cat states. We also find that magnon squeezed states may emerge during the short-time evolution, showcasing the capability of our mechanism in preparing diverse magnon non-classical states. Magnonic cat and squeezed states are macroscopic quantum states and find applications in macroscopic quantum studies and quantum sensing, e.g., in the dark matter search using ferromagnetic axion haloscopes.",
+   "extractions": [],
+   "spans": []
+  },
+  {
+   "id": "http://arxiv.org/abs/1402.3907v1",
+   "abstract": "We present a method for resolving the combinatorial issues in the \\ttbar lepton+jets events occurring at the Tevatron collider. By incorporating multiple information into an artificial neural network, we introduce a novel event reconstruction method for such events. We find that this method significantly reduces the number of combinatorial ambiguities. Compared to the classical reconstruction method, our method provides significantly higher purity with same efficiency. We illustrate the reconstructed observables for the realistic top-quark mass and the forward-backward asymmetry measurements. A Monte Carlo study shows that our method provides meaningful improvements in the top-quark measurements using same amount of data as other methods.",
+   "extractions": [],
+   "spans": []
+  },
+  {
+   "id": "http://arxiv.org/abs/2609.11151v1",
+   "abstract": "Quantum-information observables have emerged in recent years as new tools in nuclear and particle physics, from entanglement in top-quark pairs to spin correlations in $\u039b\\bar\u039b$ production. Extending these studies to unequal-spin hadronic final states poses a fundamental challenge: the $6\\times6$ density matrix of a qubit-qutrit system contains 35 independent spin parameters, but the decays of $\u039bV$ pairs, with $V=\u03c6$ or $K^{*0}$, provide access to only 23 due to the hidden vector polarization from the strong decay. In this Letter, we formulate a qubit-qutrit quantum tomography (QQQT) technique for these spin-$\\tfrac{1}{2}\\otimes1$ systems and establish exact criteria for entanglement certification from the \\textit{incomplete} density matrix. Compared with the $\u039b\\bar\u039b$ system, QQQT of $\u039b\u03c6$ and $\u039bK^{*0}$ provides a new probe of nonperturbative QCD hadronization, enabling a direct comparison of the spin evolution of entangled quark pairs produced from the vacuum as they hadronize into a baryon or a vector meson.",
+   "extractions": [],
+   "spans": []
+  },
+  {
+   "id": "http://arxiv.org/abs/2509.18276v2",
+   "abstract": "Electromagnetic dipole interactions of light quarks induce distinct spin correlations in quark pairs produced at lepton colliders, favoring entangled spin-triplet state aligned along the $\\hat{z}$ axis or spin-singlet state. These correlations lead to unique $\\cos(\u03c6_1-\u03c6_2)$ azimuthal asymmetries in inclusive $\u03c0^+\u03c0^-$-dihadron pair production and in back-to-back hadron pairs ($\u03c0\u03c0,K\u03c0,KK$), which are absent in the SM. Using published Belle and BaBar measurements together with projected sensitivities based on ratios of azimuthal asymmetries, we demonstrate that these measurements provide significant constraints on light-quark dipole couplings, with a reduced dependence on poorly known nonperturbative fragmentation functions and free from contamination by other new physics effects. This approach offers a clean and novel probe of light-quark dipole interactions in collider experiments.",
+   "extractions": [],
+   "spans": []
+  },
+  {
+   "id": "http://arxiv.org/abs/2509.01289v1",
+   "abstract": "We introduce two basic concepts: the compositeness for resonance and the Castillejo-Dalitz-Dyson (CDD) pole. Applying them to hadron states $X(3872)$, $Z_b(10610)$ and $Z_b(10650)$, and $T_{cc}$, we obtain their compositeness values and achieve deeper insights into their inner structure.",
+   "extractions": [],
+   "spans": []
+  },
+  {
+   "id": "http://arxiv.org/abs/2006.13251v2",
+   "abstract": "A search for standard model Higgs bosons (H) produced with transverse momentum ($p_\\mathrm{T}$) greater than 450 GeV and decaying to bottom quark-antiquark pairs ($\\mathrm{b\\bar{b}}$) is performed using proton-proton collision data collected by the CMS experiment at the LHC at $\\sqrt{s} =$ 13 TeV. The data sample corresponds to an integrated luminosity of 137 fb$^{-1}$. The search is inclusive in the Higgs boson production mode. Highly Lorentz-boosted Higgs bosons decaying to $\\mathrm{b\\bar{b}}$ are reconstructed as single large-radius jets, and are identified using jet substructure and a dedicated b tagging technique based on a deep neural network. The method is validated with Z $\\to$ $\\mathrm{b\\bar{b}}$ decays. For a Higgs boson mass of 125 GeV, an excess of events above the background assuming no Higgs boson production is observed with a local significance of 2.5 standard deviations ($\u03c3$), while the expectation is 0.7. The corresponding signal strength and local significance with respect to the standard model expectation are $\u03bc_\\mathrm{H}$ $=$ 3.7 $\\pm$ 1.2 (stat) $^{+0.8}_{-0.7}$ (syst) $^{+0.8}_{-0.5}$ (theo) and 1.9 $\u03c3$. Additionally, an unfolded differential cross section as a function of Higgs boson $p_\\mathrm{T}$ for the gluon fusion production mode is presented, assuming the other production modes occur at the expected rates.",
+   "extractions": [],
+   "spans": []
+  },
+  {
+   "id": "http://arxiv.org/abs/2501.10804v1",
+   "abstract": "Particle physics and radio-frequency (RF) superconductivity have driven each other on since the 1970s. The unique properties of superconductors (SC) have been the enabling keys for the realization of accelerators with always increased performances thanks to the realization of all-superconducting cavities. The use of increasingly pure superconducting coatings for accelerating cavities, with lower and lower RF losses, determined such high-quality factors that the need to operate at low temperatures (below the superconducting transition temperature Tc) was well paid for. Recently, with respect to the path followed by the high frequency superconductivity, a new field opened since SCs are being considered for GHz operation in high dc magnetic fields, and measurements (and optimization) of totally different quantities are needed. The possibility of successfully using SCs in high magnetic fields for these purposes is far from obvious and it depends on the outcome of accurate measurements of usually overlooked quantities.",
+   "extractions": [],
+   "spans": []
+  },
+  {
+   "id": "http://arxiv.org/abs/2503.24346v2",
+   "abstract": "Precision studies of flavour-changing processes involving quarks and leptons provide a number of ways to improve knowledge of the Standard Model and search for physics beyond it. There are excellent short- and mid-term prospects for significantly improved measurements in heavy flavour physics (involving b and c hadrons and $\u03c4$ leptons), with upgrades in progress or planned for the ATLAS, CMS and LHCb experiments exploiting proton-proton collisions at CERN's Large Hadron Collider, and for the Belle II experiment operating with electron-positron collisions from the SuperKEKB accelerator in KEK. The expected sensitivities that can be achieved from these experiments for a number of key observables are presented, highlighting the complementarity of the different experiments and showing how the precision will improve with time. This international programme in heavy flavour physics will result in unprecedented capability to probe this sector of the Standard Model and, potentially, observe imprints of physics at higher energy scales than can be accessed directly.",
+   "extractions": [],
+   "spans": []
+  },
+  {
+   "id": "http://arxiv.org/abs/2606.20463v1",
+   "abstract": "The ATLAS experiment presents an observation of a centrality-dependent dijet transverse momentum imbalance in O+O and Ne+Ne collisions at a nucleon-nucleon center-of-mass energy of 5.36 TeV at the Large Hadron Collider. The measurement uses 8.0 nb$^{-1}$ of O+O and 1.0 nb$^{-1}$ of Ne+Ne data collected in 2025, together with 386 pb$^{-1}$ of \\textit{pp} data at the same energy used as a reference. The dijet momentum balance is quantified using the ratio of the sub-leading jet transverse momentum to that of the leading jet, $x_J$. For dijets produced azimuthally back-to-back, the self-normalized $x_J$ distributions exhibit increasingly large deviations from the \\textit{pp} reference as collisions become more central, corresponding to an increasing overlap of the colliding nuclei. The observed centrality dependence is consistent with medium-induced partonic energy loss in O+O and Ne+Ne collisions, demonstrating that such effects persist in collision systems considerably smaller than Pb+Pb and Xe+Xe. These results establish a new regime for investigating the path-length dependence of jet quenching and constrain the onset of quark-gluon plasma effects in small nuclear collision systems.",
+   "extractions": [],
+   "spans": []
+  },
+  {
+   "id": "http://arxiv.org/abs/2609.00152v1",
+   "abstract": "Long-lived particles are a generic prediction of Standard Model extensions that address the hierarchy problem, the origin of neutrino masses, the baryon asymmetry of the Universe, and the nature of dark matter. Despite the breadth of theoretical motivation, neutral long-lived particles in the GeV-scale mass range remain difficult to probe at the LHC main detectors, where trigger limitations and challenging backgrounds curtail sensitivity over a wide range of lifetimes. We propose GRENDEL (GalleRy ExperimeNt for Decays of Exotic LLPs), a dedicated detector to be installed in the PX56 drainage gallery at CMS Point 5. GRENDEL will exploit the substantial rock and concrete between the detector and LHC interaction point as passive shielding in addition to employing active background rejection. Located approximately 22 m above the interaction point and running largely transverse to the beam, GRENDEL will span around 110 m and cover the central region $|\u03b7| < 0.6$. GRENDEL will make use of extruded scintillator bars to achieve competitive sensitivity with other proposed detectors while requiring minimal infrastructure, and without the need for civil engineering. We present the physics case, detector concept, and projected sensitivities to heavy neutral leptons, dark scalars, and axion-like particles covering the $0.2-15$ GeV mass range with 3 $\\mathrm{ab}^{-1}$ of HL-LHC data. The benchmarks span the neutrino, scalar, and axion portals, with production through exotic Higgs decays, $B$- and $D$-meson decays, and $W/Z$ decays.",
+   "extractions": [
+    {
+     "value": 7.6,
+     "sigma": 4.272391992003231,
+     "unit": "GeV",
+     "quantity": "axion-like particles covering the",
+     "flags": [
+      "range_uniform"
+     ]
+    }
+   ],
+   "spans": [
+    "0.2-15$ GeV"
+   ]
+  },
+  {
+   "id": "http://arxiv.org/abs/2507.12598v2",
+   "abstract": "A search for the Higgs boson decay to a $Z$ boson and a photon in the $\\ell\\ell\u03b3$ ($\\ell = e, \u03bc$) final state is performed using $pp$ collisions at $\\sqrt{s}=13.6$ TeV recorded with the ATLAS detector at the Large Hadron Collider during 2022-2024, corresponding to an integrated luminosity of 165 fb$^{-1}$. The signal yield, normalised to the Standard Model prediction, is measured to be $\u03bc=0.9^{+0.7}_{-0.6}$, compared to an expected value of $\u03bc=1.0\\pm0.7$. This corresponds to an observed (expected) signal significance of 1.4 (1.5) standard deviations for the background-only hypothesis. This result is combined with that of a similar search performed with 140 fb$^{-1}$ of $\\sqrt{s}=13$ TeV $pp$ collisions to provide the most stringent expected sensitivity to date to this rare decay, namely an observed (expected) signal strength of $\u03bc= 1.3^{+0.6}_{-0.5}$ ($\u03bc= 1.0^{+0.6}_{-0.5}$), corresponding to an observed (expected) significance of 2.5 (1.9) standard deviations. The measurement is consistent with the Standard Model expectation.",
+   "extractions": [],
+   "spans": []
+  },
+  {
+   "id": "http://arxiv.org/abs/2605.03908v1",
+   "abstract": "Future e$^+$e$^-$ colliders provide a unique opportunity for long-lived particle (LLP) searches. We present a full simulation study of LLP searches using the International Large Detector (ILD), where a gaseous time projection chamber as the main tracking device provides excellent prospects for LLP searches. Signatures of displaced vertices and kinked tracks are explored. We study challenging final states involving both very soft displaced tracks and boosted, nearly collinear tracks. Backgrounds from beam-induced interactions and other Standard Model processes are considered. We present expected exclusion limits for a model-independent analyses, as well as for Higgs boson decays to LLPs, for a range of LLP lifetimes.",
+   "extractions": [],
+   "spans": []
+  }
+ ]
+}

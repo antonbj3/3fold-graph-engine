@@ -60,6 +60,7 @@ corpus the gate abstains on all 57 papers from title and abstract. The modules b
 | `profile` | every assumption a graph's owner makes, in one validated object | ~30 fields grouped by the module that reads them; estimable ones (per-root reliability, p_transition) filled from data, requirements (z, p, τ, α) declared; `merge` of two graphs' profiles keeps per-root numbers and takes the stricter requirement, reporting every difference |
 | `hidden_variable` | an overlapping-box disagreement read as a candidate UNDECLARED variable, not a contradiction to settle | data side: the attribute split with the largest χ² (or Gini) drop, permutation p-value, the boxes it would add; mechanism side (`from_mechanism`): the model parameters that can flip the sign of dy/dx inside the declared ranges, before any report |
 | `precision_form` | one quadratic form for structure, margins and regimes; value of one observation or of a SET in bits | J from the Laplacian + lineage-weighted observation blocks + a local Gaussian image of a Bernoulli belief; rank-1 updates; set value ½ log det(I + H C Hᵀ/σ²), submodular, greedy |
+| `numeric_rules` | numbers with uncertainty out of text: v ± s, asymmetric, stat ⊕ syst, CI, ranges, powers of ten, unit prefixes | deterministic; abstains when no quantity phrase is found; feeds `margin_net` (value = margin, σ) |
 | `closed_loop` | the engine choosing probes against a world with known sign structure, scored against the truth | world of ≤ 1-transition sign functions with sourced, copied, unreliable claims; policies engine / copies / random / oracle; wrong measure and believed wrong measure |
 | `polarity_rules` | the sign a sentence asserts between two quantities, symbolically | one direction word per quantity per clause, negation flips, last clause wins, composition by product; abstains outside its lexicon (English only) |
 | `typed_extraction` | the stubbed prose → `Claim` step of `paper_graph/pipeline.py` | yes/no fields from the target node's claim; balanced lenses; isotonic calibration of the pooled log-odds; confidence = Π max(p, 1−p) = P(whole claim right); `agree` adds the log-odds of a second, independent judge |
@@ -275,6 +276,27 @@ the joint top-1 is a fourth that none of them nominates, because cost and probe 
 age at 45–55 is found with permutation p < 0.02 and the decoys at p > 0.05; with no planted effect every attribute is at chance; an
 attribute missing on most reports cannot score. Mechanism side: for harvested yield Y = hK(1 − h/r) against effort h ∈ [0.2, 0.8],
 the growth rate r (flip at h = r/2) is nominated and the carrying capacity K (scales, never flips) scores 0.
+
+**Conf with precision on a real experimental corpus (e23; 7 201 hep-ex abstracts from the arXiv API, cached outside the repo).**
+`numeric_rules` extracts a numeric claim with uncertainty from 11.7 % of abstracts (bare numbers without uncertainty are not
+extracted). Hand check of 30 random abstracts, all read: 2 right, 1 wrong (junk quantity phrase on a range), 3 abstained where a
+number was there (a paper-private LaTeX macro; twice a single Greek-letter quantity the phrase rule rejects), 24 correct abstentions.
+Then `margin_net` on the quantities many papers report, each paper its own source, and again with the collaboration as the root:
+
+| quantity | n | per paper m̂ ± s (N_eff) | per collaboration m̂ ± s (N_eff) | χ² p, per paper | PDG |
+|---|---|---|---|---|---|
+| top quark mass, GeV | 93 | 172.73 ± 0.11 (93) | 172.75 ± 0.64 (10) | 0.99 | 172.60 ± 0.27 |
+| W mass, GeV | 35 | 80.3750 ± 0.0032 (35) | 80.364 ± 0.005 (14) | 9e-6 | 80.3625 ± 0.0077 |
+| Higgs mass, GeV | 9 | 125.23 ± 0.07 (9) | 125.35 ± 0.28 (2) | 0.55 | 125.13 ± 0.11 |
+
+Per paper, 37 CDF and 17 D0 papers count as independent and s is 3–6× too small; with the collaboration as root the estimates move onto
+the PDG values (W 1.5σ → 0.1σ). The χ² fires for W (Q = 81 on 34 dof: the LEP/Tevatron/LHC spread is wider than the quoted σ) and
+does NOT fire for the top mass (Q = 64 on 92 dof: quoted total σ are larger than the scatter, and abstracts re-quote combinations),
+so the test does not see the known Tevatron/LHC offset (≤ 2011: 172.86 ± 0.30; ≥ 2012: 172.71 ± 0.12; PDG's Tevatron average
+174.30 ± 0.65) — the offset is inside the individual σ. Limit found by the run: with the collaboration as root, margin_net's copy check
+(b) fires on every quantity, and it is right to — successive measurements by one collaboration are not copies of one report, they
+are different measurements sharing part of their systematics. The lineage model has two states (independent / copy) and this
+corpus needs a third: partially shared error, e = D(√(1−ρ) ε_own + √ρ ε_root). Not built; it is the next change to `margin_net`.
 
 **Label-free calibration (e18; same 320 sentences).** Raw pooled 0.591; subtracting each lens's batch-mean log-odds (Batch Calibration) 0.572;
 per sentence form 0.603; per-form Platt on the rule's answers 0.927; on true labels 0.927. The option prior is not the fault; the
