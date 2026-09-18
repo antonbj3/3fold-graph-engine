@@ -4,7 +4,10 @@ N1 every present channel contributes; N2 the bits are the channels' own numbers;
 N4 the guard share reserves model_check slots (and none when there is nothing to guard); N5 unlock work_nodes and the
 other non-bits channels never enter the bits ranking; N6 `how` names the target and the instrument; N7 apply routes
 each outcome kind; N8 realized = predicted in expectation on the regime channel (martingale-exact); N9 wrong-shaped
-outcomes raise.
+outcomes raise; N10 decisions add flip actions outside the bits ranking; N11 BUNDLES: a purchase priced at its own
+depth (probe pair, sweep at weight 1/K, chain throw) ranks in the same bits-per-cost list with no reserved share,
+its value is the exact joint one (additive across targets, not within one), apply routes the members in order and
+realized = predicted in expectation over the joint outcomes, and a malformed bundle raises.
 """
 import sys
 from pathlib import Path
@@ -15,7 +18,8 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src")); sys.path.insert(0, str(ROOT / "src" / "graph_engine" / "tools"))
 from graph_engine.margin_net import MarginNet  # noqa: E402
-from graph_engine.next_actions import Action, EngineState, Instrument, apply, next_actions  # noqa: E402
+from graph_engine.next_actions import (Action, EngineState, Instrument, _joint_probe_gain, apply,  # noqa: E402
+                                       next_actions)
 from graph_engine.precision_form import Candidate, PrecisionForm  # noqa: E402
 from graph_engine.profile import EngineProfile  # noqa: E402
 from graph_engine.regime_posterior import RegimePosterior  # noqa: E402
@@ -269,3 +273,158 @@ def test_decisions_add_flip_actions_named_after_the_decision():
         assert a.meta["holds"] == certify(d_pair if a.meta["decision"] == "sign_low" else d_edge, st)["holds"]
     assert {a.target for a in flips} <= {PAIR_A, "e.beam"}             # only what the decisions read
     assert next_actions(st, k=8, decisions=None).other == plain.other
+
+
+# -- N11: bundles, priced at their own depth -------------------------------------------------------
+from graph_engine.next_actions import (bundle_action, bundle_value_bits, chain_throw_bundle,  # noqa: E402
+                                       probe_pair_bundle, sweep_bundle)
+
+
+def _collision_state(p_two=0.3, reliability=0.9, n_eff=8.0):
+    """A pair whose single-transition family already explains the claims: one strong claim over the whole domain.
+    e33's regime — a single probe is worth almost nothing, a PAIR on both sides of a second transition is not."""
+    post = RegimePosterior(0.0, 1.0, reliability=reliability, p_two=p_two)
+    post.add_claim(0.0, 1.0, +1, n_eff=n_eff)
+    return EngineState(regimes={PAIR_A: post}, probe_instruments=[Instrument("judge", 1.0, 0.9)])
+
+
+def test_pair_bundle_outranks_two_singles_exactly_when_its_joint_value_per_cost_is_larger():
+    """The bundle is in the SAME bits-per-cost list as the singles and wins a slot only by that number. Both cases
+    are constructed: increasing returns (the closure-filled pair, where the pair wins) and the ordinary pair with an
+    open transition (where a single probe wins, because two probes cost twice and add less than twice)."""
+    for st, bundle_should_win in ((_collision_state(), True), (_state(pair_bundles=True), False)):
+        acts = next_actions(st, k=20, guard_share=0.0)
+        bundles = [a for a in acts if a.kind == "bundle"]
+        singles = [a for a in acts if a.kind in ("probe", "model_check") and a.target == PAIR_A]
+        assert bundles and singles
+        b = next(a for a in bundles if a.target == str(PAIR_A))
+        best_single = max(s.value_per_cost for s in singles)
+        assert (b.value_per_cost > best_single) is bundle_should_win
+        assert (acts[0] is b) is bundle_should_win                       # the one list is ordered by the one number
+        assert [a.value_per_cost for a in acts] == sorted((a.value_per_cost for a in acts), reverse=True)
+        # the bundle's number is the channel's own exact pair value, its cost the sum of the members' costs
+        post, ins = st.regimes[PAIR_A], b.instrument
+        assert b.value_bits == pytest.approx(post.bundle_value(ins.reliability, k=2)["pair"][1], rel=1e-9)
+        assert b.cost == pytest.approx(sum(m.cost for m in b.meta["member_actions"]))
+        assert len(b.meta["member_actions"]) == 2 and sorted(b.meta["x"]) == list(b.meta["x"])
+        assert b.value_unit == "bits" and b.meta["exact"]
+
+
+def test_bundles_take_no_reserved_share_and_can_be_switched_off():
+    st = _collision_state()
+    assert [a for a in next_actions(st, k=20, guard_share=0.0) if a.kind == "bundle"]
+    st2 = _collision_state()
+    st2.pair_bundles = False
+    assert not [a for a in next_actions(st2, k=20) if a.kind == "bundle"]
+    # a guard share still reserves model_check slots only; the bundle competes for the rest on its own number
+    with_guard = next_actions(_collision_state(), k=4, guard_share=0.5)
+    assert len([a for a in with_guard if a.kind == "model_check"]) >= 1
+    assert [a for a in with_guard if a.kind == "bundle"]
+
+
+def test_sweep_is_bounded_by_its_lineage():
+    """A sweep is ONE computation cell answering K points: one lineage root, so each answer enters with weight 1/K
+    (disagreement_field.model_probes). Its exact 2^K-outcome value is therefore at most the value of K INDEPENDENT
+    probes at the same points, and at least the value of one of its own answers. Measured here: it is also BELOW a
+    single full-weight probe — tempering the likelihood disperses the outcome law as well as the update."""
+    st = _state()
+    post = st.regimes[PAIR_A]
+    cell = Instrument("sweep_cell", 3.0, 0.9)
+    xs = [0.05, 0.35, 0.65, 0.95]
+    sw = sweep_bundle(st, PAIR_A, xs, cell)
+    indep, _t, _e = _joint_probe_gain(post, xs, [cell.reliability] * 4, [1.0] * 4)
+    assert sw.meta["K"] == 4 and sw.meta["weight"] == pytest.approx(0.25) and sw.meta["exact"]
+    assert all(m.meta["weight"] == pytest.approx(0.25) for m in sw.meta["member_actions"])
+    assert sw.value_bits <= indep + 1e-12                                # lineage bound: one root, not K roots
+    assert sw.value_bits >= max(sw.meta["members"]) - 1e-12              # at least one of its own answers
+    assert sw.cost == pytest.approx(cell.cost)                           # the cell's own cost, not K probe costs
+    assert sw.value_per_cost == pytest.approx(sw.value_bits / cell.cost)
+    # K > 8: the sum of conditionals along sampled outcome paths, flagged as such and close to the exact number
+    xs9 = [0.05 + 0.1 * i for i in range(9)]
+    big = sweep_bundle(_state(), PAIR_A, xs9, cell, n_sample=1000)
+    exact9, _t, ex = _joint_probe_gain(post, xs9, [cell.reliability] * 9, [1.0 / 9] * 9, max_exact=9)
+    assert ex and big.meta["exact"] is False and big.meta["subsample"] == 1000
+    assert big.value_bits == pytest.approx(exact9, rel=0.15)
+
+
+def test_bundle_apply_realized_equals_predicted_in_expectation_over_the_joint_outcomes():
+    """Exact over the FOUR outcomes of a probe pair: the price is an expectation over the joint outcome law, and
+    `apply` routes the members in order and returns ONE ledger row with both numbers."""
+    st = _collision_state()
+    act = next(a for a in next_actions(st, k=20, guard_share=0.0) if a.kind == "bundle")
+    law = act.meta["outcome_law"]
+    assert len(law) == 4 and sum(p for _s, p in law) == pytest.approx(1.0)
+    expected = 0.0
+    for signs, prob in law:
+        s = _collision_state()
+        row = apply(s, act, {"outcomes": [{"sign": sg} for sg in signs]})
+        assert len(s.regimes[PAIR_A].probes) == 2
+        assert [pr[0] for pr in s.regimes[PAIR_A].probes] == list(act.meta["x"])
+        assert row["action"] == act.id and row["outcome"] == "bundle" and row["supersedes"] == []
+        assert row["value_predicted"] == pytest.approx(act.value_bits) and row["value_unit"] == "bits"
+        assert row["members"] == [m.id for m in act.meta["member_actions"]]
+        expected += prob * row["value_realized"]
+    assert expected == pytest.approx(act.value_bits, abs=1e-9)
+
+
+def test_chain_throw_bundle_value_is_the_set_value_of_its_links():
+    """A chain throw (throws.chain_throw: the decoded path) is priced by precision_form.set_value_bits of its links'
+    rows — the joint log-det value, which is not the sum of the links' own values."""
+    st = _state()
+    ch = chain_throw_bundle(st, [0, 1, 2, 3], w=1.0, cost_per_link=0.5)
+    H = np.array([[1.0, -1.0, 0.0, 0.0], [0.0, 1.0, -1.0, 0.0], [0.0, 0.0, 1.0, -1.0]])
+    assert ch.value_bits == pytest.approx(st.form.set_value_bits(H, np.ones(3)), rel=1e-12)
+    assert ch.cost == pytest.approx(1.5) and ch.meta["nodes"] == [0, 1, 2, 3]
+    assert ch.value_bits < sum(ch.meta["members"])            # the links overlap: submodular, not additive
+    row = apply(st, ch, {"outcomes": [{"confirmed_links": [(i, j, 1.0)]} for i, j in ((0, 1), (1, 2), (2, 3))]})
+    assert row["value_realized"] == pytest.approx(ch.value_bits, rel=1e-9)   # log-det is exact, not an expectation
+    with pytest.raises(ValueError, match="at least two nodes"):
+        chain_throw_bundle(st, [2], w=1.0)
+
+
+def test_a_bundle_across_different_pairs_is_the_sum_of_its_members():
+    """Independent beliefs: the joint posterior factorizes, so the exact set value is additive across targets
+    (e35 (a)). On ONE pair it is not — that is the whole point of pricing a purchase at its own depth."""
+    st = _state()
+    a = probe_pair_bundle(st, PAIR_A).meta["member_actions"][0]
+    b = probe_pair_bundle(st, PAIR_B).meta["member_actions"][0]
+    cross = bundle_action(st, [a, b])
+    assert cross.value_bits == pytest.approx(sum(cross.meta["members"]), abs=1e-12)
+    assert len(cross.meta["groups"]) == 2 and cross.cost == pytest.approx(a.cost + b.cost)
+    same = probe_pair_bundle(st, PAIR_A)
+    assert same.value_bits < sum(same.meta["members"]) - 1e-9              # two probes on one pair overlap
+    joint, meta = bundle_value_bits(st, same.meta["member_actions"])
+    assert joint == pytest.approx(same.value_bits, rel=1e-12) and meta["exact"]
+
+
+def test_malformed_bundles_raise():
+    st = _state()
+    good = probe_pair_bundle(st, PAIR_A)
+    m = good.meta["member_actions"][0]
+    meas = next(a for a in next_actions(st, k=20) if a.kind == "measure")
+    with pytest.raises(ValueError, match="non-empty"):
+        bundle_action(st, [])
+    with pytest.raises(ValueError, match="must be an Action"):
+        bundle_action(st, [m, {"kind": "probe"}])
+    with pytest.raises(ValueError, match="cannot contain a bundle"):
+        bundle_action(st, [m, good])
+    with pytest.raises(ValueError, match="must be a probe"):
+        bundle_action(st, [m, meas])
+    with pytest.raises(ValueError, match="meta\\['x'\\]"):
+        bundle_action(st, [Action("probe", PAIR_A, m.instrument, 1.0, 1.0, 1.0, "regime_posterior", "how")])
+    with pytest.raises(ValueError, match="no regime posterior"):
+        bundle_action(st, [Action("probe", ("no", "pair"), m.instrument, 1.0, 1.0, 1.0, "regime_posterior", "how",
+                                  meta={"x": 0.5})])
+    with pytest.raises(ValueError, match="cost must be"):
+        bundle_action(st, [m], cost=0.0)
+    with pytest.raises(ValueError, match="must carry"):
+        apply(st, good, {"sign": 1})
+    with pytest.raises(ValueError, match="one outcome per member"):
+        apply(st, good, {"outcomes": [{"sign": 1}]})
+    with pytest.raises(ValueError, match="at least one point"):
+        sweep_bundle(st, PAIR_A, [], Instrument("cell", 2.0, 0.9))
+
+
+def test_a_subsampled_bundle_says_so_in_its_how():
+    big = sweep_bundle(_state(), PAIR_A, [0.05 + 0.1 * i for i in range(9)], Instrument("cell", 3.0, 0.9), n_sample=64)
+    assert "subsample" in big.how and "return " in big.how and "\n" not in big.how
