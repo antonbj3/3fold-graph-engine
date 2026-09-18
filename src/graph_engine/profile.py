@@ -143,8 +143,12 @@ class EngineProfile:
     # -- estimation from data, and merging two graphs' profiles ------------------------------------------
     ESTIMABLE = ("claim_reliability", "reliability_by_root", "p_transition")
     REQUIREMENTS = ("stressed_below_z", "disagree_p", "admission_tau", "guarantee_alpha", "guarantee_delta", "copy_tolerance")
-    STRICTER = {"stressed_below_z": max, "disagree_p": min, "admission_tau": max, "guarantee_alpha": min, "guarantee_delta": min,
-                "copy_tolerance": min, "claim_reliability": min, "abstain_below": max}
+    # On a conflict between two graphs the value that LEAVES MORE OPEN governs: settles fewer nodes, averages away fewer
+    # disagreements, trusts less. A first draft called this "stricter" and took the LOWER disagreement p — which flags fewer
+    # pairs as contradictions and averages the rest, i.e. concludes more. Wrong direction; a contradiction is a node to
+    # expand, not an alarm to suppress. So disagree_p takes the higher value.
+    LEAVES_OPEN = {"stressed_below_z": max, "disagree_p": max, "admission_tau": max, "guarantee_alpha": min, "guarantee_delta": min,
+                   "copy_tolerance": min, "claim_reliability": min, "abstain_below": max, "p_two_transitions": max}
 
     def estimate_from(self, fed, known: dict | None = None, min_questions: int = 20) -> dict:
         """Fill the ESTIMABLE fields from a claim_federation.Federation: per-root reliability from agreement
@@ -174,7 +178,7 @@ class EngineProfile:
     def merge(self, other: "EngineProfile") -> tuple["EngineProfile", list[dict]]:
         """Profile for the federation of two graphs. Per-root reliabilities and log-scale variables are unioned (a root
         keeps its own number; the same root declared twice with different numbers is a conflict, the lower wins).
-        Requirements are taken per field by the STRICTER rule and every difference is reported, so the owner sees which
+        Requirements are taken per field by the LEAVES_OPEN rule and every difference is reported, so the owner sees which
         requirement now governs a question that used to be governed by the other graph's. Lexicons are unioned; a word
         that is 'up' in one and 'down' in the other is a conflict and is dropped from both."""
         m = EngineProfile(**{f.name: getattr(self, f.name) for f in fields(self)})
@@ -201,9 +205,9 @@ class EngineProfile:
                 m.direction_lexicon = {"up": sorted(up - both), "down": sorted(down - both)}
             elif f.name == "notes":
                 m.notes = "; ".join(x for x in (a, b) if x)
-            elif f.name in self.STRICTER:
+            elif f.name in self.LEAVES_OPEN:
                 if a != b:
-                    took = self.STRICTER[f.name](a, b)
+                    took = self.LEAVES_OPEN[f.name](a, b)
                     conflicts.append({"field": f.name, "values": (a, b), "took": took}); setattr(m, f.name, took)
             elif a != b:
                 conflicts.append({"field": f.name, "values": (a, b), "took": a})

@@ -52,13 +52,14 @@ def test_estimate_from_data_fills_reliabilities_not_requirements():
     assert p.stressed_below_z == 3.0                                  # a requirement, untouched
 
 
-def test_merge_manufacturing_with_medicine_takes_the_stricter_requirement_and_keeps_roots():
+def test_merge_manufacturing_with_medicine_takes_what_leaves_more_open_and_keeps_roots():
     manuf = EngineProfile(claim_reliability=0.85, reliability_by_root={"lab-A": 0.9}, log_scale_variables=["grain size"],
                           direction_lexicon={"up": ["increase", "harden"], "down": ["decrease", "soften"]}, notes="manufacturing")
     med = EngineProfile(stressed_below_z=3.0, disagree_p=0.001, guarantee_alpha=0.02, reliability_by_root={"trial-1": 0.8, "lab-A": 0.7},
                         direction_lexicon={"up": ["increase", "elevate"], "down": ["decrease", "harden"]}, notes="medicine")
     m, conflicts = manuf.merge(med)
-    assert m.stressed_below_z == 3.0 and m.disagree_p == 0.001 and m.guarantee_alpha == 0.02      # stricter governs
+    assert m.stressed_below_z == 3.0 and m.disagree_p == 0.01 and m.guarantee_alpha == 0.02       # what leaves more open governs:
+    # higher z (more stressed), HIGHER disagreement p (more contradictions kept open, not averaged), lower α (fewer admitted)
     assert m.reliability_by_root == {"lab-A": 0.7, "trial-1": 0.8}                                  # roots kept, lower wins on conflict
     assert m.log_scale_variables == ["grain size"]
     assert "harden" not in m.direction_lexicon["up"] and "harden" not in m.direction_lexicon["down"]  # contradictory word dropped
