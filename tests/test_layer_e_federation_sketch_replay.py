@@ -394,3 +394,49 @@ def test_majority_claim_model_is_less_sure_at_the_far_end_of_a_wide_box():
     a, b = RegimePosterior(0.0, 1.0), RegimePosterior(0.0, 1.0, claim_model="majority")
     a.add_claim(0.0, 0.9, 1, 3); b.add_claim(0.0, 0.9, 1, 3)
     assert b.p_plus(0.85) < a.p_plus(0.85) and b.p_plus(0.1) > 0.7
+
+
+def test_model_check_pair_straddles_the_gap_and_predicts_its_own_realized_drop():
+    """Two + claims at the ends of a wide gap: one probe rarely settles the family, so the pair is bought together.
+    The two points land on opposite sides of the middle (or both inside the gap), and the expected drop over the four
+    joint outcomes is exactly what the realized posteriors give (exact Bayes on the fixed partition)."""
+    from graph_engine.regime_posterior import RegimePosterior
+    rp = RegimePosterior(0.0, 1.0); rp.add_claim(0.05, 0.25, 1, 3); rp.add_claim(0.75, 0.95, 1, 3)
+    (x1, x2), gain = rp.model_check_pair(0.95)
+    assert x1 < x2 and gain > 0
+    assert (x1 < 0.5 < x2) or (0.25 < x1 and x2 < 0.75)
+    assert gain >= rp.model_check_probe(0.95)[1] - 1e-12                 # two probes are worth at least one
+    h = lambda p: 0.0 if p <= 0 or p >= 1 else -(p * np.log2(p) + (1 - p) * np.log2(1 - p))
+    before = h(rp.collision()["p_two_transitions"]); realized = 0.0
+    for s1 in (1, -1):
+        for s2 in (1, -1):
+            trial = RegimePosterior(0.0, 1.0); trial.claims = list(rp.claims)
+            cells, _, F, post = trial._with_probes()
+            c1 = min(int(np.searchsorted(cells[:, 1], x1, side="left")), len(cells) - 1)
+            c2 = min(int(np.searchsorted(cells[:, 1], x2, side="left")), len(cells) - 1)
+            f1 = F[:, c1] if s1 > 0 else 1 - F[:, c1]; l1 = f1 * 0.95 + (1 - f1) * 0.05
+            p1 = float(post @ l1); q1 = post * l1 / p1
+            f2 = F[:, c2] if s2 > 0 else 1 - F[:, c2]; l2 = f2 * 0.95 + (1 - f2) * 0.05
+            p2 = float(q1 @ l2)
+            trial.add_probe(x1, s1, 0.95); trial.add_probe(x2, s2, 0.95)
+            realized += p1 * p2 * h(trial.collision()["p_two_transitions"])
+    assert abs((before - realized) - gain) < 1e-9
+
+
+def test_edge_leverage_sums_to_n_minus_one_and_sparsifier_keeps_resistances():
+    """Kirchhoff: Σ_e w_e R_e = n − 1 exactly (a spanning tree has n − 1 edges). Spielman–Srivastava: sampling edges by leverage
+    keeps every resistance within a few percent with a fraction of the edges."""
+    from graph_engine.resistance_sketch import ResistanceSketch, edge_leverage, sparsify, laplacian_from_edges
+    rng = np.random.default_rng(0); n = 300
+    edges = np.unique(np.sort(rng.integers(0, n, (2400, 2)), 1), axis=0); edges = edges[edges[:, 0] != edges[:, 1]]
+    edges = np.vstack([edges, np.stack([np.arange(n - 1), np.arange(1, n)], 1)])       # a path keeps it connected
+    L = laplacian_from_edges(n, edges)[0].toarray(); Lp = np.linalg.pinv(L)
+    exact = np.array([Lp[i, i] + Lp[j, j] - 2 * Lp[i, j] for i, j in edges])
+    assert abs(exact.sum() - (n - 1)) < 1e-6
+    sk = ResistanceSketch.build(n, edges, k=256, seed=0)
+    assert abs(edge_leverage(sk, edges).sum() - (n - 1)) / (n - 1) < 0.1
+    e2, w2, _ = sparsify(n, edges, q=16 * n, k=256, seed=1)
+    L2 = laplacian_from_edges(n, e2, w2)[0].toarray(); Lp2 = np.linalg.pinv(L2)
+    pairs = rng.integers(0, n, (200, 2)); pairs = pairs[pairs[:, 0] != pairs[:, 1]]
+    r1 = np.array([Lp[i, i] + Lp[j, j] - 2 * Lp[i, j] for i, j in pairs]); r2 = np.array([Lp2[i, i] + Lp2[j, j] - 2 * Lp2[i, j] for i, j in pairs])
+    assert len(e2) < 0.9 * len(edges) and np.median(np.abs(r2 / r1 - 1)) < 0.15, (len(e2), np.median(np.abs(r2 / r1 - 1)))

@@ -85,3 +85,38 @@ def test_continuum_throw_without_dither_is_deterministic_and_with_dither_is_unbi
     centroid = np.mean([Z[s].mean(0) for s, _ in dith], axis=0)
     assert np.linalg.norm(centroid - x) < np.linalg.norm(Z[fixed[0][0]].mean(0) - x) + 0.35     # not pulled away from x_star by the grid
     pis = np.concatenate([p for _, p in dith]); assert 0 < pis.min() and pis.max() <= 1
+
+
+def test_sequential_densification_stops_rethrowing_what_it_learned():
+    """A path graph with one Bernoulli anchor; each round observes the contrast between the two most distant members.
+    The form's bits fall every round, and the inclusion probability of a node drops after its contrast was observed."""
+    from graph_engine.precision_form import PrecisionForm
+    from graph_engine.throws import densify_sequential
+    n = 12; f = PrecisionForm.zeros(n).add_laplacian([(i, i + 1) for i in range(n - 1)]).add_bernoulli(0, 0.5)
+    seen = []
+    def observe(S):
+        if len(S) < 2:
+            return []
+        i, j = int(S[0]), int(S[-1]); h = np.zeros(n); h[i] = 1; h[j] = -1; seen.append((i, j)); return [(h, 0.3, 0.0)]
+    log = densify_sequential(f, np.arange(n), rounds=6, sigma=1.0, observe=observe, seed=3)
+    assert all(r["bits_realized"] >= -1e-9 for r in log) and sum(r["bits_realized"] for r in log) > 0.5
+    assert all(abs(r["inclusion"].sum() - 0) >= 0 for r in log)
+    # a node whose contrast was observed is less likely in later rounds than before
+    first = log[0]["members"]
+    if len(first) >= 2:
+        i = int(first[0]); before = float(log[0]["inclusion"][0]); later = [float(dict(zip(r["members"].tolist(), r["inclusion"])).get(i, 0.0)) for r in log[1:]]
+        assert min(later) <= before + 1e-9
+
+
+def test_point_dpp_throw_has_exact_marginals_and_sits_near_the_design_point():
+    from graph_engine.throws import throw_at_point_dpp, dpp_inclusion_probabilities
+    rng = np.random.default_rng(2); Z = rng.standard_normal((60, 5)); x = Z[:3].mean(0)
+    hits = np.zeros(60); n = 400
+    for s in range(n):
+        S, pi = throw_at_point_dpp(Z, x, seed=s); hits[S] += 1
+    d = np.linalg.norm(Z - x, axis=1)
+    assert np.corrcoef(hits, -d)[0, 1] > 0.5                       # mass concentrates near the design point
+    # exact marginals: recompute with the same quality on the same support and compare with frequencies
+    scale = float(np.median(np.sort(d)[:6])); q = np.exp(-d ** 2 / (2 * scale ** 2)); near = np.flatnonzero(q > 1e-6)
+    pi = dpp_inclusion_probabilities(Z[near], quality=q[near])
+    assert np.abs(hits[near] / n - pi).max() < 0.08

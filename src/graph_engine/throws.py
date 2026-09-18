@@ -28,7 +28,7 @@ from __future__ import annotations
 
 import numpy as np
 
-__all__ = ["throw_scores", "draw", "draw_pairs", "inclusion_probabilities", "draw_set_dpp", "dpp_inclusion_probabilities", "throw_from_continuum"]
+__all__ = ["throw_scores", "draw", "draw_pairs", "inclusion_probabilities", "draw_set_dpp", "dpp_inclusion_probabilities", "throw_from_continuum", "densify_sequential", "throw_at_point_dpp"]
 
 
 def throw_scores(mechanism: np.ndarray, graph: np.ndarray, subject: np.ndarray | None = None,
@@ -142,3 +142,58 @@ def throw_from_continuum(Z: np.ndarray, x_star: np.ndarray, k: int = 3, dither: 
         S = np.sort(decode(x_star + dither * rng.standard_normal(Z.shape[1])))
         out.append((S, pi[S]))
     return out
+
+
+# -- sequential densification: throw, observe, update the geometry, throw again ----------------------------------------
+def densify_sequential(form, candidates: np.ndarray, rounds: int, sigma: float = 1.0, observe=None, seed: int = 0) -> list[dict]:
+    """The loop that densifies a graph with sets: at each round the set is drawn from the determinantal process whose kernel is
+    the CURRENT posterior covariance of the candidate nodes, L = C_S/σ² (precision_form; the same kernel whose log det is the
+    set value), so P(set) ∝ det(C_S/σ²): nodes still uncertain and in independent directions are drawn together, nodes already
+    pinned by earlier throws are not drawn again. `observe(set) -> [(h, sigma, y)]` returns what the throw taught (e.g. for a
+    confirmed link between i and j the contrast e_i − e_j with its noise); each is a rank-1 update of the form
+    (Sherman–Morrison), after which the kernel — and every inclusion probability — is exact again. Returns per round the
+    members, their exact inclusion probabilities under that round's kernel, and the bits the form lost (the value realized)."""
+    rng = np.random.default_rng(seed); cand = np.asarray(candidates, np.int64); out = []
+    for r in range(rounds):
+        C = form.cov()[np.ix_(cand, cand)] / sigma ** 2
+        lam, V = np.linalg.eigh((C + C.T) / 2); lam = np.clip(lam, 0, None)
+        keep = rng.random(len(lam)) < lam / (1 + lam); Vk = V[:, keep]; chosen = []
+        while Vk.shape[1] > 0:
+            p = (Vk ** 2).sum(1); p /= p.sum(); i = int(rng.choice(len(p), p=p)); chosen.append(i)
+            j = int(np.argmax(np.abs(Vk[i]))); v = Vk[:, j] / Vk[i, j]
+            Vk = Vk - np.outer(v, Vk[i]); Vk = np.delete(Vk, j, axis=1)
+            if Vk.shape[1]:
+                Vk, _ = np.linalg.qr(Vk)
+        pi = np.diag(C @ np.linalg.inv(np.eye(len(C)) + C))
+        S = cand[np.array(sorted(chosen), int)]
+        before = float(np.linalg.slogdet(np.eye(len(C)) + C)[1]) / (2 * np.log(2))
+        if observe is not None and len(S):
+            for h, s, y in observe(S):
+                form.observe(h, s, y)
+        C2 = form.cov()[np.ix_(cand, cand)] / sigma ** 2
+        after = float(np.linalg.slogdet(np.eye(len(C2)) + C2)[1]) / (2 * np.log(2))
+        out.append({"round": r, "members": S, "inclusion": pi[np.array(sorted(chosen), int)] if len(chosen) else np.array([]),
+                    "bits_realized": before - after})
+    return out
+
+
+def throw_at_point_dpp(Z: np.ndarray, x_star: np.ndarray, scale: float | None = None, k: int | None = None,
+                       seed: int = 0) -> tuple[np.ndarray, np.ndarray]:
+    """The exact form of a throw at a design point: instead of dithering x_star and quantizing (no exact condition on an
+    irregular node set), put the design point into the QUALITY of a determinantal process, q_i = exp(−‖z_i − x*‖²/(2·scale²)),
+    L = q Φ Φᵀ q, P(S) ∝ det(L_S). Every inclusion probability is then exact in closed form (diag L(I+L)⁻¹), the members are
+    spread over independent directions by the determinant, and the design point is the bump, not a noisy sample. Default
+    scale = median distance from x* to its 2k (or 6) nearest nodes. If k is given, the drawn set is trimmed to its k members
+    with the highest inclusion probability (a k-DPP would be exact; this is the cheap approximation and is labelled so)."""
+    d = np.linalg.norm(Z - x_star, axis=1)
+    if scale is None:
+        scale = float(np.median(np.sort(d)[: 2 * (k or 3)]))
+    q = np.exp(-d ** 2 / (2 * scale ** 2))
+    near = np.flatnonzero(q > 1e-6)                                   # nodes with any weight: keeps the eigen-decomposition small
+    if len(near) < 2:
+        near = np.argsort(d)[: max(2 * (k or 3), 6)]
+    S, pi = draw_set_dpp(Z[near], quality=q[near], seed=seed)
+    S, pi = near[S], pi
+    if k is not None and len(S) > k:
+        top = np.argsort(-pi)[:k]; S, pi = S[top], pi[top]
+    return S, pi

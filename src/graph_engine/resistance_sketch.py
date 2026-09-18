@@ -32,7 +32,7 @@ import numpy as np
 import scipy.sparse as sp
 import scipy.sparse.linalg as spla
 
-__all__ = ["laplacian_from_edges", "ResistanceSketch", "QuantizedSketch", "lloyd_max_gaussian"]
+__all__ = ["laplacian_from_edges", "ResistanceSketch", "QuantizedSketch", "lloyd_max_gaussian", "edge_leverage", "sparsify"]
 
 
 def laplacian_from_edges(n: int, edges: np.ndarray, weights: np.ndarray | None = None):
@@ -157,6 +157,30 @@ class ResistanceSketch:
 # ------------------------------------------------------------------------------------------------
 # quantization
 # ------------------------------------------------------------------------------------------------
+def edge_leverage(sketch: "ResistanceSketch", edges: np.ndarray, weights: np.ndarray | None = None) -> np.ndarray:
+    """w_e · R_e for every existing edge: exactly the probability that the edge is in a uniformly random spanning tree
+    (Kirchhoff; Burton–Pemantle). Near 1 = a bridge, the only path between two parts — where the graph is fragile and a throw
+    should add a parallel path. Near 0 = redundant for connectivity: many parallel paths. The sum over edges is n − 1 exactly
+    (a spanning tree has n − 1 edges); with the sketch it is n − 1 up to the sketch's own error (test)."""
+    e = np.asarray(edges, np.int64); w = np.ones(len(e)) if weights is None else np.asarray(weights, float)
+    return w * sketch.resistance(e[:, 0], e[:, 1])
+
+
+def sparsify(n: int, edges: np.ndarray, weights: np.ndarray | None = None, q: int | None = None, k: int = 64, seed: int = 0):
+    """Spectral sparsification (Spielman–Srivastava 2011): sample q edges with probability ∝ leverage w_e R_e, reweight by
+    1/(q p_e). The sparsified Laplacian keeps every resistance within (1 ± ε) with ε ≈ O(√(log n / q · n)) — the pruning that
+    keeps the geometry: edges carrying little of the flow go, edges carrying much are kept with their weight raised. Returns
+    (edges, weights) of the sparsifier and the leverages. For the EVIDENCE layer this must not be used — a parallel path there
+    is an independent confirmation, not redundancy; use it for the computation (sketch, kernels) only."""
+    e = np.asarray(edges, np.int64); w = np.ones(len(e)) if weights is None else np.asarray(weights, float)
+    sk = ResistanceSketch.build(n, e, w, k=k, seed=seed)
+    lev = np.clip(edge_leverage(sk, e, w), 1e-12, None); p = lev / lev.sum()
+    q = int(q or max(4 * n, 1))
+    rng = np.random.default_rng(seed); draw = rng.choice(len(e), q, replace=True, p=p)
+    cnt = np.bincount(draw, minlength=len(e)).astype(float); keep = np.flatnonzero(cnt)
+    return e[keep], w[keep] * cnt[keep] / (q * p[keep]), lev
+
+
 def lloyd_max_gaussian(bits: int, iters: int = 200) -> tuple[np.ndarray, np.ndarray]:
     """(levels, edges) of the MSE-optimal scalar quantizer of N(0,1) with 2**bits levels."""
     from scipy.stats import norm
