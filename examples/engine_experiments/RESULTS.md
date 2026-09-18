@@ -384,6 +384,16 @@ pair got ~3 probes and the value rule spends them where the sign potential falls
 already explains. Timing: a plain read 3× faster than the enumeration (0.6 vs 2.0 ms), probe selection slower (37 vs 16 ms) because
 the chain re-solves per candidate. Kept as the reader for N ≥ 2; the enumeration stays for probe selection.
 
+**Throws from the continuum (e27, e27b; cit-HepTh, T = 95, horizon 24, 600 sets of three; label = a new paper co-cites a pair of the
+set that was not co-cited before).** Share of sets with a future link: random 0.7 %; far pairs by softmax 0 %; the MIDPOINT of two
+nodes in resistance space decoded to its three nearest nodes 6.7 % (near pairs 7.2 %, far pairs 1.0 %); dither on the neighbourhood's
+scale 1.7 % (dither on the distance from x*, the first default, 0.8 % — it scattered the decode; fixed); a CHAIN along the segment
+between a far pair, decoded at t = 0.25 / 0.5 / 0.75, 2.0 % with within-set resistance 1.2 — the only rule that finds long links
+above random (3×); a DPP set on a 150-node subsample 0.5 %; an OED-style point (largest hole pushed toward a far node) 0.8 %.
+Reading: decoding a point of the continuum to nodes is a 10× candidate generator for co-citation, but the label rewards locality
+(as e3b and e19 said), so near midpoints win; the chain is what makes a long throw pay at all. Throws are late-decoded points now;
+what x* should be is open — the design point that maximizes variance found nothing here.
+
 **Label-free calibration (e18; same 320 sentences).** Raw pooled 0.591; subtracting each lens's batch-mean log-odds (Batch Calibration) 0.572;
 per sentence form 0.603; per-form Platt on the rule's answers 0.927; on true labels 0.927. The option prior is not the fault; the
 per-form sign inversion is, and only labels (the rule's are enough) fix it.

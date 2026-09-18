@@ -1,0 +1,58 @@
+{
+ "random": {
+  "share_with_future_link": 0.0067,
+  "future_pairs_per_set": 0.0067,
+  "mean_within_resistance": 0.547
+ },
+ "softmax_pairs": {
+  "share_with_future_link": 0.0,
+  "future_pairs_per_set": 0.0,
+  "mean_within_resistance": 1.915
+ },
+ "midpoint": {
+  "share_with_future_link": 0.0667,
+  "future_pairs_per_set": 0.0717,
+  "mean_within_resistance": 0.098
+ },
+ "dithered": {
+  "share_with_future_link": 0.0083,
+  "future_pairs_per_set": 0.0083,
+  "mean_within_resistance": 1.141
+ },
+ "dpp_150_subsample": {
+  "share_with_future_link": 0.005,
+  "future_pairs_per_set": 0.005,
+  "mean_within_resistance": 0.546
+ },
+ "_note": "cit-HepTh, T=95, horizon 24, 600 sets of 3; label = a new paper co-cites a pair of the set that was not co-cited before",
+ "dithered_nb": {
+  "share_with_future_link": 0.0167,
+  "future_pairs_per_set": 0.0167,
+  "mean_within_resistance": 0.296
+ },
+ "mid_far": {
+  "share_with_future_link": 0.01,
+  "future_pairs_per_set": 0.01,
+  "mean_within_resistance": 0.281
+ },
+ "mid_near": {
+  "share_with_future_link": 0.0717,
+  "future_pairs_per_set": 0.0833,
+  "mean_within_resistance": 0.041
+ },
+ "chain_far": {
+  "share_with_future_link": 0.02,
+  "future_pairs_per_set": 0.02,
+  "mean_within_resistance": 1.205
+ },
+ "chain_random": {
+  "share_with_future_link": 0.025,
+  "future_pairs_per_set": 0.0283,
+  "mean_within_resistance": 0.357
+ },
+ "oed_point": {
+  "share_with_future_link": 0.0083,
+  "future_pairs_per_set": 0.0117,
+  "mean_within_resistance": 0.482
+ }
+}

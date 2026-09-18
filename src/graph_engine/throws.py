@@ -124,13 +124,15 @@ def throw_from_continuum(Z: np.ndarray, x_star: np.ndarray, k: int = 3, dither: 
     corners every time, and no 1/π weight can correct for a node that can never be drawn). With dither on the scale of the
     node spacing every node within reach has π > 0 and the decode no longer depends on where x_star sits relative to the grid. Exact
     independence of the quantization error (Schuchman's condition) needs dither UNIFORM over the Voronoi cell; Gaussian
-    dither on the spacing scale is an approximation of that, and the centroid's unbiasedness is measured (test), not proven. Default dither = the median
-    distance from x_star to its 2k nearest nodes. Returns [(members, their inclusion probabilities)] for n_draws throws;
+    dither on the spacing scale is an approximation of that, and the centroid's unbiasedness is measured (test), not proven. Default dither = half the median
+    pairwise distance among the 2k nodes nearest x_star (the neighbourhood's scale). Returns [(members, their inclusion probabilities)] for n_draws throws;
     inclusion probabilities are estimated by n_pi Monte-Carlo decodes of the same dithered point (exact in the limit)."""
     rng = np.random.default_rng(seed)
     d0 = np.linalg.norm(Z - x_star, axis=1)
-    if dither is None:
-        dither = float(np.median(np.sort(d0)[: 2 * k]))
+    if dither is None:                                       # the NEIGHBOURHOOD's own scale: distances among the 2k nearest nodes,
+        near = np.argsort(d0)[: 2 * k]                        # not the distance from x_star (which can be far from every node;
+        D = np.linalg.norm(Z[near][:, None] - Z[near][None], axis=2)   # e27 measured that choice to scatter the decode anywhere)
+        dither = 0.5 * float(np.median(D[np.triu_indices(len(near), 1)]))
     def decode(x):
         return np.argsort(np.linalg.norm(Z - x, axis=1), kind="stable")[:k]
     counts = np.zeros(len(Z))
