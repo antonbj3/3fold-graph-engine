@@ -69,6 +69,35 @@ index maximizes the TRACE, n·tr C — the same edge drops it by n·w‖C v‖²
 (resistance_sketch.kirchhoff_drop). Same C, same rank-1 update, different functional: a log-det
 ranking and a trace ranking of candidate links are not the same ranking (T10).
 
+COUPLED CRITICALITY (T12–T13). `criticality()` reads the smallest NON-TRIVIAL eigenvalue of J — the
+Laplacian's constant vector per connected block is gauge, not weakness, so it is deflated — and
+`joint_criticality` does it for two forms glued through shared concepts the way graph_interface glues
+them. Two parts with σ_min ≈ 1.05 each, sharing one concept both lean on with conductance 1 and
+neither measures, give a joint σ_min of 0.05: a 21× collapse no per-part check can see. The reason is
+sharp and bounds what this read can ever find: the joint form restricted to one part's coordinates is
+that part's form PLUS the other's contribution, so every direction inside one part keeps Rayleigh
+quotient ≥ that part's σ_min. A joint weakness is therefore ALWAYS a cross-part mode. Two consequences
+measured in e31: the shared variable carries the mode's ENERGY (share 1.000 against ≤ 0.025 for every
+other node) while its AMPLITUDE there is exactly 0 — it sits at the neutral point, so ranking nodes by
+eigenvector loading does not find the mediator; and observing the LEVEL of that variable, h = e_s, is
+orthogonal to the mode and does NOT repair it (σ_min 0.050 → 0.0165 at σ = 1, → 0.0498 at σ = 0.05: a
+perfect pin only approaches the old value from below, because an absolute measurement also spends the
+gauge). The repair that works is a CONTRAST across the seam, h = e_a − e_b: σ_min 0.050 → 0.148, and
+that h lies in range(J), so `observe` takes the Sherman–Morrison branch, exact to 5e-13 against the
+recomputed pinv.
+
+NOISE FLOOR (T14–T15). Every σ_min or small-eigenvalue read taken from a k-column sketch carries
+Marchenko–Pastur noise. `mp_floor(n, k, σ²) = σ²(1 + √(n/k))²` is the upper bulk edge for the Gram
+G = (1/k)ZZᵀ of an n×k sketch — the SAMPLED axis is the k columns, γ = n/k — and `eigen_readout` flags
+every eigenvalue inside that bulk, so that a σ_min below the floor is reported as no finding rather
+than as a near-degeneracy. Calibration: a pure-noise Gram at n = 200, k = 800 has 100 % of its
+spectrum flagged and its top eigenvalue 1.4 % under the edge; a spike planted 10× above the edge is
+the one eigenvalue not flagged. Applied to the DPP kernel of all 300 nodes of a graph built from a
+k = 64 sketch: 296 of 300 eigenvalues are inside the bulk (298 with the unit-diagonal convention) and
+the top one sits 6 % over the edge — the kernel is almost all sketch noise, and the EXACT kernel's
+whole spectrum lies below that floor, i.e. at k = 64 no eigenvalue of this kernel is evidence about
+this graph. k = 16/64/256 flags 299/296/288 of 300.
+
 numpy/scipy only; dense — this is the exact reference form, the sketch is the scalable one.
 """
 from __future__ import annotations
@@ -78,7 +107,7 @@ from itertools import combinations
 
 import numpy as np
 
-__all__ = ["PrecisionForm", "Candidate", "set_value_bits"]
+__all__ = ["PrecisionForm", "Candidate", "set_value_bits", "joint_criticality", "mp_floor", "eigen_readout"]
 
 _LOG2 = np.log(2.0)
 
@@ -328,6 +357,185 @@ class PrecisionForm:
         cnt = np.bincount(draw, minlength=len(e)).astype(float)
         keep = np.flatnonzero(cnt)
         return e[keep], w[keep] * cnt[keep] / (q * p[keep]), lev
+
+    # -- criticality ---------------------------------------------------------------------------------
+    def _blocks(self, struct_tol: float = 1e-12):
+        """Connected blocks of the graph drawn by J's non-zero off-diagonal entries."""
+        from scipy.sparse import csr_matrix
+        from scipy.sparse.csgraph import connected_components
+        A = np.abs(self.J).copy()
+        np.fill_diagonal(A, 0.0)
+        A = A > struct_tol * max(float(np.abs(self.J).max()), 1.0)
+        nb, lab = connected_components(csr_matrix(A), directed=False)
+        return nb, lab
+
+    def gauge_null(self, atol: float | None = None) -> np.ndarray:
+        """The TRIVIAL null space: the per-block constant vectors that a graph Laplacian annihilates
+        (its gauge freedom — potentials are defined up to a constant on every connected block). Returns
+        a d×m matrix of orthonormal indicator vectors, one per block whose constant really is in the
+        null space (a block carrying a measurement or a Bernoulli block is NOT counted: J 1_block ≠ 0).
+        Disjoint supports, so the columns are orthonormal by construction."""
+        nb, lab = self._blocks()
+        scale = max(float(np.abs(np.diag(self.J)).max()), 1.0)
+        at = float(atol if atol is not None else 1e-9 * scale)
+        cols = []
+        for c in range(nb):
+            u = (lab == c).astype(float)
+            u /= np.linalg.norm(u)
+            if float(np.abs(self.J @ u).max()) <= at:
+                cols.append(u)
+        return np.stack(cols, 1) if cols else np.zeros((self.d, 0))
+
+    def criticality(self, top: int = 8, atol: float | None = None) -> dict:
+        """The SMALLEST NON-TRIVIAL eigenvalue of J and the direction that carries it.
+
+        J's small eigenvalues are the soft directions of the Gaussian: λ_min of J is 1/λ_max of C, the
+        largest variance in the form. A graph Laplacian always has the constant vector of every
+        connected block in its null space (gauge), which is not a weakness but a convention, so those
+        directions are DEFLATED (`gauge_null`) and the read-out is the smallest eigenvalue on the
+        orthogonal complement. On a single connected Laplacian-only form that is exactly the algebraic
+        connectivity λ₂ (Fiedler); on a form that also carries measurement blocks it is the smallest
+        posterior precision of any contrast the data actually constrain.
+
+        Returns {sigma_min, direction, loading, energy_share, null_dim, n_blocks, spectrum}:
+          direction    the eigenvector v (unit) of that eigenvalue, in the form's coordinates;
+          loading      [(node, v_i)] for the `top` coordinates by |v_i| — where the soft mode lives
+                       in AMPLITUDE;
+          energy_share per-node share of the mode's energy vᵀJv = Σ_{i<j} w_ij (v_i−v_j)² + Σ_i r_i v_i²
+                       (w_ij = −J_ij, r_i = J_ii − Σ_j w_ij): the share of that energy carried by the
+                       edges INCIDENT on each node, so each value is in [0,1] and they sum to 2 (every
+                       edge is counted at both of its endpoints), not to 1. This is the LOAD-BEARING
+                       read: a mediating variable sits near the neutral point of the mode (amplitude
+                       ≈ 0) while carrying nearly all of its energy, so amplitude loading alone will
+                       not find it (see `joint_criticality`).
+        """
+        N = self.gauge_null(atol)
+        if N.shape[1]:
+            U = np.linalg.svd(N, full_matrices=True)[0]
+            P = U[:, N.shape[1]:]
+        else:
+            P = np.eye(self.d)
+        lam, W = np.linalg.eigh(P.T @ self.J @ P)
+        v = P @ W[:, 0]
+        order = np.argsort(-np.abs(v))[:top]
+        W_off = -self.J.copy()
+        np.fill_diagonal(W_off, 0.0)
+        r = np.diag(self.J) - W_off.sum(1)
+        D = (v[:, None] - v[None, :]) ** 2
+        per_node = (W_off * D).sum(1) + r * v ** 2                # each edge counted at both endpoints
+        tot = float(v @ self.J @ v)
+        nb, _ = self._blocks()
+        return {
+            "sigma_min": float(lam[0]),
+            "direction": v,
+            "loading": [(int(i), float(v[i])) for i in order],
+            "energy_share": per_node / max(tot, 1e-300),
+            "null_dim": int(N.shape[1]),
+            "n_blocks": int(nb),
+            "spectrum": lam,
+        }
+
+
+def joint_criticality(form_a: "PrecisionForm", form_b: "PrecisionForm", shared_index_map,
+                      top: int = 8) -> dict:
+    """COUPLED CRITICALITY of two forms glued through shared concepts (the graph_interface federation:
+    J = J_A ⊕ J_B with the rows of S identified — Kron/Schur gluing, no interior exchanged).
+
+    `shared_index_map`: {index in A: index in B} (or an iterable of (a, b) pairs). The joint coordinates
+    are A's coordinates 0..d_a−1 followed by B's NON-shared coordinates; a shared B coordinate is
+    scattered onto its A partner, which is exactly the row identification of graph_interface.
+
+    Why a per-part health check is blind here, stated exactly: the joint form restricted to A's
+    coordinates is J_A + (B's contribution at the shared rows) ⪰ J_A, so EVERY direction supported
+    inside one part has Rayleigh quotient ≥ that part's own σ_min. A joint σ_min below both parts'
+    therefore MUST come from a direction with mass in both interiors — a cross-part mode, which no
+    part can even represent. The shared variables are its only channel, and they are where its energy
+    goes even though its amplitude there is near zero (`shared` below reports both).
+
+    Returns {sigma_min_joint, sigma_min_a, sigma_min_b, ratio, joint, shared, a_map, b_map}:
+      ratio   σ_min(joint) / min(σ_min(A), σ_min(B)) — ≪ 1 is the coupling-induced criticality;
+      shared  per shared concept (joint index, name in A, name in B, amplitude, energy_share of the
+              weak mode), sorted by energy share: the shared variable both parts lean on.
+    """
+    if isinstance(shared_index_map, dict):
+        pairs = [(int(a), int(b)) for a, b in shared_index_map.items()]
+    else:
+        pairs = [(int(a), int(b)) for a, b in np.asarray(shared_index_map, np.int64)]
+    da, db = form_a.d, form_b.d
+    b_to_a = {b: a for a, b in pairs}
+    if len(b_to_a) != len(pairs) or len({a for a, _ in pairs}) != len(pairs):
+        raise ValueError("shared_index_map must be a one-to-one map between A and B coordinates")
+    a_map = np.arange(da)
+    b_map = np.empty(db, np.int64)
+    nxt = da
+    for j in range(db):
+        if j in b_to_a:
+            b_map[j] = b_to_a[j]
+        else:
+            b_map[j] = nxt; nxt += 1
+    dj = nxt
+    J = np.zeros((dj, dj)); bvec = np.zeros(dj)
+    J[np.ix_(a_map, a_map)] += form_a.J; bvec[a_map] += form_a.b
+    J[np.ix_(b_map, b_map)] += form_b.J; bvec[b_map] += form_b.b
+    joint = PrecisionForm(J, bvec, min(form_a.tol, form_b.tol))
+    rj, ra, rb = joint.criticality(top), form_a.criticality(top), form_b.criticality(top)
+    share, v = rj["energy_share"], rj["direction"]
+    shared = sorted(
+        ({"joint": int(a_map[a]), "a": int(a), "b": int(b),
+          "amplitude": float(v[a_map[a]]), "energy_share": float(share[a_map[a]])} for a, b in pairs),
+        key=lambda s: -s["energy_share"])
+    lo = min(ra["sigma_min"], rb["sigma_min"])
+    return {
+        "sigma_min_joint": rj["sigma_min"], "sigma_min_a": ra["sigma_min"], "sigma_min_b": rb["sigma_min"],
+        "ratio": float(rj["sigma_min"] / lo) if lo > 0 else float("inf"),
+        "joint": joint, "report": rj, "shared": shared, "a_map": a_map, "b_map": b_map,
+    }
+
+
+# -- noise floor -----------------------------------------------------------------------------------
+def mp_floor(n: int, k: int, sigma2: float = 1.0) -> float:
+    """Marchenko–Pastur UPPER bulk edge λ₊ = σ²(1 + √(n/k))².
+
+    CONVENTION, stated because every sign of the aspect ratio depends on it: the matrix read out is the
+    n×n Gram G = (1/k)·Z Zᵀ of an n×k sketch Z whose entries are i.i.d. with variance σ². The SAMPLED
+    axis is the second one — k columns (the sketch dimension, k = 64 by default in resistance_sketch,
+    whose Q is (±1/√k)^{m×k}, so its Z Zᵀ already carries the 1/k and is in this normalization).
+    γ = n/k = dimension / samples. Under pure noise the whole spectrum of G lies in
+    [σ²(1−√γ)², σ²(1+√γ)²] as n, k → ∞ with γ fixed (for γ > 1, n−k of the eigenvalues are exactly 0
+    and the bulk sits between the two edges above); an observed eigenvalue below λ₊ is inside the noise
+    bulk and is not a finding. For γ > 1 the LOWER edge is not a floor for σ_min — the rank deficiency
+    puts n−k zeros there — which is why this function returns the upper edge and `eigen_readout` flags
+    everything under it.
+    """
+    if k <= 0 or n <= 0:
+        raise ValueError(f"n and k must be > 0, got n={n}, k={k}")
+    return float(sigma2) * (1.0 + np.sqrt(float(n) / float(k))) ** 2
+
+
+def eigen_readout(matrix, k: int, sigma2: float | None = None) -> dict:
+    """Eigenvalues of a symmetric matrix read out WITH the Marchenko–Pastur floor of the k-dimensional
+    sketch they came from (resistance_sketch's Z, and therefore `_dpp_kernel`'s K = C_S/σ² when C is
+    sketched). `below_floor[i]` is True when λ_i ≤ mp_floor(n, k, σ²): that eigenvalue is inside the
+    bulk a pure-noise sketch of the same shape produces, so it carries no evidence — in particular a
+    σ_min below the floor is not a finding, only an upper bound on the true one (Weyl).
+
+    sigma2 = None uses the plug-in null scale σ̂² = mean(diag(matrix)), i.e. "if this matrix were
+    nothing but sketch noise of its own diagonal scale". That is the conservative null; pass an
+    explicit σ² when the sketch's per-entry noise scale is known.
+
+    Returns {eigenvalues (descending), below_floor, floor, gamma, sigma2, n_below, share_below,
+    n_above, top}."""
+    M = np.asarray(matrix, float)
+    M = (M + M.T) / 2
+    n = len(M)
+    s2 = float(np.mean(np.diag(M))) if sigma2 is None else float(sigma2)
+    floor = mp_floor(n, k, s2)
+    lam = np.linalg.eigvalsh(M)[::-1]
+    below = lam <= floor
+    return {"eigenvalues": lam, "below_floor": below, "floor": float(floor),
+            "gamma": float(n) / float(k), "sigma2": s2, "n_below": int(below.sum()),
+            "share_below": float(below.mean()), "n_above": int((~below).sum()),
+            "top": float(lam[0])}
 
 
 def set_value_bits(C: np.ndarray, H, sigma=1.0) -> float:

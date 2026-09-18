@@ -515,3 +515,172 @@ def test_t11b_sparsify_actually_drops_edges_at_the_same_error_as_the_sketch():
     assert min(kept) < len(edges)                               # edges really are dropped here
     assert np.mean(err_f) < 0.55 and np.mean(err_s) < 0.55
     assert np.mean(err_f) <= np.mean(err_s) + 0.10
+
+
+
+# ---------------------------------------------------------------------------------------------------
+# T12–T15: coupled criticality (the joint form of two glued graphs) and the Marchenko–Pastur floor of
+# every small-eigenvalue read-out taken from a k-dimensional sketch.
+# ---------------------------------------------------------------------------------------------------
+from graph_engine.precision_form import eigen_readout, joint_criticality, mp_floor  # noqa: E402
+
+
+def _glue_part(n_interior, w_in, c_shared, seed):
+    """A healthy part: a strongly connected interior (coords 0..n−1) plus ONE shared concept (coord n)
+    attached to every interior node, total conductance c_shared. Nothing measures the shared concept."""
+    f = PrecisionForm.zeros(n_interior + 1)
+    inside = [(i, j) for i in range(n_interior) for j in range(i + 1, n_interior)]
+    f.add_laplacian(inside, [w_in] * len(inside))
+    f.add_laplacian([(i, n_interior) for i in range(n_interior)], [c_shared / n_interior] * n_interior)
+    return f
+
+
+def test_t12_criticality_is_the_algebraic_connectivity_with_the_gauge_deflated():
+    """The smallest NON-TRIVIAL eigenvalue: on a connected Laplacian-only form exactly λ₂ (Fiedler),
+    with the one constant direction deflated; per connected block when there are several; and no
+    deflation at all once a measurement makes the constant direction informative."""
+    n = 40
+    f, edges, w, L = _laplacian_form(n, 70, 5)
+    lam = np.linalg.eigvalsh(L)
+    r = f.criticality()
+    assert r["n_blocks"] == 1 and r["null_dim"] == 1
+    assert abs(r["sigma_min"] - lam[1]) < 1e-9                    # = algebraic connectivity, exactly
+    v = r["direction"]
+    assert abs(float(v @ np.ones(n))) < 1e-8                      # orthogonal to the deflated gauge
+    assert abs(float(v @ L @ v) - lam[1]) < 1e-9
+    # the energy shares are per-node shares of vᵀJv counted at both endpoints of every edge
+    assert 1.99 < float(r["energy_share"].sum()) < 2.01
+    # two disconnected blocks: two trivial null vectors, the read-out is the 3rd smallest eigenvalue
+    g = PrecisionForm.zeros(2 * n)
+    g.add_laplacian(edges, w); g.add_laplacian(edges + n, w)
+    r2 = g.criticality()
+    assert r2["n_blocks"] == 2 and r2["null_dim"] == 2
+    assert abs(r2["sigma_min"] - np.linalg.eigvalsh(g.J)[2]) < 1e-9
+    # one measurement on the constant direction: nothing is trivial any more
+    h = np.ones(n) / np.sqrt(n)
+    f2 = f.copy(); f2.observe(h, 1.0)
+    r3 = f2.criticality()
+    assert r3["null_dim"] == 0
+    assert abs(r3["sigma_min"] - np.linalg.eigvalsh(f2.J)[0]) < 1e-9
+
+
+def test_t13_joint_criticality_of_two_healthy_parts_glued_through_one_shared_variable():
+    """Two parts, each σ_min ≈ 1.05, glued through one shared concept neither of them measures: the
+    JOINT σ_min is 0.05 — 21× below either part. The weak direction's AMPLITUDE on the shared variable
+    is ~0 (it sits at the neutral point of the mode); its ENERGY share is 1.0 against ≤ 0.025 for every
+    other node, which is the read that actually finds the mediator."""
+    nA = nB = 20
+    A, B = _glue_part(nA, 5.0, 1.0, 0), _glue_part(nB, 5.0, 1.0, 1)
+    r = joint_criticality(A, B, {nA: nB})
+    assert r["sigma_min_a"] > 1.0 and r["sigma_min_b"] > 1.0          # each part healthy
+    assert abs(r["sigma_min_joint"] - 0.05) < 1e-6
+    assert r["ratio"] < 0.05                                          # 21× collapse on gluing
+    s = r["shared"][0]
+    assert s["energy_share"] > 0.999 and abs(s["amplitude"]) < 1e-6
+    other = np.delete(r["report"]["energy_share"], s["joint"])
+    assert other.max() < 0.03                                         # the mediator is unmistakable
+    # WHY a per-part check cannot see it: the joint form restricted to one part's coordinates is that
+    # part's form PLUS the other's contribution, so every direction living inside one part has Rayleigh
+    # quotient ≥ that part's σ_min. The weak mode must be cross-part — and it is.
+    J = r["joint"].J
+    rng = np.random.default_rng(0)
+    for coords, part_sigma in ((r["a_map"], r["sigma_min_a"]), (r["b_map"], r["sigma_min_b"])):
+        for _ in range(200):
+            u = np.zeros(len(J))
+            x = rng.standard_normal(len(coords))
+            u[coords] = x - x.mean()                                  # inside the part, gauge deflated
+            u /= np.linalg.norm(u)
+            assert float(u @ J @ u) >= part_sigma - 1e-9              # never below the part's own σ_min
+    v = r["report"]["direction"]
+    mass_a = float((v[r["a_map"]] ** 2).sum())
+    assert 0.3 < mass_a < 0.7                                         # mass in BOTH interiors
+
+
+def test_t13b_the_repair_is_a_contrast_not_a_level_and_sherman_morrison_is_exact_there():
+    """What raises σ_min back, measured both ways. A rank-1 observation only lifts the weak mode where
+    the mode has amplitude: h = e_s (the LEVEL of the shared variable) is orthogonal to it and does not
+    raise σ_min at all — it lowers it, because measuring an absolute level also spends the gauge and
+    creates a new soft direction 1/(σ²d). The observation that does work is the CONTRAST h = e_a − e_b
+    across the seam (one cross link): σ_min 0.050 → 0.148. That h lies in range(J) of a connected
+    Laplacian, so `observe` takes the Sherman–Morrison branch and it is exact to 1e-12 against the
+    recomputed pseudo-inverse."""
+    nA = nB = 20
+    A, B = _glue_part(nA, 5.0, 1.0, 0), _glue_part(nB, 5.0, 1.0, 1)
+    r = joint_criticality(A, B, {nA: nB})
+    J0, s = r["joint"], r["shared"][0]["joint"]
+    base = r["sigma_min_joint"]
+
+    lvl = {}
+    for sigma in (1.0, 0.05):
+        f = J0.copy(); h = np.zeros(f.d); h[s] = 1.0
+        assert f.observe(h, sigma) is False                           # e_s ∉ range(J): null space shrinks
+        lvl[sigma] = f.criticality()["sigma_min"]
+    assert lvl[1.0] < base and lvl[0.05] < base                       # never "raises σ_min back"
+    assert lvl[0.05] / base > 0.99                                    # a perfect pin only approaches it
+
+    f = J0.copy()
+    h = np.zeros(f.d); h[0] = 1.0; h[int(r["b_map"][0])] = -1.0
+    assert f.in_range(h)
+    bits = f.value_bits(h, 1.0)
+    assert f.observe(h, 1.0) is True                                  # Sherman–Morrison branch
+    C_sm = f.cov().copy()
+    assert np.abs(C_sm - np.linalg.pinv(f.J, rcond=f.tol, hermitian=True)).max() < 1e-12
+    after = f.criticality()["sigma_min"]
+    assert after > 2.9 * base and bits > 0
+    # and it is the seam that is repaired: the mediator's energy share drops
+    assert f.criticality()["energy_share"][s] < 0.999
+
+
+def test_t14_marchenko_pastur_floor_flags_a_pure_noise_sketch_and_spares_a_planted_signal():
+    """The floor itself: for G = (1/k)ZZᵀ with Z an n×k i.i.d. Gaussian sketch (σ = 1.3), the whole
+    spectrum is inside the bulk and the top eigenvalue matches the MP edge σ²(1+√(n/k))² to 1.4 %.
+    With a spike planted 10× above the edge, exactly the signal eigenvalue is not flagged."""
+    rng = np.random.default_rng(0)
+    n, k, s = 200, 800, 1.3
+    Z = rng.standard_normal((n, k)) * s
+    G = Z @ Z.T / k
+    r = eigen_readout(G, k, sigma2=s ** 2)
+    assert abs(r["floor"] - mp_floor(n, k, s ** 2)) < 1e-12
+    assert r["share_below"] >= 0.95 and r["n_above"] == 0
+    assert abs(r["top"] / r["floor"] - 1) < 0.10                      # measured −1.4 %
+    u = rng.standard_normal(n); u /= np.linalg.norm(u)
+    theta = 10 * mp_floor(n, k, s ** 2)
+    Z2 = Z + np.sqrt(theta) * np.outer(u, rng.standard_normal(k))
+    r2 = eigen_readout(Z2 @ Z2.T / k, k, sigma2=s ** 2)
+    assert r2["n_above"] == 1 and not r2["below_floor"][0]            # the signal survives the floor
+    assert r2["eigenvalues"][0] > 5 * r2["floor"]
+    assert abs(float(np.linalg.eigh(Z2 @ Z2.T / k)[1][:, -1] @ u)) > 0.95
+    assert r2["share_below"] >= 0.99                                  # everything else is still bulk
+
+
+def test_t15_how_much_of_a_sketched_dpp_kernel_is_sketch_noise():
+    """Applied where the engine actually reads small eigenvalues off a sketch: the DPP kernel
+    K = C_S/σ² of all 300 nodes of a graph, with C from a k-column resistance sketch instead of the
+    dense pinv. At k = 64, 296 of 300 eigenvalues are inside the MP bulk (298 of 300 after
+    diagonal normalisation) — the kernel is almost entirely sketch noise, and its top eigenvalue sits
+    at the MP edge, which is what a pure-noise Gram does. The EXACT kernel's top eigenvalue is far
+    BELOW the k = 64 floor: at that sketch width no eigenvalue of this kernel is a finding at all.
+    Widening the sketch lowers the floor monotonically, which is the only way to buy the read-out."""
+    n = 300
+    edges, w = random_connected_graph(n, 600, 3)
+    f = PrecisionForm.zeros(n).add_laplacian(edges, w)
+    K_exact = f._dpp_kernel(np.arange(n))
+
+    def corr(M):
+        d = np.sqrt(np.clip(np.diag(M), 1e-300, None))
+        return M / np.outer(d, d)
+
+    below, below_norm = {}, {}
+    for k in (16, 64, 256):
+        Z = ResistanceSketch.build(n, edges, w, k=k, seed=1).Z
+        K = Z @ Z.T                                                   # the sketch's C, the DPP kernel's
+        r = eigen_readout(K, k)                                       # plug-in null σ̂² = mean diag
+        rn = eigen_readout(corr(K), k, sigma2=1.0)                    # unit-diagonal convention
+        below[k], below_norm[k] = r["n_below"], rn["n_below"]
+        assert 0.95 < rn["top"] / rn["floor"] < 1.35                  # the top hugs the MP edge
+        if k == 64:
+            assert r["n_below"] == 296 and rn["n_below"] == 298
+            assert eigen_readout(corr(K_exact), k, sigma2=1.0)["n_below"] == n
+    assert below[16] >= below[64] >= below[256]                       # more columns, lower floor
+    assert below_norm[16] >= below_norm[64] >= below_norm[256]
+    assert below[256] < n                                             # at k = 256 something clears it

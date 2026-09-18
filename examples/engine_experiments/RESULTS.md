@@ -404,7 +404,7 @@ set that was not co-cited before).** Share of sets with a future link: random 0.
 nodes in resistance space decoded to its three nearest nodes 6.7 % (near pairs 7.2 %, far pairs 1.0 %); dither on the neighbourhood's
 scale 1.7 % (dither on the distance from x*, the first default, 0.8 % — it scattered the decode; fixed); a CHAIN along the segment
 between a far pair, decoded at t = 0.25 / 0.5 / 0.75, 2.0 % with within-set resistance 1.2 — the only rule that finds long links
-above random (3×); a DPP set on a 150-node subsample 0.5 %; an OED-style point (largest hole pushed toward a far node) 0.8 %.
+above random (3×); a DPP set on a 150-node subsample 0.5 % (e31: at k = 64 the sketched kernel is 98.7 % below the noise floor — the draw was from noise); an OED-style point (largest hole pushed toward a far node) 0.8 %.
 Reading: decoding a point of the continuum to nodes is a 10× candidate generator for co-citation, but the label rewards locality
 (as e3b and e19 said), so near midpoints win; the chain is what makes a long throw pay at all. Throws are late-decoded points now;
 what x* should be is open — the design point that maximizes variance found nothing here.
@@ -427,6 +427,20 @@ attribution of the next measurement follows the decision, not the entropy: with 
 bits ranking puts the empty high-entropy pair first and the flip ranking puts the decision's pair first. Found on the way: a probe
 OUTSIDE the decision's box can flip a sign decision (a far − answer lifts exactly the hypotheses that fail on the box) — a first test
 assumed the opposite and was wrong.
+
+**Coupled criticality and the noise floor (e31; two more readings of the precision form, concepts from the Hollow project).**
+Criticality = the smallest non-gauge eigenvalue of J with its direction. Two healthy parts (σ_min 1.05 each) glued through one shared,
+unmeasured concept: joint σ_min 0.050, a 21× collapse, and the weak mode loads 0.5 / 0.5 on the two interiors with the shared node at
+amplitude exactly 0. Two things the seed did NOT transfer as stated: gluing precision forms is information-monotone, so a joint
+weakness is always a cross-part mode, never inside one part (proved and tested) — the seed's dynamical instability has no analogue;
+and "one measurement on the shared variable repairs it" is false: an absolute measurement is orthogonal to the mode and spends the
+gauge (σ_min 0.050 → 0.017), while the CONTRAST across the seam raises it 3× (0.148). With asymmetric leans gluing can even improve
+σ_min (1.49×); criticality needs the cross-part bottleneck. Noise floor (Marchenko–Pastur, upper edge σ²(1 + √(n/k))²): on a pure-noise
+k-column Gram every eigenvalue is inside the bulk and the edge is met within 1.4–3.3 %; a planted spike is the one eigenvalue left
+unflagged (overlap 0.995). Applied to the DPP kernel built from a resistance sketch of a 300-node graph: k = 16 → 99.7 % of the
+eigenvalues below the floor, k = 64 → 98.7 %, k = 256 → 96 %; the exact kernel's entire spectrum (top 3.4) lies under the k = 256 floor
+(4.3). So a determinantal throw drawn from a sketched kernel is drawn from noise at these widths — which is what e27's DPP arm
+measured (0.5 %, below random). A σ_min below the floor is not a finding; a DPP on a sketch needs the exact kernel or k ≫ n.
 
 **Label-free calibration (e18; same 320 sentences).** Raw pooled 0.591; subtracting each lens's batch-mean log-odds (Batch Calibration) 0.572;
 per sentence form 0.603; per-form Platt on the rule's answers 0.927; on true labels 0.927. The option prior is not the fault; the
