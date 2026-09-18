@@ -440,3 +440,66 @@ def test_edge_leverage_sums_to_n_minus_one_and_sparsifier_keeps_resistances():
     pairs = rng.integers(0, n, (200, 2)); pairs = pairs[pairs[:, 0] != pairs[:, 1]]
     r1 = np.array([Lp[i, i] + Lp[j, j] - 2 * Lp[i, j] for i, j in pairs]); r2 = np.array([Lp2[i, i] + Lp2[j, j] - 2 * Lp2[i, j] for i, j in pairs])
     assert len(e2) < 0.9 * len(edges) and np.median(np.abs(r2 / r1 - 1)) < 0.15, (len(e2), np.median(np.abs(r2 / r1 - 1)))
+
+
+def test_e_optimal_probe_is_flat_in_the_exact_max_min_and_decides_on_the_tied_weakest_set():
+    """regime_posterior.weakest_direction_probe, the E-optimal (max-min) rule, against a hand recomputation.
+
+    Three things are pinned. (1) The discrimination matrix is exactly the Jeffreys divergence between the two-outcome
+    emissions of the hypotheses that carry mass, summed over the probes made: the chosen x and the reported value
+    agree to 1e-12 with an independent recomputation from the probe list. (2) The EXACT one-step max-min gain is ZERO on this hypothesis space, for
+    every candidate, as long as two hypotheses that carry mass agree on every cell probed so far: their
+    discrimination is 0 and one probe lifts only the pairs that straddle its own cell, so min D does not move. Here it is
+    flat on the first 3 of 5 steps and decisive on the last 2. That is the structural degeneracy of greedy E-optimality,
+    and it is why the rule falls back to the mean lift of the tied weakest set — which is what the returned value is,
+    verified against the recomputation. (3) The mixed rule's λ is fixed on the first step so that the entropy term and
+    the discrimination term have exactly equal scale there: λ · max-gain = max expected entropy drop = best_probe's.
+    """
+    from graph_engine.regime_posterior import RegimePosterior
+
+    def jeffreys(Fk, c, r, wt=1.0):
+        a = np.clip(r * Fk[:, c] + (1 - r) * (1 - Fk[:, c]), 1e-12, 1 - 1e-12)
+        la, lb = np.log(a), np.log(1 - a)
+        return wt * (a[:, None] - a[None, :]) * ((la[:, None] - la[None, :]) - (lb[:, None] - lb[None, :]))
+
+    def dmat(rp, eps=0.01, n_max=30):
+        cells, _w, F, post = rp._with_probes()
+        keep = np.where(post >= eps)[0]
+        if len(keep) > n_max:
+            keep = keep[np.argsort(post[keep])[::-1][:n_max]]
+        if len(keep) < 2:
+            keep = np.argsort(post)[::-1][: min(n_max, len(post))]
+        Fk = F[keep]
+        D = np.zeros((len(keep), len(keep)))
+        for x, _sg, r, wt in rp.probes:
+            c = min(int(np.searchsorted(cells[:, 1], x, side="left")), len(cells) - 1)
+            D += jeffreys(Fk, c, r, wt)
+        return cells, F, post, keep, D
+
+    rp = RegimePosterior(0.0, 1.0, n_grid=8)
+    rp.add_claim(0.05, 0.25, 1, 3); rp.add_claim(0.75, 0.95, 1, 3)
+    flat = []
+    for _ in range(5):
+        cells, F, post, keep, D = dmat(rp)
+        iu = np.triu_indices(len(keep), 1)
+        now_min = float(D[iu].min())
+        assert now_min == 0.0                                   # (2) an unseparated pair always exists early
+        xs = list(cells.mean(1)) + [rp.lo, rp.hi]
+        cs = list(range(len(cells))) + [0, len(cells) - 1]
+        weak = D[iu] <= now_min + 1e-9
+        exact = [float((D[iu] + jeffreys(F[keep], c, 0.95)[iu]).min()) - now_min for c in cs]
+        ties = [float(jeffreys(F[keep], c, 0.95)[iu][weak].mean()) for c in cs]
+        flat.append(max(exact) <= 1e-12)                        # is max-min flat for every candidate?
+        x, gain = rp.weakest_direction_probe(0.95)
+        score = ties if flat[-1] else exact
+        k = int(np.argmax(score))
+        assert abs(x - xs[k]) < 1e-12 and abs(gain - score[k]) < 1e-12, (x, xs[k], gain, score[k])
+        rp.add_probe(float(x), 1 if 0.3 < x < 0.7 else -1, 0.95)
+    assert flat[0] and sum(flat) >= 3, flat                     # flat while the kept pairs are mostly unseparated; the
+    assert not all(flat), flat                                  # exact rule only becomes decisive once they are not
+
+    d_star = rp.best_probe(0.95)[1]                             # (3) equal scale on the first mixed step
+    g_star = rp.weakest_direction_probe(0.95)[1]
+    twin = RegimePosterior(0.0, 1.0, n_grid=8); twin.claims = list(rp.claims); twin.probes = list(rp.probes)
+    twin.weakest_direction_probe(0.95, mix=True)
+    assert abs(twin._eopt_lambda * g_star - d_star) < 1e-12, (twin._eopt_lambda, g_star, d_star)

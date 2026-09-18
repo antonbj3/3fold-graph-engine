@@ -34,6 +34,18 @@ random numbers (`engine+guard`, `engine+reliability`, `engine+replay`, `engine+a
                 guard probe goes to another pair (3-4 of 25 collisions flagged, 21 missed). Mutually exclusive with
                 +guard, same cap on the guard spend. Measured: alone it is WORSE than +guard (1 of 25); it pays only
                 together with +replay and +majority (6 and 7 of 25) — see the numbers below.
+  +eopt         the guard share is spent by the E-OPTIMAL rule (regime_posterior.weakest_direction_probe) instead of the
+                family-entropy rule: the probe that most lifts the SMALLEST pairwise discrimination between hypotheses
+                that carry mass. Motivated by the diagnosis that the second transition is a direction the entropy
+                (D-optimal) criterion can ignore because it optimizes an average. Mutually exclusive with
+                +guard/+guard2/+burst. MEASURED (e21c, same 40 worlds, budget 40): NEGATIVE on both axes —
+                +eopt+replay+majority 1.181 (+0.101 ± 0.046 paired against +guard2+replay+majority's 1.08, 11 of 40
+                wins), 4 of 25 collisions against 7; the pure rule without replay/majority 1.331 (+0.251 ± 0.051),
+                0 of 25.
+  +eoptmix      every probe (no guard share) by the mixed rule, value = expected potential drop + λ·(min-discrimination
+                increase) with λ fixed on the first step so the terms have equal scale. MEASURED: 1.248
+                (+0.169 ± 0.068, 12 of 40), 0 of 25 collisions — the calibration gap is the flattest of the four
+                (−0.002) and that is all it buys.
   +majority     the box claims are read as majority reports (RegimePosterior claim_model="majority") instead of
                 pointwise r-accurate labels — the reading the +reliability result points at as the seat of the loop's
                 over-confidence.
@@ -239,9 +251,9 @@ def _flags(policy: str) -> set:
     f = set(parts[1:])
     if "all" in f:
         f = {"guard", "reliability", "replay"}
-    if f - {"guard", "guard2", "burst", "reliability", "replay", "majority"}:
+    if f - {"guard", "guard2", "burst", "eopt", "eoptmix", "reliability", "replay", "majority"}:
         raise ValueError(policy)
-    if len(f & {"guard", "guard2", "burst"}) > 1:
+    if len(f & {"guard", "guard2", "burst", "eopt", "eoptmix"}) > 1:
         raise ValueError(policy)
     return f
 
@@ -276,7 +288,7 @@ def run(world: World, policy: str, budget: float, instruments=((1.0, 0.8), (4.0,
     next_rec, next_rel = record_every, rel_every
     while spent < budget:
         kind = "value"
-        if ("guard" in flags or "guard2" in flags or "burst" in flags) and spent_guard < guard * budget:
+        if (flags & {"guard", "guard2", "burst", "eopt"}) and spent_guard < guard * budget:
             k = 2 if "guard2" in flags else 1                  # +guard2 buys the PAIR of probes back to back
             fits = [(c, r) for c, r in instruments if spent_guard + k * c <= guard * budget + 1.0]
             if fits:
@@ -284,7 +296,10 @@ def run(world: World, policy: str, budget: float, instruments=((1.0, 0.8), (4.0,
                 best = (-1.0, None)
                 for p in range(world.n_pairs):
                     for c, r in fits:
-                        if k == 2:
+                        if "eopt" in flags:                    # E-optimal: the guard share attacks the WEAKEST
+                            x, gain = posts[p].weakest_direction_probe(r)   # discriminated direction instead of the
+                            xs_now = [x]                       # average (family-entropy) direction
+                        elif k == 2:
                             (x1, x2), gain = posts[p].model_check_pair(r)
                             xs_now = [x1, x2]
                         else:
@@ -301,7 +316,8 @@ def run(world: World, policy: str, budget: float, instruments=((1.0, 0.8), (4.0,
             best = (-1.0, None)
             for p in range(world.n_pairs):
                 for c, r in instruments:
-                    x, gain = posts[p].best_probe(r)
+                    x, gain = (posts[p].weakest_direction_probe(r, mix=True) if "eoptmix" in flags
+                               else posts[p].best_probe(r))   # +eoptmix: EVERY probe by the mixed rule, no guard share
                     if gain / c > best[0]:
                         best = (gain / c, (p, x, c, r))
             p, x, c, r = best[1]

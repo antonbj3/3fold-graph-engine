@@ -1,0 +1,91 @@
+{
+ "n_worlds": 40,
+ "budget": 40,
+ "guard": 0.2,
+ "baseline": "engine+guard2+replay+majority",
+ "engine+guard2+replay+majority": {
+  "wrong40": 1.08,
+  "se": 0.069,
+  "gap_mean": -0.08,
+  "gap_se": 0.065,
+  "collision_tp_fn_fp": [
+   7,
+   18,
+   2
+  ],
+  "vs_baseline": {
+   "mean": 0.0,
+   "se": 0.0,
+   "wins": 0,
+   "ties": 40
+  }
+ },
+ "engine+eopt+replay+majority": {
+  "wrong40": 1.181,
+  "se": 0.072,
+  "gap_mean": 0.09,
+  "gap_se": 0.069,
+  "collision_tp_fn_fp": [
+   4,
+   21,
+   1
+  ],
+  "vs_baseline": {
+   "mean": 0.101,
+   "se": 0.046,
+   "wins": 11,
+   "ties": 0
+  }
+ },
+ "engine+eoptmix+replay+majority": {
+  "wrong40": 1.248,
+  "se": 0.069,
+  "gap_mean": -0.002,
+  "gap_se": 0.069,
+  "collision_tp_fn_fp": [
+   0,
+   25,
+   0
+  ],
+  "vs_baseline": {
+   "mean": 0.169,
+   "se": 0.068,
+   "wins": 12,
+   "ties": 0
+  }
+ },
+ "engine+eopt": {
+  "wrong40": 1.331,
+  "se": 0.077,
+  "gap_mean": 0.249,
+  "gap_se": 0.079,
+  "collision_tp_fn_fp": [
+   0,
+   25,
+   0
+  ],
+  "vs_baseline": {
+   "mean": 0.251,
+   "se": 0.051,
+   "wins": 8,
+   "ties": 0
+  }
+ },
+ "learned_priors": {
+  "engine+guard2+replay+majority": {
+   "p_flip": 0.563,
+   "p_two": 0.095,
+   "reliability": 0.818
+  },
+  "engine+eopt+replay+majority": {
+   "p_flip": 0.493,
+   "p_two": 0.115,
+   "reliability": 0.822
+  },
+  "engine+eoptmix+replay+majority": {
+   "p_flip": 0.528,
+   "p_two": 0.074,
+   "reliability": 0.823
+  }
+ }
+}

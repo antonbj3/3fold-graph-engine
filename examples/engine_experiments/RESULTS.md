@@ -321,6 +321,14 @@ Three additions to the loop, same 40 worlds, paired against `engine` (1.24 at bu
   20 % of a 40-unit budget is 8 probes: one burst per world, on one pair. Allocation is not fixable inside a budget of 2–3 probes
   per pair; a second transition costs ~12 probes and the budget has to be raised for it or a cheaper instrument (a sweep from a
   computation cell: many probes per run) has to exist. Recorded as the limit, not as a rule to tune.
+- **E-optimal / T-optimal allocation (e21c): negative, with the reason.** A max-min rule (raise the smallest pairwise discrimination
+  between mass-carrying hypotheses; the identifiability-steered excitation of the Hollow project, Atkinson–Fedorov's model
+  discrimination) is identically zero on this fixed threshold family until nearly every cell is probed: two hypotheses that agree on
+  every probed cell have discrimination 0, and one probe lifts only the pairs straddling its own cell. The fallback (mean lift of the
+  tied weakest set) spends probes on "threshold in cell i vs i + 1" — hairline distinctions of no value. Measured: +0.10 ± 0.05 wrong and
+  4 of 25 collisions (baseline 7), the mixed rule +0.17. The second transition is not unidentifiable in the max-min sense; it is
+  LOW-PRIOR, and what buys it is the pair purchase with a learned p_two and the majority reading. Two allocation rules refuted
+  (burst, E-optimal); the diagnosis stands as a budget statement.
 
 **One quadratic form (e24, `precision_form`).** Exact to machine precision: effective resistance = (e_i−e_j)ᵀJ⁺(e_i−e_j) (1e-16);
 the GLS estimate and variance of `margin_net` = posterior mean and variance of the observation block (0.0 / 4e-18, including a

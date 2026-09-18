@@ -108,3 +108,21 @@ def test_majority_flag_reads_claims_as_majority_reports():
     w = World(seed=5, n_pairs=4)
     r = run(w, "engine+majority", budget=8, seed=5)
     assert r["believed_wrong"] > run(w, "engine", budget=8, seed=5)["believed_wrong"]   # less sure inside wide boxes
+
+
+def test_eopt_flags_route_the_e_optimal_rule_through_the_loop():
+    """+eopt spends the guard share on weakest_direction_probe (one probe at a time, so the spend is not forced even);
+    +eoptmix buys EVERY probe with the mixed rule and therefore spends nothing on the guard share; the E-flags are
+    mutually exclusive with the other allocation flags."""
+    w = World(seed=5, n_pairs=4)
+    for share in (0.1, 0.25, 0.5):
+        r = run(w, "engine+eopt", budget=20, seed=5, guard=share)
+        assert 0 < r["spent_guard"] <= share * 20 + 1.0, (share, r["spent_guard"])
+    mix = run(w, "engine+eoptmix", budget=20, seed=5)
+    assert mix["spent_guard"] == 0.0 and mix["cost"][-1] >= 20
+    assert run(w, "engine+eopt+replay+majority", budget=20, seed=5)["spent_guard"] > 0
+    for bad in ("engine+eopt+guard2", "engine+eopt+eoptmix", "engine+eoptx"):
+        try:
+            run(w, bad, budget=4, seed=0); assert False, bad
+        except ValueError:
+            pass

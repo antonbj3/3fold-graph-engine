@@ -304,6 +304,97 @@ class RegimePosterior:
                     best = ((min(x1, x2), max(x1, x2)), now - after)
         return best
 
+    def weakest_direction_probe(self, reliability: float = 0.95, mix: bool = False,
+                                eps: float = 0.01, n_max: int = 30, lam: float | None = None) -> tuple[float, float]:
+        """E-OPTIMAL probe: (x, gain), the probe that most raises the SMALLEST pairwise discrimination between the
+        hypotheses that still carry posterior mass. `best_probe` and `model_check_probe` are D-optimal in spirit — they
+        buy the largest expected drop of an entropy (of the sign potential, of the family indicator), which is an
+        AVERAGE over the hypothesis space and can be bought entirely along the directions that are already well
+        separated. The second transition of a collision pair is the opposite case: one direction that no probe in the
+        schedule separates at all. E-optimality (max-min) is the criterion that cannot ignore it.
+
+        Concretely. At a probe in cell c with reliability r a hypothesis h emits + with probability
+        a_h = r·F[h,c] + (1−r)(1−F[h,c]) — a two-outcome distribution, so the expected log-likelihood-ratio
+        contribution of that probe to telling h from h' is the KL divergence between Bern(a_h) and Bern(a_h'). Summed
+        over the probes already made (each with its own cell, reliability and weight) that gives a discrimination
+        matrix D(h,h'); symmetrized (Jeffreys, KL(h‖h') + KL(h'‖h)) because the pair is unordered. The candidate x
+        contributes ΔD(h,h') ≥ 0 exactly — KL is already an expectation over the two outcomes, so no outcome average
+        is needed and the gain is deterministic:
+            gain(x) = min_{h,h'} [D + ΔD(x)] − min_{h,h'} D.
+        Hypotheses with posterior < `eps` are dropped (they are not directions anyone is being confused along) and the
+        set is capped at the `n_max` most probable, so the cost is cells × n_max².
+
+        mix=True returns the MIXED rule, value = (expected entropy drop, exactly `best_probe`'s objective)
+        + λ·(min-discrimination increase), with λ fixed on the first call at max-drop / max-gain over the candidates
+        so the two terms have equal scale on the first step; the same λ is then reused (cached on the object) so later
+        steps are compared on the first step's units. Pass `lam` to fix it by hand.
+        Returns (midpoint, 0.0) when fewer than two hypotheses carry mass."""
+        cells, w, F, post = self._with_probes()
+        mid = 0.5 * (self.lo + self.hi)
+        keep = np.where(post >= eps)[0]
+        if len(keep) > n_max:
+            keep = keep[np.argsort(post[keep])[::-1][:n_max]]
+        if len(keep) < 2:                        # early on the mass is spread over every threshold cell and nothing
+            if len(post) < 2:                    # clears ε; fall back to the two most probable so the rule is defined
+                return (mid, 0.0)
+            keep = np.argsort(post)[::-1][:min(n_max, len(post))]
+        Fk = F[keep]
+
+        def dmat(c: float, r: float, wt: float = 1.0) -> np.ndarray:
+            """Jeffreys divergence between the two-outcome emissions of every pair of kept hypotheses at cell c."""
+            a = np.clip(r * Fk[:, c] + (1 - r) * (1 - Fk[:, c]), 1e-12, 1 - 1e-12)
+            la, lb = np.log(a), np.log(1 - a)
+            return wt * (a[:, None] - a[None, :]) * ((la[:, None] - la[None, :]) - (lb[:, None] - lb[None, :]))
+
+        D = np.zeros((len(keep), len(keep)))
+        for x, _sg, rel, wt in self.probes:
+            c = min(int(np.searchsorted(cells[:, 1], x, side="left")), len(cells) - 1)
+            D += dmat(c, rel, wt)
+        iu = np.triu_indices(len(keep), 1)
+        now_min = float(D[iu].min())
+        xs = list(cells.mean(1)) + [self.lo, self.hi]
+        cs = list(range(len(cells))) + [0, len(cells) - 1]
+        weak = D[iu] <= now_min + 1e-9                    # the tied weakest directions (usually many: each pair of
+        gains, ties = [], []                              # neighbouring thresholds is separated only by its own cell)
+        for c in cs:
+            dd = dmat(c, reliability)[iu]
+            gains.append(float((D[iu] + dd).min()) - now_min)
+            ties.append(float(dd[weak].mean()))
+        gains, ties = np.array(gains), np.array(ties)
+        if gains.max() <= 1e-12:
+            # Max-min is FLAT here: the minimum is attained by many pairs at once and one probe lifts only one of them,
+            # so the exact one-step increase of min D is 0 for every candidate and the criterion cannot choose. Rank by
+            # the mean lift of the tied weakest set instead (the flat-limit derivative of the soft-min surrogate
+            # −β⁻¹ log Σ e^{−βD}); same units, and it reduces to the exact rule as soon as one direction is strictly
+            # weakest. Reported as the value, so a caller comparing pairs compares the same quantity.
+            gains = ties
+        if not mix:
+            k = int(np.argmax(gains))
+            return (float(xs[k]), float(gains[k]))
+        pp = post @ F
+        now = float(self._u(pp) @ w)
+        drops = []
+        for c in cs:
+            f = F[:, c]
+            after = 0.0
+            for sg in (1, -1):
+                ff = f if sg > 0 else 1 - f
+                like = ff * reliability + (1 - ff) * (1 - reliability)
+                pout = float(post @ like)
+                if pout <= 0:
+                    continue
+                after += pout * float(self._u((post * like / pout) @ F) @ w)
+            drops.append(now - after)
+        drops = np.array(drops)
+        if lam is None:
+            lam = getattr(self, "_eopt_lambda", None)
+        if lam is None:
+            lam = float(drops.max() / gains.max()) if gains.max() > 0 else 0.0
+            self._eopt_lambda = lam
+        val = drops + lam * gains
+        k = int(np.argmax(val))
+        return (float(xs[k]), float(val[k]))
+
     def collision(self, flag_at: float = 0.5) -> dict:
         """Posterior mass on the collision family (two transitions) and the Bayes factor against
         the declared single-transition reading. A pair is flagged when that mass passes `flag_at`:
