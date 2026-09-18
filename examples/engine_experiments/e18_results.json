@@ -1,0 +1,7 @@
+{
+ "raw_pooled": 0.591,
+ "batch_calibrated": 0.572,
+ "batch_calibrated_per_form": 0.603,
+ "rule_labelled_per_form": 0.927,
+ "ground_truth_per_form": 0.927
+}

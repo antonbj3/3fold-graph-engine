@@ -166,6 +166,12 @@ record admitted nothing; scanning until a threshold passed broke the level in 8 
 Recovered within 0.07 of the planted values; fused signs with the estimated per-origin weights are > 3 points more accurate than
 with one fixed reliability. Needs ≥ 3 independent origins per question to be identifiable; shared misreadings stay invisible.
 
+**Label-free calibration (e18; same 320 sentences).** Raw pooled 0.591; subtracting each lens's batch-mean log-odds (Batch Calibration) 0.572;
+per sentence form 0.603; per-form Platt on the rule's answers 0.927; on true labels 0.927. The option prior is not the fault; the
+per-form sign inversion is, and only labels (the rule's are enough) fix it.
+
+Sources behind the modules, with their numbers next to ours: LITERATURE.md.
+
 **Mechanism signature (tests).** Electrostatic pull-in, Semenov thermal runaway and shallow-truss snap-through: one limit point,
 order 2.00, β 0.50, γ 0.50, at (1/3, 4/27), (1, 1/e), (1 − 1/√3, ·). Symmetric column: odd, γ 1.00. Cusp, linear, saturating: no limit point.
 Same thing, different names (e17): eleven named textbook phenomena from six fields, grouped by computed signature blind to the
