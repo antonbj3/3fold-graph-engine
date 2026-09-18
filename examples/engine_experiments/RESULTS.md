@@ -478,6 +478,16 @@ mis-declaration, on known truth (500 draws): declaring INDEPENDENT what is share
 coverage falls to 64–77 % — while over-declaring sharing is conservative (96–100 %). That is the e23/e26 question answered where the
 truth is known: when in doubt, declare the ancestor. Sources may now be given as {"id", "parent", "share": θ} records.
 
+**Exact set value for beliefs (e35).** For probes on independent beliefs the posterior factorizes, so the exact set value is the sum of
+the single exact two-outcome values (checked against 2^m × 2^k enumeration to 1e-15); for several probes on one belief the chain rule
+Σ_k [H(X | Y_<k) − H(X | Y_≤k)] telescopes to the exact value (1e-15, any order); the mixed case is the sum over beliefs. The sphere's
+second-order term Var(Δθ)/(2 ln 2) is exact as the step shrinks but overshoots by up to 47 % at r → 1 (median 4.9 %); e24's Gaussian
+image undershoots by up to 226 % (median 14 %). The exact form costs two entropy evaluations. `set_value_bits` and `rank` now take
+the exact route when every candidate is a single probe on an uncoupled belief at its prior; mixed Gaussian + Bernoulli sets keep the
+image with a residual that does not shrink with the set (15 % low on e24's T6 example). e24's ranking is unchanged; its Bernoulli
+bits move to the exact values (0.43 → 0.71 for the r = 0.95 probe). Expected information gain is monotone submodular for conditionally
+independent observations (Krause–Guestrin): 0 violations in 500 checks, so the greedy probe set is within 1 − 1/e of optimal.
+
 **Label-free calibration (e18; same 320 sentences).** Raw pooled 0.591; subtracting each lens's batch-mean log-odds (Batch Calibration) 0.572;
 per sentence form 0.603; per-form Platt on the rule's answers 0.927; on true labels 0.927. The option prior is not the fault; the
 per-form sign inversion is, and only labels (the rule's are enough) fix it.

@@ -684,3 +684,191 @@ def test_t15_how_much_of_a_sketched_dpp_kernel_is_sketch_noise():
     assert below[16] >= below[64] >= below[256]                       # more columns, lower floor
     assert below_norm[16] >= below_norm[64] >= below_norm[256]
     assert below[256] < n                                             # at k = 256 something clears it
+
+
+# -- e35: the EXACT set value of Bernoulli probes (no Gaussian image) --------------------------------
+from graph_engine.precision_form import (  # noqa: E402
+    exact_bernoulli_chain, exact_bernoulli_one_belief, exact_bernoulli_set_value, p_of_theta,
+    sphere_error_grid, sphere_set_value, theta_of_p,
+)
+
+
+def _ent_bits(p):
+    p = np.asarray(p, float); p = p[p > 0]
+    return float(-np.sum(p * np.log2(p)))
+
+
+def brute_joint_bernoulli_value(beliefs, probes):
+    """Independent reference for the exact set value: the full 2^m truths × 2^k answers table,
+    H(X) − Σ_y P(y) H(X|y). No structure assumed — not additivity, not the chain rule."""
+    m, k = len(beliefs), len(probes)
+    x = ((np.arange(1 << m)[:, None] >> np.arange(m)[None, :]) & 1).astype(float)
+    p = np.asarray(beliefs, float)
+    prior = np.prod(np.where(x > 0, p, 1 - p), axis=1)
+    y = ((np.arange(1 << k)[:, None] >> np.arange(k)[None, :]) & 1).astype(float)
+    lik = np.ones((1 << m, 1 << k))
+    for j, (b, r) in enumerate(probes):
+        lik *= np.where(x[:, None, int(b)] == y[None, :, j], float(r), 1.0 - float(r))
+    joint = prior[:, None] * lik
+    Py = joint.sum(0)
+    post = joint / np.where(Py > 0, Py, 1.0)
+    return float(_ent_bits(prior) - float(np.sum(Py * np.array([_ent_bits(post[:, c]) for c in range(1 << k)]))))
+
+
+def test_e35_independent_beliefs_are_additive():
+    """(a) Independent beliefs, one probe each: the joint posterior factorizes, so the exact set value
+    is the SUM of the single exact values — against a brute enumeration over 2^m × 2^k, to 1e-12."""
+    rng = np.random.default_rng(0)
+    for _ in range(60):
+        m = int(rng.integers(2, 5))
+        beliefs = list(rng.uniform(0.05, 0.95, m))
+        probes = [(b, float(rng.uniform(0.55, 0.99))) for b in range(m)]
+        s = sum(bernoulli_exact_bits(beliefs[b], r) for b, r in probes)
+        assert abs(exact_bernoulli_set_value(beliefs, probes) - s) < 1e-12
+        assert abs(brute_joint_bernoulli_value(beliefs, probes) - s) < 1e-12
+
+
+def test_e35_independent_beliefs_monte_carlo():
+    """The same identity against Monte Carlo (sample truth, sample answers, average posterior entropy)."""
+    rng = np.random.default_rng(4)
+    beliefs = [0.3, 0.55, 0.8]
+    probes = [(0, 0.7), (1, 0.85), (2, 0.9)]
+    ex = exact_bernoulli_set_value(beliefs, probes)
+    n = 200_000
+    x = (rng.random((n, 3)) < np.array(beliefs)).astype(int)
+    prior_h = sum(_hb_prior(p) for p in beliefs)
+    post_h = np.zeros(n)
+    for b, r in probes:                                 # the joint posterior factorizes: entropies add
+        truth = x[:, b]
+        y = np.where(rng.random(n) > r, 1 - truth, truth)
+        p = beliefs[b]
+        qy = p * r + (1 - p) * (1 - r)
+        post = np.where(y == 1, p * r / qy, p * (1 - r) / (1 - qy))
+        post_h += -(post * np.log2(post) + (1 - post) * np.log2(1 - post))
+    assert abs((prior_h - float(post_h.mean())) - ex) < 5e-3
+
+
+def _hb_prior(p):
+    return _ent_bits([p, 1 - p])
+
+
+def test_e35_chain_rule_on_one_belief():
+    """(b) Several probes on ONE belief: enumeration over 2^k outcomes = the chain rule
+    Σ_k E[value of probe k | answers 1..k−1], in every order, and = the brute joint table."""
+    rng = np.random.default_rng(1)
+    for _ in range(40):
+        k = int(rng.integers(1, 7))
+        p = float(rng.uniform(0.05, 0.95))
+        rels = list(rng.uniform(0.55, 0.99, k))
+        ex = exact_bernoulli_one_belief(p, rels)
+        total, terms = exact_bernoulli_chain(p, rels)
+        assert abs(total - ex) < 1e-12 and abs(sum(terms) - ex) < 1e-12
+        assert abs(brute_joint_bernoulli_value([p], [(0, r) for r in rels]) - ex) < 1e-12
+        idx = rng.permutation(k)
+        assert abs(exact_bernoulli_chain(p, [rels[i] for i in idx])[0] - ex) < 1e-12
+    rels12 = list(np.random.default_rng(2).uniform(0.55, 0.95, 12))          # k = 12 still enumerable
+    ex12 = exact_bernoulli_one_belief(0.37, rels12)
+    assert abs(exact_bernoulli_chain(0.37, rels12)[0] - ex12) < 1e-12
+    assert ex12 < sum(bernoulli_exact_bits(0.37, r) for r in rels12)          # probes on one belief overlap
+    assert ex12 < _hb_prior(0.37)                                            # and can never exceed h(p)
+
+
+def test_e35_mixed_case_sums_over_beliefs():
+    """(c) Several beliefs each with several probes = sum over beliefs of (b), against the brute table."""
+    beliefs = [0.2, 0.5, 0.8]
+    probes = [(0, 0.7), (0, 0.9), (1, 0.6), (1, 0.6), (1, 0.85), (2, 0.95)]
+    per = [exact_bernoulli_one_belief(beliefs[b], [r for bb, r in probes if bb == b]) for b in range(3)]
+    v = exact_bernoulli_set_value(beliefs, probes)
+    assert abs(v - sum(per)) < 1e-12
+    assert abs(v - brute_joint_bernoulli_value(beliefs, probes)) < 1e-12
+    assert v < sum(bernoulli_exact_bits(beliefs[b], r) for b, r in probes)
+
+
+def test_e35_sphere_coordinate_and_second_order_error():
+    """The flat Fisher coordinate θ = 2 arcsin√p (ds = dθ) and the second-order value Var(Δθ)/(2 ln 2):
+    exact in the small-step limit, and measurably wrong for informative probes."""
+    ps = np.linspace(0.02, 0.98, 25)
+    assert np.allclose(p_of_theta(theta_of_p(ps)), ps, atol=1e-12)
+    d = 1e-6                                                        # ds/dp = 1/sqrt(p(1-p))
+    num = (theta_of_p(ps + d) - theta_of_p(ps - d)) / (2 * d)
+    assert np.max(np.abs(num - 1 / np.sqrt(ps * (1 - ps)))) < 1e-6
+    tiny = abs(sphere_set_value([0.5], [(0, 0.5 + 1e-4)]) / exact_bernoulli_set_value([0.5], [(0, 0.5 + 1e-4)]) - 1)
+    assert tiny < 1e-6                                              # second order is exact as the step → 0
+    g = sphere_error_grid(np.linspace(0.02, 0.98, 49), [0.55, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 0.97, 0.99])
+    assert 0.40 < g["max_rel_error"] < 0.55                         # what the local/Gaussian read pays
+    assert g["median_rel_error"] < 0.10
+    assert g["argmax_r"] == 0.99                                    # the error is in the LARGE steps
+    assert sphere_set_value([0.5], [(0, 0.99)]) > exact_bernoulli_set_value([0.5], [(0, 0.99)])  # overshoots
+
+
+def test_e35_exact_route_in_set_value_bits_on_t6():
+    """(d) The Bernoulli block's value is replaced by the exact form when every row of the set is a
+    probe on an independent registered belief. e24's T6 instance: the ranking of the Bernoulli
+    candidates is unchanged, and their bits now equal the exact two-outcome values."""
+    f, cands, meta, _ = unified_instance()
+    old = f.rank(cands)
+    new = f.rank(cands, exact_bernoulli=True)
+    bern = [c.id for c in cands if c.kind == "regime"]
+    assert [i for i, _, _, _ in old if i in bern] == [i for i, _, _, _ in new if i in bern]
+    nb = {i: v for i, v, _, _ in new}
+    ob = {i: v for i, v, _, _ in old}
+    for c in cands:
+        if c.kind == "regime":
+            assert abs(nb[c.id] - meta[c.id]["exact_bits"]) < 1e-12          # exact, not the image
+            assert abs(ob[c.id] / meta[c.id]["exact_bits"] - 1) > 0.1        # the image was 14-40 % off
+        else:
+            assert abs(nb[c.id] - ob[c.id]) < 1e-12                          # nothing else moves
+    single = [c for c in cands if c.id == "probe_r0.95"][0]
+    assert abs(f.set_value_bits(np.atleast_2d(single.h), single.sigma) - meta["probe_r0.95"]["exact_bits"]) < 1e-12
+    assert abs(f.set_value_bits(np.atleast_2d(single.h), single.sigma, exact_bernoulli=False)
+               - f.value_bits(single.h, single.sigma)) < 1e-12               # the image is still reachable
+    # a MIXED set keeps the Gaussian image, and the residual is the belief row's own gap
+    mix = [c for c in cands if c.kind == "structure"][:1] + [c for c in cands if c.kind == "margin"][:1] + [single]
+    H = np.array([c.h for c in mix]); s = np.array([c.sigma for c in mix])
+    assert f.bernoulli_rows(H) is None
+    gauss = f.set_value_bits(H, s)
+    hybrid = f.set_value_bits(H[:2], s[:2]) + meta["probe_r0.95"]["exact_bits"]
+    assert gauss < hybrid and 0.1 < abs(gauss / hybrid - 1) < 0.2
+
+
+def test_e35_exact_route_gate_is_conservative():
+    """The exact route fires only where the discrete model is the whole story: not on unregistered
+    coordinates, not on multi-coordinate rows, and not once the belief is coupled or updated."""
+    f = PrecisionForm.zeros(2).add_bernoulli(0, 0.4)
+    h, s = bernoulli_probe(0.4, 0.8)
+    assert f.bernoulli_rows(np.array([[h, 0.0]])) is not None
+    assert f.bernoulli_rows(np.array([[h, h]])) is None                      # two coordinates: not a probe
+    assert f.bernoulli_rows(np.array([[0.0, h]])) is None                    # coordinate 1 is not a belief
+    g = PrecisionForm.zeros(2).add_bernoulli(0, 0.4).add_bernoulli(1, 0.6)
+    two = exact_bernoulli_set_value([0.4, 0.6], [(0, 0.8), (1, 0.9)])
+    h2, s2 = bernoulli_probe(0.6, 0.9)
+    assert abs(g.set_value_bits(np.array([[h, 0.0], [0.0, h2]]), np.array([s, s2])) - two) < 1e-12
+    same = exact_bernoulli_one_belief(0.4, [0.8, 0.8])                       # two probes on ONE belief
+    assert abs(g.set_value_bits(np.array([[h, 0.0], [h, 0.0]]), np.array([s, s])) - same) < 1e-12
+    assert same < 2 * bernoulli_exact_bits(0.4, 0.8)
+    g.observe(np.array([h, 0.0]), s)                                         # the belief is no longer at its prior
+    assert g.bernoulli_rows(np.array([[h, 0.0]])) is None
+
+
+def test_e35_exact_set_value_is_submodular_on_one_belief():
+    """(e) Diminishing returns of the exact set value, 500 random (p, reliabilities, A ⊆ B, e):
+    I(X;Y_S) is monotone submodular for observations conditionally independent given X."""
+    rng = np.random.default_rng(35)
+    viol, strict = 0, 0
+    for _ in range(500):
+        p = float(rng.uniform(0.02, 0.98))
+        n = int(rng.integers(2, 8))
+        rel = list(rng.uniform(0.5, 0.999, n))
+        idx = list(rng.permutation(n))
+        e, rest = idx[0], idx[1:]
+        nb = int(rng.integers(0, len(rest) + 1)); B = rest[:nb]
+        na = int(rng.integers(0, nb + 1)); A = B[:na]
+        gA = exact_bernoulli_one_belief(p, [rel[i] for i in A + [e]]) - exact_bernoulli_one_belief(p, [rel[i] for i in A])
+        gB = exact_bernoulli_one_belief(p, [rel[i] for i in B + [e]]) - exact_bernoulli_one_belief(p, [rel[i] for i in B])
+        assert gB >= -1e-12                                                  # monotone
+        viol += int(gA - gB < -1e-12)
+        strict += int(na < nb)
+    assert viol == 0 and strict > 100
+    gains = [exact_bernoulli_one_belief(0.4, [0.8] * k) - exact_bernoulli_one_belief(0.4, [0.8] * (k - 1))
+             for k in range(1, 9)]
+    assert all(gains[i] > gains[i + 1] for i in range(len(gains) - 1))        # strictly diminishing

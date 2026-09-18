@@ -107,7 +107,10 @@ from itertools import combinations
 
 import numpy as np
 
-__all__ = ["PrecisionForm", "Candidate", "set_value_bits", "joint_criticality", "mp_floor", "eigen_readout"]
+__all__ = ["PrecisionForm", "Candidate", "set_value_bits", "joint_criticality", "mp_floor", "eigen_readout",
+           "exact_bernoulli_set_value", "exact_bernoulli_one_belief", "exact_bernoulli_chain",
+           "sphere_set_value", "theta_of_p", "p_of_theta", "bernoulli_outcome_table",
+           "bernoulli_reliability_of_probe", "sphere_error_grid"]
 
 _LOG2 = np.log(2.0)
 
@@ -128,6 +131,7 @@ class PrecisionForm:
     b: np.ndarray                                   # information vector, μ = J⁺ b
     tol: float = 1e-10
     _C: np.ndarray | None = field(default=None, repr=False)
+    beliefs: dict = field(default_factory=dict, repr=False)   # coordinate -> p, filled by add_bernoulli
 
     @classmethod
     def zeros(cls, d: int, tol: float = 1e-10) -> "PrecisionForm":
@@ -166,6 +170,7 @@ class PrecisionForm:
         """(c) local Gaussian image of a Bernoulli belief: Fisher precision 1/(p(1−p))."""
         p = float(np.clip(p, 1e-9, 1 - 1e-9))
         self.J[i, i] += 1.0 / (p * (1.0 - p))
+        self.beliefs[int(i)] = p          # remembered so that `set_value_bits` can take the EXACT route
         self._dirty()
         return self
 
@@ -215,6 +220,7 @@ class PrecisionForm:
     def copy(self) -> "PrecisionForm":
         c = PrecisionForm(self.J.copy(), self.b.copy(), self.tol)
         c._C = None if self._C is None else self._C.copy()
+        c.beliefs = dict(self.beliefs)
         return c
 
     # -- value -------------------------------------------------------------------------------------
@@ -233,23 +239,69 @@ class PrecisionForm:
         frac = float(u @ S @ u) / den
         return float(-np.log1p(-min(frac, 1 - 1e-15)) / (2 * _LOG2))
 
-    def set_value_bits(self, H, sigma=1.0) -> float:
-        """½log₂det(I + D⁻¹ H C Hᵀ D⁻¹), D = diag(σ): the joint value of observing a SET (T5)."""
+    def bernoulli_rows(self, H) -> list[tuple[int, float]] | None:
+        """[(belief coordinate, reliability)] if EVERY row of H is a yes/no probe on a belief this form
+        registered with `add_bernoulli` and those beliefs are independent in C (no coupling to any other
+        coordinate, variance still p(1−p)); None otherwise. The gate of the exact route in
+        `set_value_bits`: it fires only where the discrete model is the whole story."""
+        if not self.beliefs:
+            return None
+        H = np.atleast_2d(np.asarray(H, float))
+        if H.size == 0:
+            return None
+        C = self.cov()
+        out: list[tuple[int, float]] = []
+        for h in H:
+            nz = np.flatnonzero(np.abs(h) > 1e-12)
+            if len(nz) != 1 or int(nz[0]) not in self.beliefs:
+                return None
+            i = int(nz[0]); p = self.beliefs[i]
+            row = np.abs(C[i]).copy(); row[i] = 0.0
+            v = p * (1 - p)
+            if float(row.max()) > 1e-9 * max(v, 1.0) or abs(float(C[i, i]) - v) > 1e-9 * max(v, 1.0):
+                return None                       # the belief is coupled or no longer at its prior
+            out.append((i, bernoulli_reliability_of_probe(float(h[0] if len(h) == 1 else h[i]))))
+        return out
+
+    def set_value_bits(self, H, sigma=1.0, exact_bernoulli: bool = True) -> float:
+        """½log₂det(I + D⁻¹ H C Hᵀ D⁻¹), D = diag(σ): the joint value of observing a SET (T5).
+
+        When every row is a yes/no probe on an independent registered Bernoulli belief (`bernoulli_rows`)
+        the Gaussian image is NOT used: the value is the exact discrete one, Σ_b I(X_b; Y_{S_b}), by
+        enumeration over each belief's outcome patterns (e35 (d)). Both are the same functional I(x;y_S);
+        the discrete evaluation is simply exact, and it is the only route that is. exact_bernoulli=False
+        forces the Gaussian image (what e24 measured). A MIXED set — Gaussian rows together with belief
+        probes — still takes the Gaussian image on the whole set, and then the belief part carries the
+        e24 residual (up to 43 %, median 15 %, order preserved); e35 measures it on T6's own instance."""
         H = np.atleast_2d(np.asarray(H, float))
         if H.size == 0:
             return 0.0
+        if exact_bernoulli:
+            rows = self.bernoulli_rows(H)
+            if rows is not None:
+                coords = sorted({i for i, _ in rows})
+                idx = {c: k for k, c in enumerate(coords)}
+                return exact_bernoulli_set_value([self.beliefs[c] for c in coords],
+                                                 [(idx[i], r) for i, r in rows])
         s = np.broadcast_to(np.asarray(sigma, float), (len(H),))
         M = (H @ self.cov() @ H.T) / np.outer(s, s)
         sign, ld = np.linalg.slogdet(np.eye(len(H)) + M)
         return float(ld / (2 * _LOG2)) if sign > 0 else float("-inf")
 
-    def value_of(self, cands: list[Candidate]) -> float:
-        return self.set_value_bits(np.array([c.h for c in cands]), np.array([c.sigma for c in cands]))
+    def value_of(self, cands: list[Candidate], exact_bernoulli: bool = True) -> float:
+        return self.set_value_bits(np.array([c.h for c in cands]), np.array([c.sigma for c in cands]),
+                                   exact_bernoulli=exact_bernoulli)
 
     # -- ranking -----------------------------------------------------------------------------------
-    def rank(self, cands: list[Candidate]) -> list[tuple[str, float, float, str]]:
-        """(id, bits, bits/cost, kind) sorted by bits per cost — one currency for every kind (T6)."""
-        out = [(c.id, self.value_bits(c.h, c.sigma), self.value_bits(c.h, c.sigma) / c.cost, c.kind) for c in cands]
+    def rank(self, cands: list[Candidate], exact_bernoulli: bool = False) -> list[tuple[str, float, float, str]]:
+        """(id, bits, bits/cost, kind) sorted by bits per cost — one currency for every kind (T6).
+        exact_bernoulli=True prices belief probes by the exact two-outcome entropy drop instead of the
+        local Gaussian image (e35 (d)); the default keeps e24's measured numbers."""
+        def bits(c: Candidate) -> float:
+            if exact_bernoulli:
+                return self.set_value_bits(np.atleast_2d(c.h), c.sigma, exact_bernoulli=True)
+            return self.value_bits(c.h, c.sigma)
+        out = [(c.id, bits(c), bits(c) / c.cost, c.kind) for c in cands]
         return sorted(out, key=lambda t: -t[2])
 
     def best_set(self, cands: list[Candidate], k: int, per_cost: bool = False) -> list[Candidate]:
@@ -569,3 +621,155 @@ def bernoulli_fisher_bits(p: float, reliability: float) -> float:
     h, s = bernoulli_probe(p, reliability)
     t = (p * (1 - p)) * h * h / (s * s)
     return float(t / (1 + t) / (2 * _LOG2))
+
+
+# -- EXACT set value of Bernoulli probes (e35) -------------------------------------------------------
+# The Gaussian image above is the only inexact step in this file (T4: order kept, bits up to 43 % off).
+# For a SET of yes/no probes it need not be paid at all — the exact value is a finite sum:
+#
+#   ONE BELIEF, k probes. Probes are conditionally independent GIVEN the truth X (each is a binary
+#   symmetric channel of reliability r_i), so for an outcome pattern y ∈ {0,1}^k
+#       P(y) = p·Π_i r_i^{y_i}(1−r_i)^{1−y_i} + (1−p)·Π_i (1−r_i)^{y_i} r_i^{1−y_i},
+#       p(y) = p·Π_i r_i^{y_i}(1−r_i)^{1−y_i} / P(y),
+#   and the exact value is the drop of the EXPECTED binary entropy
+#       V(S) = h(p) − Σ_y P(y) h(p(y)) = I(X; Y_S)  bits.                                    (b)
+#   CHAIN RULE, one line: Σ_{k} [H(X|Y_{<k}) − H(X|Y_{≤k})] telescopes to H(X) − H(X|Y_S) = V(S), and
+#   the k-th term is E_{y_{<k}}[ value of probe k at the posterior p(y_{<k}) ] — so the sequential
+#   "value of the next probe in the belief left by the previous answers" summed over any order IS the
+#   set value (`exact_bernoulli_chain`, equal to the enumeration to 1e-15).
+#
+#   DIFFERENT BELIEFS. With independent beliefs X_b and each probe touching one of them, the joint
+#   prior and the channels factorize, so the joint posterior factorizes for EVERY outcome pattern:
+#       P(y) = Π_b P_b(y_b),  p_b(y) = p_b(y_b)  ⇒  H(X|Y=y) = Σ_b H(X_b|y_b)
+#   and therefore V(S) = Σ_b V_b(S_b): the exact set value is the SUM of the per-belief exact values,
+#   with no cross term.                                                                       (a)
+#   Both are I(X;Y_S) — the same functional `set_value_bits` computes in the Gaussian image, evaluated
+#   on the true discrete model instead of its local quadratic image.
+#
+#   SUBMODULARITY. For observations that are conditionally independent given X,
+#       V(S ∪ {e}) − V(S) = I(X;Y_e|Y_S) = H(Y_e|Y_S) − H(Y_e|X),
+#   where the subtrahend does not depend on S (conditional independence) and H(Y_e|Y_S) is
+#   non-increasing in S (conditioning reduces entropy). Hence the marginal gain is non-increasing:
+#   V is monotone submodular (Krause & Guestrin 2005), and greedy is within 1 − 1/e. e35 checks the
+#   diminishing-returns inequality directly on 500 random (p, r, A ⊆ B, e).                    (e)
+
+
+def theta_of_p(p):
+    """The FLAT coordinate of the Bernoulli Fisher metric ds² = dp²/(p(1−p)): θ = 2·arcsin√p ∈ [0, π],
+    in which ds = dθ — the belief simplex is a quarter circle of unit radius (√p, √(1−p))."""
+    return 2.0 * np.arcsin(np.sqrt(np.clip(np.asarray(p, float), 0.0, 1.0)))
+
+
+def p_of_theta(theta):
+    return np.sin(np.asarray(theta, float) / 2.0) ** 2
+
+
+def _hbin(x):
+    x = np.clip(np.asarray(x, float), 1e-300, 1 - 1e-300)
+    return -(x * np.log2(x) + (1 - x) * np.log2(1 - x))
+
+
+def bernoulli_outcome_table(p: float, reliabilities) -> tuple[np.ndarray, np.ndarray]:
+    """(P(y), p(y)) over all 2^k outcome patterns of k conditionally independent reliability-r probes
+    on ONE belief p. Rows are ordered by the integer whose bit i is y_i ("probe i answered yes")."""
+    r = np.clip(np.asarray(list(reliabilities), float), 1e-12, 1 - 1e-12)
+    k = len(r)
+    if k == 0:
+        return np.ones(1), np.full(1, float(p))
+    if k > 20:
+        raise ValueError(f"enumeration over 2^k outcomes needs k <= 20, got k={k}")
+    bits = ((np.arange(1 << k)[:, None] >> np.arange(k)[None, :]) & 1).astype(float)
+    l1 = np.prod(np.where(bits > 0, r, 1 - r), axis=1)          # P(y | X = 1)
+    l0 = np.prod(np.where(bits > 0, 1 - r, r), axis=1)          # P(y | X = 0)
+    p = float(np.clip(p, 0.0, 1.0))
+    Py = p * l1 + (1 - p) * l0
+    post = np.where(Py > 0, p * l1 / np.where(Py > 0, Py, 1.0), p)
+    return Py, post
+
+
+def exact_bernoulli_one_belief(p: float, reliabilities) -> float:
+    """(b) EXACT value in bits of a set of probes on ONE belief: h(p) − Σ_y P(y) h(p(y)) = I(X;Y_S),
+    by enumeration over the 2^k outcome patterns (k ≤ 20). No Gaussian image anywhere."""
+    Py, post = bernoulli_outcome_table(p, reliabilities)
+    return float(_hbin(p) - float(np.sum(Py * _hbin(post))))
+
+
+def exact_bernoulli_chain(p: float, reliabilities) -> tuple[float, list[float]]:
+    """The same value by the CHAIN RULE: (total, per-probe conditional values), where term k is
+    E_{y_{<k}}[ bernoulli_exact_bits(p(y_{<k}), r_k) ] — the value of probe k in the belief the first
+    k−1 answers leave. Telescoping makes the sum equal `exact_bernoulli_one_belief` for ANY order."""
+    r = list(np.asarray(list(reliabilities), float))
+    terms = []
+    for k in range(len(r)):
+        Py, post = bernoulli_outcome_table(p, r[:k])
+        terms.append(float(np.sum(Py * np.array([bernoulli_exact_bits(float(q), float(r[k])) for q in post]))))
+    return float(sum(terms)), terms
+
+
+def exact_bernoulli_set_value(beliefs, probes) -> float:
+    """(a)+(b)+(c) EXACT value in bits of an arbitrary set of yes/no probes over independent beliefs.
+
+    beliefs : [p_0, p_1, ...]                    independent Bernoulli beliefs
+    probes  : [(belief_index, reliability), ...] any number of probes per belief
+
+    Value = Σ_b I(X_b; Y_{S_b}) — additive across beliefs because the joint posterior factorizes (a),
+    each term exact by enumeration over that belief's 2^{k_b} outcome patterns (b)."""
+    ps = [float(x) for x in beliefs]
+    per: dict[int, list[float]] = {}
+    for bi, r in probes:
+        per.setdefault(int(bi), []).append(float(r))
+    if any(b < 0 or b >= len(ps) for b in per):
+        raise IndexError("probe refers to a belief index outside `beliefs`")
+    return float(sum(exact_bernoulli_one_belief(ps[b], rs) for b, rs in per.items()))
+
+
+def sphere_set_value(beliefs, probes, moment: str = "var") -> float:
+    """The SAME set in the flat (sphere) coordinate θ = 2 arcsin√p: the second-order value
+
+        V₂(S) = Var(Δθ) / (2 ln 2)        bits,   Δθ = θ(p(y)) − θ(p) over the outcome law P(y)
+
+    (moment="raw" uses E[Δθ²] instead of the variance). This is what the Gaussian image of the
+    Bernoulli block computes, written in the coordinate where the Fisher metric is flat: the Jensen
+    gap of the strictly concave h is −½h″(p)·E[Δp²] = E[Δp²]/(2 ln2·p(1−p)) = E[Δθ²]/(2 ln2) + O(Δ³),
+    i.e. the expected entropy drop is the expected SQUARED DISTANCE the belief travels on the quarter
+    circle. Exact only in the small-step limit; `sphere_error_grid` measures what the truncation costs
+    against `exact_bernoulli_set_value` over a (p, r) grid — the error e24's T4 pays."""
+    ps = [float(x) for x in beliefs]
+    per: dict[int, list[float]] = {}
+    for bi, r in probes:
+        per.setdefault(int(bi), []).append(float(r))
+    tot = 0.0
+    for b, rs in per.items():
+        Py, post = bernoulli_outcome_table(ps[b], rs)
+        dth = theta_of_p(post) - theta_of_p(ps[b])
+        m2 = float(np.sum(Py * dth ** 2))
+        if moment == "var":
+            m2 -= float(np.sum(Py * dth)) ** 2
+        elif moment != "raw":
+            raise ValueError("moment must be 'var' or 'raw'")
+        tot += m2 / (2 * _LOG2)
+    return float(tot)
+
+
+def sphere_error_grid(ps, rels, k: int = 1, moment: str = "var") -> dict:
+    """Relative error of the second-order sphere value against the exact value over a (p, r) grid,
+    for k identical probes per belief. Returns {max_rel_error, median_rel_error, argmax (p, r), ...}."""
+    rows = []
+    for p in np.asarray(ps, float):
+        for r in np.asarray(rels, float):
+            ex = exact_bernoulli_set_value([float(p)], [(0, float(r))] * k)
+            sp = sphere_set_value([float(p)], [(0, float(r))] * k, moment=moment)
+            rows.append((float(p), float(r), ex, sp, abs(sp / ex - 1.0) if ex > 0 else 0.0))
+    err = np.array([x[4] for x in rows])
+    i = int(np.argmax(err))
+    return {"n": len(rows), "k_probes": int(k), "moment": moment,
+            "max_rel_error": float(err.max()), "median_rel_error": float(np.median(err)),
+            "argmax_p": rows[i][0], "argmax_r": rows[i][1],
+            "exact_at_argmax_bits": rows[i][2], "sphere_at_argmax_bits": rows[i][3],
+            "max_rel_error_at_r_le_0.9": float(max((x[4] for x in rows if x[1] <= 0.9), default=0.0))}
+
+
+def bernoulli_reliability_of_probe(h: float, sigma: float | None = None) -> float:
+    """Invert `bernoulli_probe`'s slope: h = 2r − 1 ⇒ r = (1 + h)/2 (σ carries no extra information —
+    it is determined by p and r)."""
+    return float(np.clip((1.0 + float(h)) / 2.0, 0.0, 1.0))
