@@ -28,7 +28,7 @@ from __future__ import annotations
 
 import numpy as np
 
-__all__ = ["throw_scores", "draw", "draw_pairs", "inclusion_probabilities", "draw_set_dpp", "dpp_inclusion_probabilities", "throw_from_continuum", "densify_sequential", "throw_at_point_dpp", "chain_throw"]
+__all__ = ["throw_scores", "draw", "draw_pairs", "inclusion_probabilities", "draw_set_dpp", "dpp_inclusion_probabilities", "throw_from_continuum", "densify_sequential", "throw_at_point_dpp", "chain_throw", "would_be_leverage", "bridge_throws"]
 
 
 def throw_scores(mechanism: np.ndarray, graph: np.ndarray, subject: np.ndarray | None = None,
@@ -212,3 +212,51 @@ def chain_throw(Z: np.ndarray, a: int, b: int, steps: int = 3, dither: float = 0
         x = za + t * (zb - za) + (dither * rng.standard_normal(Z.shape[1]) if dither > 0 else 0.0)
         nodes.append(int(np.argmin(np.linalg.norm(Z - x, axis=1))))
     return np.array(sorted(set(nodes)), int)
+
+
+# -- would-be leverage: what an edge that does not exist yet would be worth to the connectivity -------------------------
+def would_be_leverage(sketch_or_Z, i, j, w: float = 1.0) -> np.ndarray:
+    """P(the candidate edge (i, j) of weight w is in a uniform spanning tree of the graph WITH it added) = w R_ij / (1 + w R_ij),
+    with R_ij the resistance in the graph WITHOUT it. `sketch_or_Z` is a ResistanceSketch or its coordinates Z (R_ij = ‖z_i − z_j‖²);
+    i, j are node ids or arrays of them.
+
+    Proof. For an existing edge Kirchhoff's rule gives P(e ∈ UST) = w_e R_e (Burton–Pemantle), so the quantity wanted is w R'_ij,
+    the leverage measured in the NEW graph. Adding the edge is a rank-1 update of the Laplacian, L' = L + w b bᵀ with b = e_i − e_j.
+    Since b ⟂ 1, Sherman–Morrison applies to the pseudo-inverse on 1^⊥:
+            L'⁺ = L⁺ − w L⁺ b bᵀ L⁺ / (1 + w bᵀ L⁺ b) = L⁺ − w L⁺ b bᵀ L⁺ / (1 + w R_ij) ,
+            R'_ij = bᵀ L'⁺ b = R_ij − w R²_ij / (1 + w R_ij) = R_ij / (1 + w R_ij) ,
+    hence w R'_ij = w R_ij / (1 + w R_ij). ∎ (Same identity as resistance_sketch.kirchhoff_drop's denominator; here it is the
+    inclusion probability itself, not a trace decrease.)
+
+    Reading. The map x ↦ x/(1 + x) is increasing and bounded: a candidate whose ends are already connected by many parallel paths
+    (R → 0) has leverage → 0 — redundant; a candidate that would be the ONLY path between two parts (R → ∞) has leverage → 1 — a
+    bridge, i.e. a link whose two ends currently share no route. Unlike raw resistance it saturates, so the ordering at the top is
+    compressed by construction and a band in the middle is a well-defined region rather than a tail. WHERE along this scale future
+    links actually sit is a measurement (examples/engine_experiments/e27c), not an assumption of this function."""
+    Z = getattr(sketch_or_Z, "Z", sketch_or_Z)
+    Z = np.asarray(Z, float)
+    d = Z[np.asarray(i)] - Z[np.asarray(j)]
+    R = (d * d).sum(-1)
+    return w * R / (1.0 + w * R)
+
+
+def bridge_throws(Z: np.ndarray, candidates: np.ndarray, band: tuple[float, float] = (0.3, 0.7), k: int = 100,
+                  w: float = 1.0, sharpness: float = 1.0, temperature: float = 1.0, floor: float = 0.05,
+                  seed: int = 0) -> list[tuple[int, int, float]]:
+    """k candidate pairs whose would-be leverage lies in `band`, as (i, j, π) with EXACT inclusion probabilities.
+
+    `candidates` is an m×2 array of pairs (no edge assumed between them). Pairs outside the band are dropped; the rest are drawn
+    by the existing `draw_pairs` (systematic sampling, Madow 1949) over the score
+            s_ij = −sharpness · ((ℓ_ij − mid) / half)² ,   mid, half = centre and half-width of the band,
+    a softmax peaking at the band's centre and falling off toward its edges. Nothing here is a new sampler: the probabilities come
+    from `inclusion_probabilities`/`draw_pairs`, so a 1/π-weighted fit on the outcomes is valid (e8b), and the floor keeps every
+    in-band pair reachable. Returns [] if no candidate falls in the band."""
+    cand = np.asarray(candidates, np.int64).reshape(-1, 2)
+    lev = would_be_leverage(Z, cand[:, 0], cand[:, 1], w=w)
+    lo, hi = float(band[0]), float(band[1])
+    keep = np.flatnonzero((lev >= lo) & (lev <= hi))
+    if len(keep) == 0:
+        return []
+    mid, half = (lo + hi) / 2, max((hi - lo) / 2, 1e-12)
+    s = -sharpness * ((lev[keep] - mid) / half) ** 2
+    return draw_pairs(cand[keep, 0], cand[keep, 1], s, k, temperature=temperature, floor=floor, seed=seed)

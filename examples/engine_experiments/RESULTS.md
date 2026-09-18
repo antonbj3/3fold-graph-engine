@@ -416,6 +416,12 @@ above random (3×); a DPP set on a 150-node subsample 0.5 % (e31: at k = 64 the 
 Reading: decoding a point of the continuum to nodes is a 10× candidate generator for co-citation, but the label rewards locality
 (as e3b and e19 said), so near midpoints win; the chain is what makes a long throw pay at all. Throws are late-decoded points now;
 what x* should be is open — the design point that maximizes variance found nothing here.
+Would-be leverage (e27c): for a candidate link that does not exist, the probability it would sit in a uniform spanning tree of the
+graph with it added is wR_ij/(1 + wR_ij) — exact (Sherman–Morrison; checked to 1e-10 against a fresh pinv). Decile curve over 20 000
+random non-co-cited pairs: future co-citation is MONOTONE DECREASING in would-be leverage (bottom decile 1.0 %, top five deciles 1 of
+10 000; Fisher p = 1e-9). A candidate that would be a bridge is anti-predictive; the mid band is empty, not a sweet spot. Third
+time the same answer from three different scores (raw resistance, midpoint decode, would-be leverage): on citation data the label
+rewards what is already almost connected. The quantity stays in `throws` as an exact bridge measure; it is not a link predictor.
 
 **The checker layer (e30, `claim_types`; seed: proof checking blocks mistakes before they enter).** Dimensions over the raw numeric
 extractions of both corpora: hep-ex 1 761 records, 6.9 % rejected (unknown unit 52, mass without unit 29, dimension mismatch 18);

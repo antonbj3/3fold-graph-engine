@@ -128,3 +128,88 @@ def test_chain_throw_decodes_the_segment_to_intermediate_nodes():
     ch = chain_throw(Z, 0, 6, steps=3)
     assert ch[0] == 0 and ch[-1] == 6 and set(ch) >= {0, 6} and 1 <= len(ch) - 2 <= 3
     assert all(0 < i < 6 for i in ch[1:-1])                                    # intermediate nodes lie between the ends
+
+
+# -- would-be leverage --------------------------------------------------------------------------------------------------
+def _exact_coords(n, edges, weights=None):
+    """Z with ‖z_i − z_j‖² = R_ij exactly: L⁺ = V diag(λ) Vᵀ, Z = V diag(√λ). Used to test the FORMULA, not the sketch."""
+    e = np.asarray(edges, np.int64); w = np.ones(len(e)) if weights is None else np.asarray(weights, float)
+    L = np.zeros((n, n))
+    for (a, b), ww in zip(e, w):
+        L[a, a] += ww; L[b, b] += ww; L[a, b] -= ww; L[b, a] -= ww
+    Lp = np.linalg.pinv(L); lam, V = np.linalg.eigh((Lp + Lp.T) / 2)
+    return V * np.sqrt(np.clip(lam, 0, None)), L, Lp
+
+
+def test_would_be_leverage_equals_brute_force_pinv_on_the_graph_with_the_edge_added():
+    """w R'_ij computed in the graph WITH the candidate edge (fresh pinv) equals w R_ij/(1 + w R_ij) from the graph without it."""
+    from graph_engine.throws import would_be_leverage
+    rng = np.random.default_rng(0); n = 9
+    e = sorted({(min(a, b), max(a, b)) for a, b in zip(*np.triu_indices(n, 1)) if rng.random() < 0.45} |
+               {(i, i + 1) for i in range(n - 1)})
+    e = np.array(sorted(e)); wts = 0.5 + rng.random(len(e))
+    Z, L, Lp = _exact_coords(n, e, wts); have = {tuple(p) for p in e.tolist()}
+    tested = 0
+    for i in range(n):
+        for j in range(i + 1, n):
+            if (i, j) in have:
+                continue
+            for w in (0.3, 1.0, 4.0):
+                b = np.zeros(n); b[i] = 1.0; b[j] = -1.0
+                L2 = L + w * np.outer(b, b); R2 = float(b @ np.linalg.pinv(L2) @ b)   # brute force: rebuild and re-pinv
+                assert abs(w * R2 - float(would_be_leverage(Z, i, j, w=w))) < 1e-10
+            tested += 1
+    assert tested >= 5
+
+
+def test_existing_edge_leverage_is_one_on_a_path_and_three_quarters_on_a_four_cycle():
+    """Kirchhoff: P(e ∈ UST) = w_e R_e. Every edge of a path is a bridge (1). On a 4-cycle each edge has R = 1·3/(1+3) = 3/4
+    (the edge in parallel with the 3-edge path), and the four values sum to 3 = n − 1."""
+    from graph_engine.resistance_sketch import edge_leverage, ResistanceSketch
+    path = np.array([(i, i + 1) for i in range(5)]); Zp, _, _ = _exact_coords(6, path)
+    lev_p = np.array([np.sum((Zp[a] - Zp[b]) ** 2) for a, b in path])
+    assert np.allclose(lev_p, 1.0, atol=1e-10) and abs(lev_p.sum() - 5) < 1e-10
+    cyc = np.array([(0, 1), (1, 2), (2, 3), (0, 3)]); Zc, _, _ = _exact_coords(4, cyc)
+    lev_c = np.array([np.sum((Zc[a] - Zc[b]) ** 2) for a, b in cyc])
+    assert np.allclose(lev_c, 0.75, atol=1e-10) and abs(lev_c.sum() - 3) < 1e-10
+    sk = ResistanceSketch.build(4, cyc, k=64, seed=0)             # the same quantity through the public helper on the sketch
+    assert np.abs(edge_leverage(sk, cyc) - 0.75).max() < 0.15
+
+
+def test_would_be_leverage_saturates_in_the_open_unit_interval_and_is_monotone_in_resistance():
+    """Bounded and increasing: a candidate can never be MORE than a bridge. The far end approaches 1 but never reaches it,
+    and two disconnected parts (R → ∞) are the limit, not an attained value."""
+    from graph_engine.throws import would_be_leverage
+    R = np.array([1e-6, 1e-3, 0.1, 1.0, 10.0, 1e3, 1e9])
+    Z = np.zeros((len(R) + 1, 1)); Z[1:, 0] = np.sqrt(R)                     # node 0 at the origin, node t+1 at distance √R_t
+    lev = would_be_leverage(Z, np.zeros(len(R), int), np.arange(1, len(R) + 1))
+    assert (lev > 0).all() and (lev < 1).all() and np.all(np.diff(lev) > 0)
+    assert abs(lev[3] - 0.5) < 1e-12 and lev[-1] > 0.999                     # R = 1 sits exactly at the middle of the scale
+    # a path graph's MISSING long chord: leverage rises with the span, and the span-1 chord is the least useful
+    Zp, _, _ = _exact_coords(8, np.array([(i, i + 1) for i in range(7)]))
+    spans = np.array([would_be_leverage(Zp, 0, s) for s in range(2, 8)])
+    assert np.all(np.diff(spans) > 0) and spans[0] > 0.6                     # even a span-2 chord halves a 2-edge path
+
+
+def test_bridge_throws_keeps_the_band_and_reports_exact_inclusion_probabilities():
+    """The band filter is exact, and the draw is the existing systematic sampler: stated π equals the frequency of being drawn."""
+    from graph_engine.throws import bridge_throws, would_be_leverage
+    rng = np.random.default_rng(3); n = 40
+    Zc = rng.standard_normal((n, 3)) * 0.6
+    cand = np.array([(i, j) for i in range(n) for j in range(i + 1, n)])
+    lev = would_be_leverage(Zc, cand[:, 0], cand[:, 1])
+    band = (0.3, 0.7); inband = np.flatnonzero((lev >= band[0]) & (lev <= band[1])); assert len(inband) > 30
+    k = 12; counts = {}; reps = 2000
+    for s in range(reps):
+        got = bridge_throws(Zc, cand, band=band, k=k, seed=s)
+        assert len(got) == k and len({(i, j) for i, j, _ in got}) == k
+        for i, j, pi in got:
+            assert band[0] <= float(would_be_leverage(Zc, i, j)) <= band[1]
+            counts[(i, j)] = (counts.get((i, j), (0, pi))[0] + 1, pi)
+    freq = np.array([c / reps for c, _ in counts.values()]); stated = np.array([p for _, p in counts.values()])
+    assert np.abs(freq - stated).max() < 0.05 and abs(stated.sum() - k) < 1e-6
+    # the score peaks at the band centre: drawn pairs are closer to the middle than the in-band candidates on average
+    mid = sum(band) / 2
+    drawn = np.array([float(would_be_leverage(Zc, i, j)) for i, j, _ in bridge_throws(Zc, cand, band=band, k=k, temperature=0.3, seed=0)])
+    assert np.abs(drawn - mid).mean() < np.abs(lev[inband] - mid).mean()
+    assert bridge_throws(Zc, cand, band=(0.999999, 1.0), k=5) == []

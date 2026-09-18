@@ -1,0 +1,140 @@
+{
+ "_note": "cit-HepTh, T=95, horizon 24; would-be leverage l = wR/(1+wR) on resistance-sketch coordinates (k=64, w=1). Decile curve over 20 000 random alive pairs not already co-cited; arms of 600. Label = a new paper co-cites a pair not co-cited before. e27 reference: random triples 0.0067, near-midpoint 0.0717, chain 0.020.",
+ "n_candidates": 20000,
+ "overall_share_future": 0.0018,
+ "band_used": [
+  0.1567,
+  0.3041
+ ],
+ "decile_curve": [
+  {
+   "decile": 1,
+   "lev_lo": 0.0108,
+   "lev_hi": 0.0829,
+   "n": 2000,
+   "share_future": 0.01,
+   "mean_R": 0.064,
+   "n_hits": 20
+  },
+  {
+   "decile": 2,
+   "lev_lo": 0.0829,
+   "lev_hi": 0.1199,
+   "n": 2000,
+   "share_future": 0.003,
+   "mean_R": 0.114,
+   "n_hits": 6
+  },
+  {
+   "decile": 3,
+   "lev_lo": 0.1199,
+   "lev_hi": 0.1567,
+   "n": 2000,
+   "share_future": 0.002,
+   "mean_R": 0.161,
+   "n_hits": 4
+  },
+  {
+   "decile": 4,
+   "lev_lo": 0.1567,
+   "lev_hi": 0.1979,
+   "n": 2000,
+   "share_future": 0.0015,
+   "mean_R": 0.215,
+   "n_hits": 3
+  },
+  {
+   "decile": 5,
+   "lev_lo": 0.1979,
+   "lev_hi": 0.2466,
+   "n": 2000,
+   "share_future": 0.001,
+   "mean_R": 0.284,
+   "n_hits": 2
+  },
+  {
+   "decile": 6,
+   "lev_lo": 0.2466,
+   "lev_hi": 0.3041,
+   "n": 2000,
+   "share_future": 0.0,
+   "mean_R": 0.378,
+   "n_hits": 0
+  },
+  {
+   "decile": 7,
+   "lev_lo": 0.3041,
+   "lev_hi": 0.3755,
+   "n": 2000,
+   "share_future": 0.0005,
+   "mean_R": 0.513,
+   "n_hits": 1
+  },
+  {
+   "decile": 8,
+   "lev_lo": 0.3755,
+   "lev_hi": 0.4764,
+   "n": 2000,
+   "share_future": 0.0,
+   "mean_R": 0.732,
+   "n_hits": 0
+  },
+  {
+   "decile": 9,
+   "lev_lo": 0.4764,
+   "lev_hi": 0.5742,
+   "n": 2000,
+   "share_future": 0.0,
+   "mean_R": 1.131,
+   "n_hits": 0
+  },
+  {
+   "decile": 10,
+   "lev_lo": 0.5742,
+   "lev_hi": 0.8631,
+   "n": 2000,
+   "share_future": 0.0,
+   "mean_R": 1.991,
+   "n_hits": 0
+  }
+ ],
+ "arms": {
+  "random_pairs": {
+   "share_with_future_link": 0.0017,
+   "future_pairs_per_set": 0.0017,
+   "mean_within_resistance": 0.556
+  },
+  "top_decile": {
+   "share_with_future_link": 0.0,
+   "future_pairs_per_set": 0.0,
+   "mean_within_resistance": 2.01
+  },
+  "bottom_decile": {
+   "share_with_future_link": 0.01,
+   "future_pairs_per_set": 0.01,
+   "mean_within_resistance": 0.064
+  },
+  "mid_deciles_4_6": {
+   "share_with_future_link": 0.0,
+   "future_pairs_per_set": 0.0,
+   "mean_within_resistance": 0.295
+  },
+  "mid_band_bridge_throws": {
+   "share_with_future_link": 0.0,
+   "future_pairs_per_set": 0.0,
+   "mean_within_resistance": 0.298,
+   "mean_inclusion_pi": 0.12087
+  },
+  "triple_third_max_leverage": {
+   "share_with_future_link": 0.0017,
+   "future_pairs_per_set": 0.0017,
+   "mean_within_resistance": 2.242
+  },
+  "triple_third_in_band": {
+   "share_with_future_link": 0.0033,
+   "future_pairs_per_set": 0.0033,
+   "mean_within_resistance": 0.466
+  }
+ },
+ "formula_check": "tests/test_throws.py: w R'_ij from a fresh pinv of L + w bb^T equals wR/(1+wR) to 1e-10; path-graph edge leverage 1, 4-cycle edge 3/4"
+}
