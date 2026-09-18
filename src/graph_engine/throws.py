@@ -16,6 +16,10 @@ examples/engine_experiments/e8, e8b): when the outcome of a throw is known only 
 selection finds the most links during the run but the model fitted on those outcomes ranks an unseen period at
 AP 0.130, against 0.162 for uniformly random throws; softmax draws (T = 0.5) with a 1/π-weighted fit reach 0.163 while finding
 4.7 times as many links as random (on the second graph: 2.9 times, 0.190 against 0.192). Top-K gives π ∈ {0, 1}: no weight can correct for pairs that could never be drawn.
+
+Measured after this module was written (e19, real citation data): what predicts the impact of a paper that connects things is a TIGHT
+core of references plus ONE far element, not far pairs. A far pair alone predicts lower impact. The next version should score a
+candidate SET (core diameter small, one element far) rather than a pair; this module still scores pairs.
 """
 from __future__ import annotations
 

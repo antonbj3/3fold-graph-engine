@@ -93,6 +93,13 @@ cutoff 107. No gain: the log-linear extrapolation feature (Δ ≤ 0.001), resist
 where the policy is worst (−0.008 on HepPh@95). e3b: among pairs that do get connected, larger resistance distance goes with a
 LOWER citation percentile of the connecting paper (Spearman −0.03 to −0.20, six of six cells).
 
+**A throw is a set, not a pair (e19; 19 674 papers in cit-HepTh/HepPh at two cutoffs).** For each new paper: core = median resistance
+distance between its references, throw = 90th percentile; impact = citation percentile within its month. Core tightness carries the
+impact (Spearman −0.14 to −0.27 in all four cells; partial −0.14 to −0.26). A far throw is negative on its own (−0.07 to −0.22, e3b's
+finding) but POSITIVE given the core (partial +0.02 to +0.11 in all four cells); the tight-core-far-throw quartile has the highest mean
+impact in 4 of 4 cells (0.59–0.66 vs 0.47–0.51 for loose-core-far-throw). Uzzi et al. 2013 in resistance geometry: the proposal to
+score is a conventional core plus one far element; `throws` scores pairs and does not yet do this.
+
 **Throws with outcomes known only for throws made (e8, e8b).** Links found / AP of the final policy on an unseen period (HepTh):
 top-K 3 608 / 0.130; 30 % random 2 795 / 0.137; softmax T = 1 1 417 / 0.161; uniform 527 / 0.162; softmax T = 0.5 with 1/π-weighted
 fit 2 491 / 0.163 — the same AP as uniform within the seed spread (sd 0.002–0.005), with 4.7 times the links (exact inclusion probabilities, systematic sampling; HepPh: 1 463 / 0.190 against uniform 497 / 0.192). Reference with all labels: 0.167.

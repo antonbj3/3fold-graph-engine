@@ -1,0 +1,54 @@
+{
+ "HepTh@71": {
+  "n_papers": 3422,
+  "spearman_core_impact": -0.271,
+  "spearman_throw_impact": -0.22,
+  "partial_throw_given_core": 0.022,
+  "partial_core_given_throw": -0.163,
+  "mean_impact": {
+   "tight_core_far_throw": 0.63,
+   "tight_core_near_throw": 0.632,
+   "loose_core_far_throw": 0.467,
+   "loose_core_near_throw": 0.601
+  }
+ },
+ "HepTh@95": {
+  "n_papers": 4596,
+  "spearman_core_impact": -0.265,
+  "spearman_throw_impact": -0.113,
+  "partial_throw_given_core": 0.105,
+  "partial_core_given_throw": -0.262,
+  "mean_impact": {
+   "tight_core_far_throw": 0.657,
+   "tight_core_near_throw": 0.603,
+   "loose_core_far_throw": 0.473,
+   "loose_core_near_throw": 0.546
+  }
+ },
+ "HepPh@71": {
+  "n_papers": 5318,
+  "spearman_core_impact": -0.14,
+  "spearman_throw_impact": -0.071,
+  "partial_throw_given_core": 0.068,
+  "partial_core_given_throw": -0.138,
+  "mean_impact": {
+   "tight_core_far_throw": 0.594,
+   "tight_core_near_throw": 0.577,
+   "loose_core_far_throw": 0.512,
+   "loose_core_near_throw": 0.531
+  }
+ },
+ "HepPh@95": {
+  "n_papers": 6338,
+  "spearman_core_impact": -0.212,
+  "spearman_throw_impact": -0.1,
+  "partial_throw_given_core": 0.083,
+  "partial_core_given_throw": -0.205,
+  "mean_impact": {
+   "tight_core_far_throw": 0.596,
+   "tight_core_near_throw": 0.588,
+   "loose_core_far_throw": 0.495,
+   "loose_core_near_throw": 0.491
+  }
+ }
+}
