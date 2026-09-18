@@ -1,0 +1,127 @@
+{
+ "experiment": "e38",
+ "_note": "E38: one throw score or two? The learned densification policy says WHERE the graph will be built (geometry of the\nclaim/citation graph, e3d); the gap co-movement of model-vs-claims says WHERE the mechanism couples (e37). This asks\nwhether their product beats each alone on either facit, or whether they are orthogonal and the engine has to carry two\nthrow lists.",
+ "part1_planted_links": {
+  "n_worlds": 40,
+  "n_pairs": 12,
+  "n_candidates": 66,
+  "n_true_links": 3,
+  "max_possible_p5": 0.6,
+  "probes_per_pair": 8,
+  "features_available_in_claim_graph": [
+   "cn_coupling",
+   "adamic_adar",
+   "pref",
+   "resistance",
+   "hole"
+  ],
+  "features_not_available": [
+   "cn_chain (claim graph is bipartite/undirected)",
+   "age_gap",
+   "recency",
+   "vel",
+   "straight (no time axis in LinkedWorld)"
+  ],
+  "precision_at_5": {
+   "a:gap-comovement": 0.21500000000000002,
+   "b:geometry_e3d_weights": 0.08,
+   "b:resistance_far": 0.07,
+   "b:resistance_near(e37)": 0.025,
+   "b:hole": 0.06000000000000001,
+   "c:rank_sum": 0.22999999999999998,
+   "c:rank_product": 0.205,
+   "c:z_product": 0.155,
+   "c:z_sum": 0.21500000000000002,
+   "random": 0.05
+  },
+  "sem": {
+   "a:gap-comovement": 0.019463970659815377,
+   "b:geometry_e3d_weights": 0.017246329970051526,
+   "b:resistance_far": 0.016870547845739468,
+   "b:resistance_near(e37)": 0.010591481821704043,
+   "b:hole": 0.014675987714106855,
+   "c:rank_sum": 0.02213015114597254,
+   "c:rank_product": 0.025305821768609203,
+   "c:z_product": 0.020862799674454296,
+   "c:z_sum": 0.024165561424770558,
+   "random": 0.015607361839521234
+  },
+  "spearman_gap_vs_geometry": {
+   "mean": -0.0026949170232752314,
+   "sem": 0.016675586185850456
+  },
+  "paired_vs_gap_alone": {
+   "c:rank_sum": {
+    "mean": 0.015000000000000003,
+    "sem": 0.02416556142477056,
+    "wins": 10,
+    "losses": 7
+   },
+   "c:rank_product": {
+    "mean": -0.010000000000000004,
+    "sem": 0.023696802770383635,
+    "wins": 7,
+    "losses": 9
+   },
+   "c:z_product": {
+    "mean": -0.06,
+    "sem": 0.026017745423519634,
+    "wins": 6,
+    "losses": 15
+   },
+   "c:z_sum": {
+    "mean": 0.0,
+    "sem": 0.02480694691784169,
+    "wins": 9,
+    "losses": 9
+   }
+  },
+  "spearman_gap_vs_resistance": {
+   "mean": 0.004826218557561842,
+   "sem": 0.017351486290482394
+  }
+ },
+ "part2_hepth": {
+  "T": 95,
+  "H": 24,
+  "train_cutoff": 71,
+  "pair_throw": {
+   "n_test_pairs": 199997,
+   "base_rate_bridged": 0.03863057945869188,
+   "ap": 0.17252393262298837,
+   "p_at_1000": 0.324,
+   "bridged_share_top_decile": 0.17735886794339717,
+   "weights": {
+    "cn_coupling": 0.049,
+    "cn_chain": 0.097,
+    "adamic_adar": -0.339,
+    "pref": 0.442,
+    "resistance": -0.05,
+    "hole": 0.976,
+    "age_gap": -0.287,
+    "recency": -0.718,
+    "vel": 0.241,
+    "straight": 0.093
+   }
+  },
+  "chain_throw": {
+   "n_chains": 2000,
+   "chain_steps": 3,
+   "mean_chain_nodes": 2.864,
+   "n_chain_links_labelled": 3595,
+   "pair_bridged_share": 0.196,
+   "chain_links_bridged_share": 0.11321279554937413,
+   "best_chain_link_by_policy_bridged_share": 0.17935808684707363,
+   "any_chain_link_bridged_share": 0.18,
+   "pair_or_chain_bridged_share": 0.2395,
+   "mean_policy_score_pair": -1.8149778010140725,
+   "mean_policy_score_chain_links": -2.59754970863045,
+   "sem": {
+    "pair": 0.008878705745087733,
+    "chain_links": 0.005285285231268796,
+    "any_chain_link": 0.00859284111683846
+   }
+  }
+ },
+ "seconds": 50.7
+}

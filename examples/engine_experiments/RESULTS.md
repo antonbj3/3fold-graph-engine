@@ -483,6 +483,12 @@ block +0.5 to +0.85, recency −0.6 to −0.9, pref +0.25 to +0.5, common refere
 recently appeared, already well-cited papers at mutually distant, high-L⁺ positions with no shared references. The two labels give
 two policies with opposite signs on the same features; the engine's is the second.
 
+**Two throw lists, not one score (e38).** The densification policy (where the graph will be built) and gap co-movement (where the
+mechanism couples) are statistically independent (within-world Spearman −0.003 ± 0.017 on the planted-links world); the geometry score
+is barely above random on the mechanism facit (0.08 vs 0.215), and every combination is within noise of the better single (rank-sum
++0.015 ± 0.024) or worse (product −0.06). On cit-HepTh, expanding a top-decile pair into a chain adds links bridged at 0.113 (2.9× base)
+below the pair's 0.196; the union pair-or-chain reaches 0.240. The engine keeps two throw lists and spends on both.
+
 **The checker layer (e30, `claim_types`; seed: proof checking blocks mistakes before they enter).** Dimensions over the raw numeric
 extractions of both corpora: hep-ex 1 761 records, 6.9 % rejected (unknown unit 52, mass without unit 29, dimension mismatch 18);
 PubMed 14 467 records, 10.4 % rejected (duration without unit 530, dimension mismatch 355, unknown unit 338, a ratio with a unit 143,
