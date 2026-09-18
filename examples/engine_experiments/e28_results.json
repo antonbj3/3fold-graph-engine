@@ -1,0 +1,52 @@
+{
+  "setup": {
+    "worlds": 40,
+    "probes_A": 10,
+    "probe_reliability_A": 0.9,
+    "probes_B": 12,
+    "probe_reliability_B": 0.95,
+    "n_grid": 48,
+    "max_switches_in_block": 2,
+    "lam_A": 0.6,
+    "lam_default": 0.4,
+    "claim_model": "majority"
+  },
+  "A_agreement_vs_regime_posterior": {
+    "expected_error_max_abs_diff": 0.084,
+    "expected_error_mean_abs_diff": 0.0149,
+    "p_plus_mean_abs_diff_per_world_max": 0.0882,
+    "p_plus_mean_abs_diff_per_world_mean": 0.0222,
+    "tail_mass_max": 0.012162
+  },
+  "B_two_transition_detection": {
+    "n_pairs": 40,
+    "markov_flagged_p_ge_two_gt_0.5": 31,
+    "markov_mean_p_ge_two": 0.7735,
+    "regime_posterior_flagged": 31,
+    "regime_posterior_mean_p_two": 0.7705,
+    "wrong_measure_markov": 0.0635,
+    "wrong_measure_regime_posterior": 0.0638
+  },
+  "C_timing": {
+    "markov_K2": {
+      "build_s": 0.0014,
+      "eval_s": 0.0006,
+      "best_probe_s": 0.0375,
+      "patterns": 1408,
+      "tail_mass": 0.002022
+    },
+    "markov_K3": {
+      "build_s": 0.0197,
+      "eval_s": 0.01424,
+      "best_probe_s": 0.6862,
+      "patterns": 16948,
+      "tail_mass": 0.000115
+    },
+    "regime_posterior": {
+      "build_s": 0.0014,
+      "eval_s": 0.002,
+      "best_probe_s": 0.0155,
+      "hypotheses": 3194
+    }
+  }
+}

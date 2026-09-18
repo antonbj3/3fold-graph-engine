@@ -69,6 +69,7 @@ corpus the gate abstains on all 57 papers from title and abstract. The modules b
 | `precision_form` | one quadratic form for structure, margins and regimes; value of one observation or of a SET in bits | J from the Laplacian + lineage-weighted observation blocks + a local Gaussian image of a Bernoulli belief; rank-1 updates; set value ½ log det(I + H C Hᵀ/σ²), submodular, greedy |
 | `numeric_rules` | numbers with uncertainty out of text: v ± s, asymmetric, stat ⊕ syst, CI, ranges, powers of ten, unit prefixes | deterministic; abstains when no quantity phrase is found; feeds `margin_net` (value = margin, σ) |
 | `provenance_rules` | who a report derives from, out of the text itself | copy / derived / shared / cites → `derives_from` or `shares`; abstains when a marker names no source |
+| `regime_markov` | the sign along x as a telegraph process: any number of transitions in one code path | forward–backward on the fixed partition, exact; majority box claims exact by block enumeration; P(N = k) from the same pass |
 | `closed_loop` | the engine choosing probes against a world with known sign structure, scored against the truth | world of ≤ 1-transition sign functions with sourced, copied, unreliable claims; policies engine / copies / random / oracle; wrong measure and believed wrong measure |
 | `polarity_rules` | the sign a sentence asserts between two quantities, symbolically | one direction word per quantity per clause, negation flips, last clause wins, composition by product; abstains outside its lexicon (English only) |
 | `representation_probe` | a second reader: a linear direction in a frozen model's mid layers, trained on the rule's labels, with its own lineage | reads text that contradicts the model's prior where the token output does not; inherits the genre of its training sentences (e22) |
@@ -364,6 +365,17 @@ channel for "according to the guideline" without a name is the next hole. Found 
 — ported into `numeric_rules` (grammar-level: separator and unit between value and interval; the label before the value as the
 quantity; ratio quantities HR/OR/RR get σ on the LOG scale with `log_scale: True`): 75.4 % of the 12 135 mentions read; hand check of
 20 new extractions 17 right, 3 wrong (one of them the abstract's own misprint, flagged `value_outside_ci`).
+
+**The regime posterior as a Markov chain (e28, `regime_markov`).** Sign along x as a telegraph process with switching rate λ, discretised
+on the same fixed partition; forward–backward exact, the switch count carried in the message so P(N = k) comes from the same pass;
+majority box claims read exactly by enumerating switch patterns inside each block of overlapping boxes (prior mass dropped by the cap:
+≤ 0.012). Against `RegimePosterior(claim_model="majority")` on 200 worlds with the same claims and probes: expected error differs by 0.015
+on average (max 0.12) — two models, one family. Two-transition pairs, 12 probes placed by each reader's own value rule, 40 worlds: the
+chain reads P(N ≥ 2) > 0.5 in 31 of 40 and the enumeration's `collision()` also 31 of 40. So the e21 hole (0 of 25 flagged) was not
+the reader and not the single-pair placement: with 12 probes on the pair both find it. It is the ALLOCATION across pairs — in e21 each
+pair got ~3 probes and the value rule spends them where the sign potential falls, which is never on a pair the one-transition reading
+already explains. Timing: a plain read 3× faster than the enumeration (0.6 vs 2.0 ms), probe selection slower (37 vs 16 ms) because
+the chain re-solves per candidate. Kept as the reader for N ≥ 2; the enumeration stays for probe selection.
 
 **Label-free calibration (e18; same 320 sentences).** Raw pooled 0.591; subtracting each lens's batch-mean log-odds (Batch Calibration) 0.572;
 per sentence form 0.603; per-form Platt on the rule's answers 0.927; on true labels 0.927. The option prior is not the fault; the
