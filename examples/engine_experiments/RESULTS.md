@@ -80,6 +80,32 @@ corpus the gate abstains on all 57 papers from title and abstract. The modules b
 | `representation_probe` | a second reader: a linear direction in a frozen model's mid layers, trained on the rule's labels, with its own lineage | reads text that contradicts the model's prior where the token output does not; inherits the genre of its training sentences (e22) |
 | `typed_extraction` | the stubbed prose → `Claim` step of `paper_graph/pipeline.py` | yes/no fields from the target node's claim; balanced lenses; isotonic calibration of the pooled log-odds; confidence = Π max(p, 1−p) = P(whole claim right); `agree` adds the log-odds of a second, independent judge |
 
+## What the measurements say together (2026-09-18)
+
+Six statements, each carried by numbers below; the rest of this file is the evidence and the negatives.
+
+1. **One matrix, many readings.** Structure, margins, regimes and throws are readings of one precision form: hole field, leverage,
+   set value, DPP kernel, link update, sparsifier, criticality — each equal to its module to ≤ 1e-12 (e24, e31, e35). Lineage is a
+   tree of error components with an O(n) exact solver (e36). Declaring independence for what is shared is the only expensive
+   error (coverage 95 → 64–77 %); over-declaring sharing is conservative. When in doubt, declare the ancestor.
+2. **The probe rule is monotone, not submodular under noise (e33).** A contradicting answer makes the same probe worth more.
+   Purchases with increasing returns — a second regime transition, a sweep, a throw plus its verification — are invisible to a
+   one-step price at ANY price (e21e) and must be priced at their own depth: exactly priced probe pairs find the collisions with no
+   reserved share (e21f). Three allocation rules were refuted on the way (burst, E-optimal, correctly priced one-step).
+3. **The label decides what a throw is (e27d, e3d).** Under co-citation, near pairs win and every far rule loses (e3b, e19, e27,
+   e27c). Under densification — the field later builds a route where there was none — far pairs win 3.2× and a learned policy on the
+   same ten features beats the resistance decile 1.4–1.9×, with the weights inverted. The engine's objective is the second label.
+4. **A model fills the gap between claims a second time (e37).** Where the two fillings disagree is a bad probe address and a good
+   throw score: co-moving gaps find planted hidden links at 4.8× random, 8.6× proximity — the first throw facit without proximity
+   bias. Synthetic data from a model enters with the model as its lineage root; K probes are one root.
+5. **Reading text: the prior lives in the last layers (e20, e22, e25, e29).** A mid-layer linear probe reads text that contradicts
+   the model's belief where the output head does not; the direction is not removable by projection; what makes a reader transfer
+   is the genre of its training sentences, and the symbolic rule labels real sentences for free. Bigger models are better priors
+   and worse readers at the output.
+6. **Nothing settles a node; a decision settles (decision_cert).** Certificates are decision-relative and the next measurement
+   is the one that can flip a decision, not the one with the largest entropy. Checkers (dimensions, certificates, link types)
+   refuse claims before they enter; the merge of two graphs takes the value that leaves more open.
+
 ## Measured
 
 **Speed and memory (e1).** Dense pinv against sketch k = 64 + 4-bit codes. n = 4 000: 61.4 s → 1.5 s, 128 MB → 0.14 MB.
