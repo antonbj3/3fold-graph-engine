@@ -1,0 +1,74 @@
+{
+ "tau=0.9,judge_reliability=0.8": {
+  "priority_cell": {
+   "spend": 48.27,
+   "wrong_settlements_per_goal": 0.023
+  },
+  "ratio_cell": {
+   "spend": 35.03,
+   "wrong_settlements_per_goal": 0.005
+  },
+  "judge_first": {
+   "spend": 5.29,
+   "wrong_settlements_per_goal": 0.087
+  },
+  "plan_value": {
+   "spend": 5.49,
+   "wrong_settlements_per_goal": 0.153
+  }
+ },
+ "tau=0.9,judge_reliability=0.97": {
+  "priority_cell": {
+   "spend": 48.27,
+   "wrong_settlements_per_goal": 0.023
+  },
+  "ratio_cell": {
+   "spend": 35.03,
+   "wrong_settlements_per_goal": 0.005
+  },
+  "judge_first": {
+   "spend": 1.76,
+   "wrong_settlements_per_goal": 0.048
+  },
+  "plan_value": {
+   "spend": 1.77,
+   "wrong_settlements_per_goal": 0.092
+  }
+ },
+ "tau=0.99,judge_reliability=0.8": {
+  "priority_cell": {
+   "spend": 53.57,
+   "wrong_settlements_per_goal": 0.0
+  },
+  "ratio_cell": {
+   "spend": 35.73,
+   "wrong_settlements_per_goal": 0.0
+  },
+  "judge_first": {
+   "spend": 10.27,
+   "wrong_settlements_per_goal": 0.007
+  },
+  "plan_value": {
+   "spend": 10.58,
+   "wrong_settlements_per_goal": 0.015
+  }
+ },
+ "tau=0.99,judge_reliability=0.97": {
+  "priority_cell": {
+   "spend": 53.57,
+   "wrong_settlements_per_goal": 0.0
+  },
+  "ratio_cell": {
+   "spend": 35.73,
+   "wrong_settlements_per_goal": 0.0
+  },
+  "judge_first": {
+   "spend": 3.67,
+   "wrong_settlements_per_goal": 0.002
+  },
+  "plan_value": {
+   "spend": 3.63,
+   "wrong_settlements_per_goal": 0.007
+  }
+ }
+}

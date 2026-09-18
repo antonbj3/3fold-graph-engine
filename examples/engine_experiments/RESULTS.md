@@ -54,6 +54,7 @@ corpus the gate abstains on all 57 papers from title and abstract. The modules b
 | `graph_interface` | combine two graphs through shared concepts only | R_ab = g_a + g_b + (h_a − h_b)ᵀ(S_A + S_B)⁺(h_a − h_b); exact, with g exact by default (a Hutchinson estimate only on request) |
 | `lens_pooling` | pool several phrasings of one question to one judge | per-stratum Platt scaling, error correlation, tempering, balanced lens sets from a Hadamard array |
 | `pooled_screening` | how many candidates per pooled question | two-stage Dorfman with noisy tests, closed forms |
+| `plan_value` | probing and working in one currency | settle cost per node by a dynamic programme over instruments (cost, reliability) with admission level τ; nodes ordered by (1 − p)/settle cost; cheap-instrument value = S_expensive − S_all ≥ 0 |
 | `polarity_rules` | the sign a sentence asserts between two quantities, symbolically | one direction word per quantity per clause, negation flips, last clause wins, composition by product; abstains outside its lexicon (English only) |
 | `typed_extraction` | the stubbed prose → `Claim` step of `paper_graph/pipeline.py` | yes/no fields from the target node's claim; balanced lenses; isotonic calibration of the pooled log-odds; confidence = Π max(p, 1−p) = P(whole claim right); `agree` adds the log-odds of a second, independent judge |
 
@@ -139,6 +140,20 @@ so this is not an independent evaluation of the rule. Language model, eight lens
 (59 % of sentences): 1.000; where they disagree the language model is right 0.000. Language model calibrated per sentence form on the
 RULE's answers instead of the labels, held-out quantity pairs: 0.927 (sd 0.025), equal to calibration on true labels (e7b).
 
+**The rule on text by other people (e15; QuaRTz, Tafjord et al. 2019, CC BY 4.0, 405 annotated paragraphs).** Given the paragraph
+and the two annotated property phrases: answers 40 % (86 % when both phrases occur verbatim), right 0.901 where it answers;
+majority class 0.709. After extending the comparative lexicon on the train split only: test split (81 paragraphs) coverage 0.43,
+accuracy where answered 0.857. The same-author 1.0 of e14 does not transfer; 0.86 with abstention on the rest is the number to use.
+
+**One currency for probing and working (e16, SIMULATION; 8 open nodes, one goal, cheap judge cost 1 with reliability r, cell
+cost 20 exact, 600 graphs).** Spend per goal / wrong settlements per goal at admission level τ = 0.99, r = 0.8: existing `priority`
+with cells only 53.6 / 0.000; (1 − p)/c order with cells only 35.7 / 0.000; judge first then cell 10.3 / 0.007; plan_value 10.6 /
+0.015. At τ = 0.9 the cheap judge settles most nodes on one answer and wrong settlements rise to 0.05–0.15 per goal: cost alone is
+gameable, τ is the knob. Negative: choosing the instrument per node by the settle-cost programme gives nothing over "judge first"
+in this range, because the judge is always worth trying here; the programme skips a cheap instrument only when it cannot leave the
+band or costs more than the cell (test). A first version scored probes by criticality × E[Δp]; that quantity is identically zero
+(martingale) and was replaced before any number was produced.
+
 **Mechanism signature (tests).** Electrostatic pull-in, Semenov thermal runaway and shallow-truss snap-through: one limit point,
 order 2.00, β 0.50, γ 0.50, at (1/3, 4/27), (1, 1/e), (1 − 1/√3, ·). Symmetric column: odd, γ 1.00. Cusp, linear, saturating: no limit point.
 
@@ -150,4 +165,5 @@ order 2.00, β 0.50, γ 0.50, at (1/3, 4/27), (1, 1/e), (1 − 1/√3, ·). Symm
 - N_eff counts a single review that cites two independent origins as 2.
 - e11: the ordering proof assumes independent nodes and work that stops at the first failure; dependence was measured up to a shared-cause probability of 0.3 only.
 - e12: the judge is simulated. No real judge has been run through `typed_extraction`. e14 uses the real 0.5B model's answers and a real rule, on templated sentences.
-- `polarity_rules`: English lexicon; one sentence; no coreference beyond "it"; abstains otherwise.
+- `polarity_rules`: English lexicon; one sentence; no coreference beyond "it"; abstains otherwise. Independent accuracy 0.86 (e15), not 1.0.
+- `plan_value`: goals summed with a node under two goals counted twice; the order is the chain-segment rule, heuristic beyond chains.

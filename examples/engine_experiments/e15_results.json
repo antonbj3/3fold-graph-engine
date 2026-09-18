@@ -1,0 +1,77 @@
+{
+ "n_paragraphs": 405,
+ "both_property_phrases_found_verbatim": 0.467,
+ "coverage_all": 0.4,
+ "accuracy_where_answered": 0.901,
+ "coverage_when_both_phrases_found": 0.857,
+ "accuracy_when_both_phrases_found": 0.901,
+ "n_answered": 162,
+ "majority_class_share": 0.709,
+ "train_split": {
+  "n": 283,
+  "coverage": 0.392,
+  "accuracy_where_answered": 0.919
+ },
+ "test_split": {
+  "n": 81,
+  "coverage": 0.432,
+  "accuracy_where_answered": 0.857
+ },
+ "note": "the comparative lexicon was extended after a first run on all splits (0.884 where answered, coverage 0.363); the test split was not looked at when extending it",
+ "examples_wrong": [
+  [
+   "A decrease in greenhouse gas levels decreases global temperature and an increase raises global temperature.",
+   "greenhouse gas levels",
+   "global temperature",
+   1
+  ],
+  [
+   "Therefore, water nearer shore usually contains more dissolved nutrients than water farther from shore.",
+   "shore",
+   "nutrients",
+   -1
+  ],
+  [
+   "However, the melanocytes of people with darker skin produce more melanin.",
+   "melanocytes",
+   "melanin",
+   1
+  ],
+  [
+   "Many observatories are built on high mountains. There is less air above the telescope, so there is less interference from the atmosphere.",
+   "air above the telescope",
+   "interference from the atmosphere",
+   -1
+  ],
+  [
+   "Shorter wavelengths (higher frequencies) correspond to higher energies and thus hotter star temperatures.",
+   "higher frequencies",
+   "hotter star temperatures",
+   1
+  ],
+  [
+   "So more water is displaced by a bigger body than a smaller one.",
+   "bigger body",
+   "water is displaced",
+   1
+  ],
+  [
+   "It would be hard to get a big chunk of chocolate to dissolve in your milk or hot water. Maybe you could make hot chocolate from some smaller",
+   "pieces",
+   "surface area",
+   1
+  ],
+  [
+   "The greater the objects mass, the greater the force of attraction; in addition, the greater the distance between objects, the smaller the fo",
+   "mass",
+   "force of attraction",
+   1
+  ],
+  [
+   "The pupil automatically gets bigger or smaller to let more or less light in as needed.",
+   "pupil",
+   "light",
+   1
+  ]
+ ]
+}

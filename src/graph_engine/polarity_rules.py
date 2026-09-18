@@ -17,7 +17,8 @@ direction word is taken as increasing ("Y falls with X"). "directly / inversely 
         sign = direction(X) · direction(Y).
 Returns 0 (ABSTAIN) when no direction is found for Y, or when X or Y is not mentioned.
 
-Scope: English; one sentence or a short passage; explicit direction words from a fixed lexicon; no coreference beyond "it" in
+Measured on text by other people (QuaRTz test split, e15): answers 43 %, right 0.857 of those. On the author's own templates 1.0.
+Scope: English; one sentence or a short passage; explicit direction words and comparatives from a fixed lexicon; no coreference beyond "it" in
 a following clause; no quantities expressed by numbers ("from 3 to 5"). It abstains rather than guess outside that scope.
 """
 from __future__ import annotations
@@ -27,9 +28,15 @@ import re
 __all__ = ["asserted_sign", "UP", "DOWN"]
 
 UP = {"increase", "increases", "increased", "increasing", "rise", "rises", "rising", "rose", "grow", "grows", "growing", "grew", "higher",
-      "raise", "raises", "raised", "raising", "climb", "climbs", "climbing", "more", "greater", "larger", "up", "gain", "gains", "boost", "boosts"}
+      "raise", "raises", "raised", "raising", "climb", "climbs", "climbing", "more", "greater", "larger", "up", "gain", "gains", "boost", "boosts",
+      # general English comparatives that name the direction of a quantity (the DOWN set holds their opposites); a comparative that names
+      # the NEGATIVE attribute ("colder" when the quantity is "coldness") is read wrongly — a known limit
+      "bigger", "faster", "stronger", "hotter", "warmer", "brighter", "heavier", "thicker", "wider", "longer", "deeper", "denser", "richer",
+      "louder", "steeper", "harder", "quicker", "taller", "broader", "extra", "additional", "abundant"}
 DOWN = {"decrease", "decreases", "decreased", "decreasing", "fall", "falls", "falling", "fell", "drop", "drops", "dropping", "dropped", "lower",
-        "lowers", "lowered", "lowering", "reduce", "reduces", "reduced", "reducing", "less", "smaller", "down", "decline", "declines", "shrink", "shrinks"}
+        "lowers", "lowered", "lowering", "reduce", "reduces", "reduced", "reducing", "less", "smaller", "down", "decline", "declines", "shrink", "shrinks",
+        "fewer", "slower", "weaker", "colder", "cooler", "darker", "dimmer", "lighter", "thinner", "narrower", "shorter", "shallower", "sparser",
+        "poorer", "quieter", "flatter", "softer", "lesser", "scarce", "limited", "lack", "little"}
 _NEG = {"not", "no", "never", "n't"}
 
 
