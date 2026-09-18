@@ -1,0 +1,83 @@
+"""RepresentationProbe on the smallest local model: fit on two quantity pairs, read two OTHER quantity pairs.
+
+Skipped unless a local Qwen2.5-0.5B-Instruct directory is present (PROBE_TEST_MODEL, else
+~/projects/hunt_3fold/models/q) and transformers is importable — the model is not part of the repo.
+64 sentences: 4 pairs × 2 asserted signs × 8 templates (the e7 forms, including the inverted and negated ones,
+so half of the sentences contradict textbook physics and the surface word alone does not give the label).
+"""
+import os
+from pathlib import Path
+
+import numpy as np
+import pytest
+
+MODEL = os.environ.get("PROBE_TEST_MODEL", str(Path.home() / "projects/hunt_3fold/models/q"))
+pytest.importorskip("transformers")
+pytestmark = pytest.mark.skipif(not Path(MODEL).is_dir(), reason=f"no local model at {MODEL}")
+
+from graph_engine.representation_probe import RepresentationProbe  # noqa: E402
+
+PAIRS = [("temperature", "electrical resistance of copper", 1), ("altitude", "air pressure", -1),
+         ("wire length", "electrical resistance", 1), ("porosity", "fatigue strength", -1)]
+
+
+def sentences(x, y, s):
+    """The e7 sentence forms for an asserted sign s between x and y."""
+    up, dn = ("an increase", "a decrease") if s > 0 else ("a decrease", "an increase")
+    return [f"An increase in {x} leads to {up} in {y}.", f"The {y} {'rises' if s > 0 else 'falls'} as {x} grows.",
+            f"Reducing {x} {'lowers' if s > 0 else 'raises'} the {y}.",
+            f"Higher {x} is associated with {'higher' if s > 0 else 'lower'} {y}.",
+            f"The {y} is {'directly' if s > 0 else 'inversely'} proportional to {x}.",
+            f"When {x} drops, the {y} {'drops' if s > 0 else 'climbs'}.",
+            f"It is not the case that the {y} {'decreases' if s > 0 else 'increases'} with {x}; it "
+            f"{'increases' if s > 0 else 'decreases'}.",
+            f"Samples with lower {x} showed {'lower' if s > 0 else 'higher'} {y}."]
+
+
+def _items(pairs):
+    texts, xy, lab = [], [], []
+    for x, y, _phys in pairs:
+        for s in (1, -1):
+            for t in sentences(x, y, s):
+                texts.append(t); xy.append((x, y)); lab.append(s > 0)
+    return texts, xy, np.array(lab)
+
+
+@pytest.fixture(scope="module")
+def fitted():
+    dev = "cuda" if os.environ.get("E7_DEVICE") == "cuda" else "cpu"
+    probe = RepresentationProbe(MODEL, device=dev, batch_size=16, name="q0.5b")
+    tr_t, tr_p, tr_y = _items(PAIRS[:2])
+    probe.fit(tr_t, tr_p, tr_y)                       # layer chosen by inner split over the two training pairs
+    return probe
+
+
+def test_reads_held_out_quantity_pairs(fitted):
+    te_t, te_p, te_y = _items(PAIRS[2:])
+    assert len(te_t) == 32
+    p = fitted.predict_proba(te_t, te_p)
+    assert p.shape == (32,) and ((p >= 0) & (p <= 1)).all()
+    acc = float(((p > 0.5) == te_y).mean())
+    assert acc > 0.75, f"probe accuracy on held-out quantity pairs was {acc:.3f}"
+
+
+def test_layer_was_chosen_on_training_data(fitted):
+    assert fitted.layer is not None and 0 <= fitted.layer < fitted.n_layers
+    assert fitted.layer_scores is not None and len(fitted.layer_scores) == fitted.n_layers
+
+
+def test_lens_callable_shape_and_lineage(fitted):
+    lens = fitted.as_lens()
+    assert callable(lens)
+    assert lens.lineage == f"probe:q0.5b:{fitted.layer}" and lens.lineage.startswith("probe:")
+    assert lens.origin == "representation_probe"
+    te_t, te_p, _ = _items(PAIRS[2:])
+    out = lens(te_t[:8], te_p[:8])
+    assert out.shape == (8,) and ((out >= 0) & (out <= 1)).all()
+    assert np.allclose(out, fitted.predict_proba(te_t[:8], te_p[:8]))
+
+
+def test_predict_sign_never_abstains(fitted):
+    te_t, te_p, _ = _items(PAIRS[2:])
+    s = fitted.predict_sign(te_t[:8], te_p[:8])
+    assert set(np.unique(s)) <= {-1, 1} and (s != 0).all()

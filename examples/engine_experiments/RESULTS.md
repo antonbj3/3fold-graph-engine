@@ -234,8 +234,14 @@ in the 0.5B it does not fall at all. So "a larger model reads worse" (model-size
 The representation of the larger model reads better than the smaller one's and without the model's belief, when it is read before
 the collapse. The probe is trained on the symbolic rule's labels, no human labels; it is a second reader whose errors are not the
 rule's (the rule is silent outside its forms, the probe is not) and not the output head's. Prior work: Burns et al. 2022 (probe beats
-output by 4 points), Li et al. 2023 (steering along a probe direction). Not built yet: the probe as a lens in `lens_pooling` with its
-own lineage; a probe on text outside the templates (QuaRTz) to see whether the 0.92 transfers.
+output by 4 points), Li et al. 2023 (steering along a probe direction). Built as `representation_probe` (a lens with lineage tag `probe:<model>:<layer>`) and tested on other people's text (e22, QuaRTz
+test split, 81 paragraphs, majority 0.716): the probe trained on OUR templates with the rule's labels does not transfer (0.57 / 0.88 /
+0.57 for 0.5B / 1.5B / 3B — it inherits the rule's domain of single-sentence direction words); trained on QuaRTz's own 283 training
+paragraphs it reads 0.80 / 0.91 / 0.90, and 0.85 / 0.94 / 0.89 on the 47 items where the rule abstains, so it covers what the rule
+cannot. And the token output on QuaRTz is NOT worse than the probe (0.83 / 0.89 / 0.93): QuaRTz paragraphs mostly agree with physics,
+so the prior helps there. The e20 gap is therefore scoped to text that contradicts the model's prior — exactly the text a research
+graph is for (a surprising measurement, a contradiction between sources) — and on ordinary text the output head is as good. n = 81:
+one item is 1.2 points.
 
 **The loop closed against a world that answers (e21, `closed_loop.py`; 40 worlds × 12 pairs; per pair the true sign along x changes at
 most once, 5 % of pairs twice; 8 sources with reliabilities 0.6–0.95, 35 % of them copies of another source; instruments: judge cost 1

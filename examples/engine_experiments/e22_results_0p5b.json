@@ -1,0 +1,49 @@
+{
+ "model": "q",
+ "size_tag": "0p5b",
+ "device": "cuda",
+ "layers": 25,
+ "n_quartz_paragraphs": {
+  "train": 283,
+  "test": 81,
+  "all_unique_para_id": 405
+ },
+ "majority_class_on_test": 0.716,
+ "a_probe_trained_on_our_templates_rule_labels": {
+  "accuracy": 0.568,
+  "n": 81,
+  "layer": 18,
+  "n_train": 320,
+  "train_labels": "polarity_rules.asserted_sign"
+ },
+ "b_probe_trained_on_quartz_train_human_labels": {
+  "accuracy": 0.802,
+  "n": 81,
+  "layer": 20,
+  "n_train": 283,
+  "train_labels": "QuaRTz annotation"
+ },
+ "c_token_output_e7_prompt": {
+  "accuracy": 0.827,
+  "n": 81
+ },
+ "d_polarity_rule": {
+  "coverage": 0.42,
+  "accuracy_where_answered": 0.853,
+  "n_answered": 34,
+  "n": 81
+ },
+ "share_predicted_increase": {
+  "truth": 0.716,
+  "a_probe": 0.728,
+  "b_probe": 0.691,
+  "c_token_output": 0.741
+ },
+ "on_items_the_rule_abstains_on": {
+  "n": 47,
+  "a_probe": 0.553,
+  "b_probe": 0.851,
+  "c_token_output": 0.872
+ },
+ "note": "QuaRTz label = direction(cause_prop) x direction(effect_prop) from para_anno (e15's mapping); one item per para_id; validation split unused; layers for (a) and (b) chosen on their own training data only"
+}
