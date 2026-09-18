@@ -122,8 +122,9 @@ def throw_from_continuum(Z: np.ndarray, x_star: np.ndarray, k: int = 3, dither: 
     (a hole: where the posterior variance is largest, or a midpoint between weakly connected regions); the throw is the set of
     the k nodes nearest to x_star + dither·ε, ε ~ N(0, I). Without dither the decode is deterministic (π ∈ {0, 1}: the same
     corners every time, and no 1/π weight can correct for a node that can never be drawn). With dither on the scale of the
-    node spacing every node within reach has π > 0, the quantization error is independent of where x_star sits (Schuchman's
-    condition for dithered quantizers), and the decoded set's centroid is unbiased for x_star. Default dither = the median
+    node spacing every node within reach has π > 0 and the decode no longer depends on where x_star sits relative to the grid. Exact
+    independence of the quantization error (Schuchman's condition) needs dither UNIFORM over the Voronoi cell; Gaussian
+    dither on the spacing scale is an approximation of that, and the centroid's unbiasedness is measured (test), not proven. Default dither = the median
     distance from x_star to its 2k nearest nodes. Returns [(members, their inclusion probabilities)] for n_draws throws;
     inclusion probabilities are estimated by n_pi Monte-Carlo decodes of the same dithered point (exact in the limit)."""
     rng = np.random.default_rng(seed)
