@@ -168,6 +168,10 @@ with one fixed reliability. Needs ≥ 3 independent origins per question to be i
 
 **Mechanism signature (tests).** Electrostatic pull-in, Semenov thermal runaway and shallow-truss snap-through: one limit point,
 order 2.00, β 0.50, γ 0.50, at (1/3, 4/27), (1, 1/e), (1 − 1/√3, ·). Symmetric column: odd, γ 1.00. Cusp, linear, saturating: no limit point.
+Same thing, different names (e17): eleven named textbook phenomena from six fields, grouped by computed signature blind to the
+names — the five folds (pull-in, thermal explosion, snap-through, harvested-population collapse, AFM jump-to-contact; five fields) in
+one group, the two pitchforks (Euler buckling, Landau ferromagnetic ordering) in another, the rest without a limit point; every group
+is one normal form.
 Vector state (test): the scalar pull-in traced as a 1-vector gives the same numbers; a two-state shallow truss (vertical drop + an
 asymmetric mode coupled through a spring) reads its snap-through fold at the known load with order 2.00 and γ = 0.50.
 

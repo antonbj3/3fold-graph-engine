@@ -1,0 +1,145 @@
+{
+ "signatures": {
+  "electrostatic pull-in": {
+   "field": "microsystems",
+   "normal_form": "fold",
+   "n_limit": 1,
+   "order": 2.0,
+   "gamma": 0.5,
+   "odd": false
+  },
+  "thermal explosion (Semenov)": {
+   "field": "combustion",
+   "normal_form": "fold",
+   "n_limit": 1,
+   "order": 2.0,
+   "gamma": 0.5,
+   "odd": false
+  },
+  "snap-through (shallow arch)": {
+   "field": "structures",
+   "normal_form": "fold",
+   "n_limit": 1,
+   "order": 2.0,
+   "gamma": 0.5,
+   "odd": false
+  },
+  "harvested population collapse": {
+   "field": "ecology",
+   "normal_form": "fold",
+   "n_limit": 1,
+   "order": 2.0,
+   "gamma": 0.5,
+   "odd": false
+  },
+  "jump-to-contact (AFM cantilever)": {
+   "field": "surface physics",
+   "normal_form": "fold",
+   "n_limit": 1,
+   "order": 2.0,
+   "gamma": 0.5,
+   "odd": false
+  },
+  "Euler buckling (column)": {
+   "field": "structures",
+   "normal_form": "pitchfork",
+   "n_limit": 1,
+   "order": 2.0,
+   "gamma": 1.0,
+   "odd": true
+  },
+  "ferromagnetic ordering (Landau)": {
+   "field": "magnetism",
+   "normal_form": "pitchfork",
+   "n_limit": 1,
+   "order": 2.0,
+   "gamma": 1.0,
+   "odd": true
+  },
+  "laser threshold": {
+   "field": "optics",
+   "normal_form": "transcritical",
+   "n_limit": 0,
+   "order": null,
+   "gamma": null,
+   "odd": false
+  },
+  "cusp (Zeeman machine axis)": {
+   "field": "generic",
+   "normal_form": "none",
+   "n_limit": 0,
+   "order": null,
+   "gamma": null,
+   "odd": false
+  },
+  "Hooke spring": {
+   "field": "mechanics",
+   "normal_form": "none",
+   "n_limit": 0,
+   "order": null,
+   "gamma": null,
+   "odd": false
+  },
+  "Michaelis–Menten saturation": {
+   "field": "biochemistry",
+   "normal_form": "none",
+   "n_limit": 0,
+   "order": null,
+   "gamma": null,
+   "odd": false
+  }
+ },
+ "groups_by_computed_signature": [
+  {
+   "members": [
+    "electrostatic pull-in",
+    "thermal explosion (Semenov)",
+    "snap-through (shallow arch)",
+    "harvested population collapse",
+    "jump-to-contact (AFM cantilever)"
+   ],
+   "fields": [
+    "combustion",
+    "ecology",
+    "microsystems",
+    "structures",
+    "surface physics"
+   ],
+   "normal_forms": [
+    "fold"
+   ]
+  },
+  {
+   "members": [
+    "Euler buckling (column)",
+    "ferromagnetic ordering (Landau)"
+   ],
+   "fields": [
+    "magnetism",
+    "structures"
+   ],
+   "normal_forms": [
+    "pitchfork"
+   ]
+  },
+  {
+   "members": [
+    "laser threshold",
+    "cusp (Zeeman machine axis)",
+    "Hooke spring",
+    "Michaelis–Menten saturation"
+   ],
+   "fields": [
+    "biochemistry",
+    "generic",
+    "mechanics",
+    "optics"
+   ],
+   "normal_forms": [
+    "none",
+    "transcritical"
+   ]
+  }
+ ],
+ "every_group_is_one_normal_form": true
+}
