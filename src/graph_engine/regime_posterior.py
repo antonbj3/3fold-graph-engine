@@ -330,6 +330,84 @@ class RegimePosterior:
                     best = ((min(x1, x2), max(x1, x2)), now - after)
         return best
 
+    def bundle_value(self, reliability: float = 0.95, k: int = 2, lam: float = 1.0, top: int = 12) -> dict:
+        """Exactly priced BUNDLES: the best single probe and the best PAIR of probes, both valued in the same bits as
+        `total_value_probe` (the TOTAL potential U + λ·H_family), so a bundle can compete with a single probe on gain
+        per cost and no guard share is needed.
+
+        Why a bundle needs its own price. e33 proved the value rule is one-step by construction and exhibited the
+        non-submodular case it cannot see: a probe toward a second transition has ≈ 0 marginal value ALONE (the
+        one-transition family still explains the claims) and a large value GIVEN a first probe on the other side —
+        increasing returns. e35 gave the exact value of a SET of probes on one belief by the chain rule
+        Σ_k [H(X | Y_<k) − H(X | Y_≤k)], which telescopes to the exact set value in any order. Here that set value is
+        computed directly: for a pair (x1, x2) the gain is the expected drop of U + λ·H_fam over the FOUR joint
+        outcomes, probe 1 then probe 2 with the posterior updated in between — exact on the fixed partition, the same
+        computation as `model_check_pair` applied to the total potential instead of the family entropy alone.
+
+        Candidates: the `top` cells by the per-cell single-probe total gain (`total_value_probe`'s objective), so the
+        cost is top²/2 × 4 posterior evaluations. Returns
+            {"single": (x, gain, 1.0), "pair": ((x1, x2), gain, 2.0), "top_singles": [(x, gain), ...], "now": ...}
+        where the third entry is the number of probes: the caller multiplies by the instrument cost c, giving 1·c and
+        2·c. `pair` is None for k = 1. Works with the collision family off (p_two = 0); then H_fam ≡ 0 and the price is
+        the sign potential alone."""
+        if k not in (1, 2):
+            raise ValueError(f"bundle_value supports k = 1 or 2: {k}")
+        cells, w, F, post = self._with_probes()
+        two = np.zeros(len(post))
+        has_fam = len(post) > self._n_one
+        if has_fam:
+            two[self._n_one:] = 1.0
+        h = lambda p: 0.0 if p <= 0 or p >= 1 else -(p * math.log2(p) + (1 - p) * math.log2(1 - p))
+        now = float(self._u(post @ F) @ w) + (lam * h(float(post @ two)) if has_fam else 0.0)
+
+        def like_of(f, sg):
+            ff = f if sg > 0 else 1 - f
+            return ff * reliability + (1 - ff) * (1 - reliability)
+
+        def tot(q):                                            # the TOTAL potential of a (normalized) posterior
+            return float(self._u(q @ F) @ w) + (lam * h(float(q @ two)) if has_fam else 0.0)
+
+        single = []
+        for c in range(len(cells)):
+            f = F[:, c]; after = 0.0
+            for sg in (1, -1):
+                like = like_of(f, sg)
+                pout = float(post @ like)
+                if pout <= 0:
+                    continue
+                after += pout * tot(post * like / pout)
+            single.append((now - after, c))
+        single.sort(reverse=True)
+        g1, c1b = single[0]
+        out = {"single": (float(cells[c1b].mean()), float(g1), 1.0),
+               "top_singles": [(float(cells[c].mean()), float(g)) for g, c in single[:top]],
+               "now": now, "pair": None}
+        if k == 1:
+            return out
+        cand = [c for _, c in single[:top]]
+        best = (((float(cells[cand[0]].mean()), float(cells[cand[0]].mean()))), -1.0)
+        for i, c1 in enumerate(cand):
+            f1 = F[:, c1]
+            for c2 in cand[i + 1:]:
+                f2 = F[:, c2]; after = 0.0
+                for s1 in (1, -1):
+                    l1 = like_of(f1, s1)
+                    p1 = float(post @ l1)
+                    if p1 <= 0:
+                        continue
+                    q1 = post * l1 / p1
+                    for s2 in (1, -1):
+                        l2 = like_of(f2, s2)
+                        p2 = float(q1 @ l2)
+                        if p2 <= 0:
+                            continue
+                        after += p1 * p2 * tot(q1 * l2 / p2)
+                if now - after > best[1]:
+                    x1, x2 = float(cells[c1].mean()), float(cells[c2].mean())
+                    best = ((min(x1, x2), max(x1, x2)), now - after)
+        out["pair"] = (best[0], float(best[1]), 2.0)
+        return out
+
     def weakest_direction_probe(self, reliability: float = 0.95, mix: bool = False,
                                 eps: float = 0.01, n_max: int = 30, lam: float | None = None) -> tuple[float, float]:
         """E-OPTIMAL probe: (x, gain), the probe that most raises the SMALLEST pairwise discrimination between the

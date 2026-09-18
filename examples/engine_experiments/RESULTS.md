@@ -331,13 +331,16 @@ Three additions to the loop, same 40 worlds, paired against `engine` (1.24 at bu
   4 of 25 collisions (baseline 7), the mixed rule +0.17. The second transition is not unidentifiable in the max-min sense; it is
   LOW-PRIOR, and what buys it is the pair purchase with a learned p_two and the majority reading. Two allocation rules refuted
   (burst, E-optimal); the diagnosis stands as a budget statement.
-- **the correctly priced one-step rule (e21e, `total_value_probe` = ΔU + ΔH_family in the same bits):** with replay and majority
-  1.053 (−0.026 ± 0.07 paired, 19 of 40), the best-calibrated run so far (gap −0.015), but 3 of 25 collisions; without replay 0 of 25.
-  Conclusion, with e33's theorem: the price was not the whole story. The first probe toward a second transition has ≈ 0 marginal value
-  on its own (the one-transition family still explains everything) and the second has a large value GIVEN the first — increasing
-  returns, the non-submodular case e33 exhibited. A one-step greedy rule cannot buy that at any price; a two-step purchase can, which
-  is why the probe PAIR (guard2) is the only rule that found collisions (7 of 25). Rule: purchases with increasing returns need
-  lookahead of their own depth; the value rule is one-step by construction.
+- **exactly priced bundles (e21f, `bundle_value`): the guard share was never necessary.** A pair of probes priced by its exact
+  two-step value of ΔU + λ·H_family competes with single probes in the same bits, no reserved share: with replay and majority 7 of 25
+  collisions with 0 false flags (the guard share: 7 with 2), and stripped of replay and majority still 6 of 25 with 0 false flags,
+  where every earlier no-share rule found 0. What buys the collision is lookahead of the purchase's own depth in the price — the
+  increasing-returns theorem of e33 made operational. Cost: sign accuracy +0.09 ± 0.05 with replay+majority (inside 2 se), +0.27–0.30
+  without, and the calibration turns over-confident (gap +0.09 to +0.34): pairs win cells where a single would have lowered the sign
+  potential more per unit cost. Test pins: pair gain between the best single and the two best singles + λH_fam (the slack lives only
+  in the family term), predicted = realized four-outcome expectation to 1e-9.
+- **the correctly priced one-step rule (e21e):** first run INVALID — the `+total` flag was not wired into the value branch (found by the e21f
+  agent), so the run measured plain `engine`. Rerun below.
 
 **One quadratic form (e24, `precision_form`).** Exact to machine precision: effective resistance = (e_i−e_j)ᵀJ⁺(e_i−e_j) (1e-16);
 the GLS estimate and variance of `margin_net` = posterior mean and variance of the observation block (0.0 / 4e-18, including a

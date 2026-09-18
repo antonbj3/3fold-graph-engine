@@ -510,3 +510,48 @@ def test_total_value_probe_is_at_least_the_sign_value_and_exact():
     rp = RegimePosterior(0.0, 1.0); rp.add_claim(0.05, 0.25, 1, 3); rp.add_claim(0.75, 0.95, 1, 3)
     xs, gs = rp.best_probe(0.95); xm, gm = rp.model_check_probe(0.95); xt, gt = rp.total_value_probe(0.95)
     assert gt >= max(gs, gm) - 1e-12 and gt <= gs + gm + 1e-12
+
+
+def test_bundle_value_prices_a_pair_exactly_and_between_its_bounds():
+    """regime_posterior.bundle_value on the two-claims-far-apart case: the PAIR priced in the same bits as the single.
+
+    Three things. (1) The pair is worth at least the best single (a second probe cannot have negative value: the
+    posterior is a martingale on the fixed partition and both terms of the total potential are concave in it). (2) It is
+    worth at most the two best singles plus the family term that is on the table at all — H(P(two transitions)) can only
+    be driven to 0, so no bundle can gain more than the sum of the one-step sign values plus the whole family entropy.
+    Together these bracket the increasing returns e33 exhibited: the pair is allowed to beat the sum of the parts inside
+    the family term (which is where a second transition lives) and nowhere else. (3) The predicted gain IS the realized
+    expectation of the total potential over the four joint outcomes, probe 1 then probe 2 with the posterior updated in
+    between — exact Bayes on the fixed partition, to 1e-9, the same pin as model_check_pair."""
+    from graph_engine.regime_posterior import RegimePosterior
+    lam = 1.0
+    rp = RegimePosterior(0.0, 1.0); rp.add_claim(0.05, 0.25, 1, 3); rp.add_claim(0.75, 0.95, 1, 3)
+    bv = rp.bundle_value(0.95, k=2, lam=lam, top=12)
+    (xs, gs, ns) = bv["single"]; ((x1, x2), gp, np_) = bv["pair"]
+    assert (ns, np_) == (1.0, 2.0) and x1 < x2 and gp > 0
+    assert abs(gs - rp.total_value_probe(0.95, lam=lam)[1]) < 1e-12          # the single IS the one-step rule
+    assert gp >= gs - 1e-12                                                  # (1)
+    h = lambda p: 0.0 if p <= 0 or p >= 1 else -(p * np.log2(p) + (1 - p) * np.log2(1 - p))
+    fam_now = h(rp.collision()["p_two_transitions"])
+    g_two = sum(g for _x, g in bv["top_singles"][:2])
+    assert gp <= g_two + lam * fam_now + 1e-12, (gp, g_two, fam_now)         # (2)
+
+    cells, w, F, post = rp._with_probes()                                    # (3) realized expectation, four outcomes
+    two = np.zeros(len(post)); two[rp._n_one:] = 1.0
+    cell_of = lambda x: min(int(np.searchsorted(cells[:, 1], x, side="left")), len(cells) - 1)
+    c1, c2 = cell_of(x1), cell_of(x2)
+    now = float(rp._u(post @ F) @ w) + lam * h(float(post @ two))
+    assert abs(now - bv["now"]) < 1e-12
+    realized = 0.0
+    for s1 in (1, -1):
+        f1 = F[:, c1] if s1 > 0 else 1 - F[:, c1]; l1 = f1 * 0.95 + (1 - f1) * 0.05
+        p1 = float(post @ l1); q1 = post * l1 / p1
+        for s2 in (1, -1):
+            f2 = F[:, c2] if s2 > 0 else 1 - F[:, c2]; l2 = f2 * 0.95 + (1 - f2) * 0.05
+            p2 = float(q1 @ l2); q2 = q1 * l2 / p2
+            trial = RegimePosterior(0.0, 1.0); trial.claims = list(rp.claims)
+            trial.add_probe(x1, s1, 0.95); trial.add_probe(x2, s2, 0.95)
+            _c, _w, _F, qq = trial._with_probes()
+            assert np.max(np.abs(qq - q2)) < 1e-12                           # the two-step update is the joint update
+            realized += p1 * p2 * (float(trial._u(qq @ _F) @ _w) + lam * h(float(qq @ two)))
+    assert abs((now - realized) - gp) < 1e-9, (now - realized, gp)

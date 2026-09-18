@@ -46,6 +46,21 @@ random numbers (`engine+guard`, `engine+reliability`, `engine+replay`, `engine+a
                 increase) with λ fixed on the first step so the terms have equal scale. MEASURED: 1.248
                 (+0.169 ± 0.068, 12 of 40), 0 of 25 collisions — the calibration gap is the flattest of the four
                 (−0.002) and that is all it buys.
+  +bundle       no guard share at all: at every step the loop compares, across pairs and instruments, the best SINGLE
+                probe and the best PAIR of probes priced in the same bits (regime_posterior.bundle_value: the exact
+                two-step expected drop of U + λ·H_family over the four joint outcomes) and takes the larger gain per
+                cost, executing the pair back to back when it wins. Motivated by e33 + e35: the value rule is one-step
+                by construction and a collision probe has ≈ 0 marginal value alone but a large value GIVEN a first
+                probe (increasing returns), while the exact value of a SET on one belief is available by the chain
+                rule — so the bundle can be priced rather than bought out of a reserved share. Mutually exclusive with
+                +guard/+guard2/+burst/+eopt/+eoptmix. MEASURED (e21f, same 40 worlds, budget 40, against
+                +guard2+replay+majority at 1.08 / 7 tp / 2 fp): +bundle+replay+majority 1.172 ± 0.074
+                (+0.092 ± 0.054 paired, 15 of 40 wins), gap 0.088, 7 tp of 25 with 0 false flags — the guard share's
+                collision count, bought by the price alone. Stripped: +bundle+majority 1.350, 6 tp 0 fp;
+                +bundle alone (default priors, pointwise claims) 1.378, 6 tp 0 fp. That last one is the result:
+                every earlier no-guard-share rule found 0 of 25 without replay (+total 0, +eoptmix 0), and the priced
+                bundle finds 6 with no learned prior and no majority reading. The cost is accuracy: sign error is
+                0.09-0.30 worse because pairs are bought on pairs where the sign potential would have paid.
   +majority     the box claims are read as majority reports (RegimePosterior claim_model="majority") instead of
                 pointwise r-accurate labels — the reading the +reliability result points at as the seat of the loop's
                 over-confidence.
@@ -251,9 +266,9 @@ def _flags(policy: str) -> set:
     f = set(parts[1:])
     if "all" in f:
         f = {"guard", "reliability", "replay"}
-    if f - {"guard", "guard2", "burst", "eopt", "eoptmix", "total", "reliability", "replay", "majority"}:
+    if f - {"guard", "guard2", "burst", "eopt", "eoptmix", "total", "bundle", "reliability", "replay", "majority"}:
         raise ValueError(policy)
-    if len(f & {"guard", "guard2", "burst", "eopt", "eoptmix"}) > 1:
+    if len(f & {"guard", "guard2", "burst", "eopt", "eoptmix", "bundle"}) > 1:
         raise ValueError(policy)
     return f
 
@@ -312,15 +327,24 @@ def run(world: World, policy: str, budget: float, instruments=((1.0, 0.8), (4.0,
             pass
         elif base == "random":
             p, x, (c, r) = int(rng.integers(world.n_pairs)), float(rng.random()), instruments[0]
+            xs_val = [x]
         elif base in ("engine", "copies"):
             best = (-1.0, None)
             for p in range(world.n_pairs):
                 for c, r in instruments:
+                    if "bundle" in flags:                      # +bundle: singles AND pairs, priced in the same bits
+                        bv = posts[p].bundle_value(r)          # (U + λ·H_family), compared on gain per cost; no guard share
+                        for xs_c, gain, n in ((list(bv["single"][:1]), bv["single"][1], bv["single"][2]),
+                                              (list(bv["pair"][0]), bv["pair"][1], bv["pair"][2])):
+                            if gain / (n * c) > best[0]:
+                                best = (gain / (n * c), (p, xs_c, c, r))
+                        continue
                     x, gain = (posts[p].weakest_direction_probe(r, mix=True) if "eoptmix" in flags
+                               else posts[p].total_value_probe(r) if "total" in flags      # +total: ΔU + ΔH_family, one step
                                else posts[p].best_probe(r))   # +eoptmix: EVERY probe by the mixed rule, no guard share
                     if gain / c > best[0]:
-                        best = (gain / c, (p, x, c, r))
-            p, x, c, r = best[1]
+                        best = (gain / c, (p, [x], c, r))
+            p, xs_val, c, r = best[1]
         elif base == "oracle":
             best = (float("inf"), None)
             for p in range(world.n_pairs):
@@ -332,10 +356,11 @@ def run(world: World, policy: str, budget: float, instruments=((1.0, 0.8), (4.0,
                         if (w - curve[-1][1]) / c < best[0]:
                             best = ((w - curve[-1][1]) / c, (p, x, c, r))
             p, x, c, r = best[1]
+            xs_val = [x]
         else:
             raise ValueError(policy)
         if kind != "model":
-            xs_now = [x]
+            xs_now = xs_val
         if kind == "model" and "burst" in flags:              # +burst: commit a run of probes to the chosen pair, each placed by
             xs_now = []                                        # the family-entropy rule AFTER the previous answer (e28: 12 probes
             for _ in range(burst_n):                           # on one pair find the second transition; 2-3 do not)
