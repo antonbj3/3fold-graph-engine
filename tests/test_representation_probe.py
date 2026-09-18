@@ -81,3 +81,64 @@ def test_predict_sign_never_abstains(fitted):
     te_t, te_p, _ = _items(PAIRS[2:])
     s = fitted.predict_sign(te_t[:8], te_p[:8])
     assert set(np.unique(s)) <= {-1, 1} and (s != 0).all()
+
+
+# ---------------------------------------------------------------- difference-of-means direction (no model needed)
+from graph_engine.representation_probe import difference_of_means_direction, remove_direction  # noqa: E402
+
+
+def _planted(n=200, d=6, seed=0):
+    """Two coordinates: 0 carries the asserted sign (the reading), 1 carries agreement-with-physics (the prior)."""
+    rng = np.random.default_rng(seed)
+    sign = rng.integers(0, 2, n) * 2 - 1
+    agree = rng.integers(0, 2, n).astype(bool)
+    H = 0.1 * rng.standard_normal((n, d))
+    H[:, 0] += 3.0 * sign
+    H[:, 1] += 2.0 * agree
+    return H, sign, agree
+
+
+def test_direction_points_along_the_planted_group_axis():
+    H, sign, agree = _planted()
+    d = difference_of_means_direction(H, agree)
+    assert np.isclose(np.linalg.norm(d), 1.0)
+    assert abs(d[1]) > 0.95 and d[1] > 0
+
+
+def test_strata_cancel_a_correlated_nuisance():
+    """With agreement 80 % aligned with the sign, the unstratified direction picks up the reading axis; stratifying
+    by the asserted sign removes it."""
+    H, sign, _ = _planted()
+    rng = np.random.default_rng(1)
+    agree = np.where(rng.random(len(sign)) < 0.8, sign > 0, sign < 0)
+    H = H.copy()
+    H[:, 1] += 2.0 * agree
+    plain = difference_of_means_direction(H, agree)
+    strat = difference_of_means_direction(H, agree, strata=sign)
+    assert abs(plain[0]) > 0.5 and abs(strat[0]) < 0.1
+    assert abs(strat[1]) > 0.95
+
+
+def test_remove_direction_zeroes_the_component_and_keeps_the_rest():
+    H, sign, agree = _planted()
+    d = difference_of_means_direction(H, agree, strata=sign)
+    Hp = remove_direction(H, d)
+    assert np.abs(Hp @ d).max() < 1e-9
+    assert np.corrcoef(Hp[:, 0], sign)[0, 1] > 0.99          # the reading axis survives
+    assert abs(np.corrcoef(Hp[:, 1], agree.astype(float))[0, 1]) < 0.2
+
+
+def test_remove_direction_target_and_alpha():
+    H, sign, agree = _planted()
+    d = difference_of_means_direction(H, agree, strata=sign)
+    c = float((H @ d).mean())
+    assert np.allclose(remove_direction(H, d, target=c) @ d, c)
+    assert np.allclose(remove_direction(H, d, alpha=0.0), H)
+    assert np.allclose(remove_direction(H, 2.5 * d), remove_direction(H, d))
+
+
+def test_direction_rejects_an_empty_side():
+    H, sign, agree = _planted()
+    bad = np.where(sign > 0, True, agree)                     # one stratum is all-True
+    with pytest.raises(ValueError):
+        difference_of_means_direction(H, bad, strata=sign)

@@ -266,6 +266,13 @@ Verdict: the training GENRE is what carries, not label quantity or purity; 660 n
 20+ points on other people's paragraphs, and free labels come within 3–4 points of human ones. Cost: the template set falls
 (0.86 / 0.89 / 0.92 → 0.63 / 0.76 / 0.79), and on QuaRTz no probe beats the token output (the paragraphs agree with the prior).
 
+**Negative: the prior cannot be projected out of the token channel (e29).** The difference-of-means direction between text that agrees
+with physics and text that contradicts it is real in the last state (held-out AUC 0.73 at 3B, 0.50 at 0.5B where there is no gap) and
+orthogonal to the reading direction (|cos| < 0.03), but removing it — or steering along it from one class mean to the other — moves the
+A/B output by 0.03 and never raises accuracy on contradicting text (0.701 → 0.660…0.694 at 3B). The prior is not one linear direction
+in the final state; it is applied by the last layers in a way one projection does not undo. The mid-layer probe stays the only reader of
+contradicting text (0.87 at e20's layer vs 0.71 for a probe on the last layer).
+
 **The loop closed against a world that answers (e21, `closed_loop.py`; 40 worlds × 12 pairs; per pair the true sign along x changes at
 most once, 5 % of pairs twice; 8 sources with reliabilities 0.6–0.95, 35 % of them copies of another source; instruments: judge cost 1
 r = 0.8, exact cell cost 4 r = 0.99; budget 40; score = measure of the domain wrongly signed against the truth, summed over pairs).**

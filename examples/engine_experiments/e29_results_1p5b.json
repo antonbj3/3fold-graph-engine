@@ -1,0 +1,354 @@
+{
+ "model": "qwen2.5-1.5b-instruct",
+ "device": "cuda",
+ "n_sentences": 320,
+ "splits": 20,
+ "note": "direction fitted on 10 training quantity pairs, evaluated on the other 10; labels = asserted_sign (rule) x physics sign (PAIRS), no human labels; 'contradicts' = the 160 sentences whose asserted sign is the opposite of textbook physics",
+ "lm_head_on_hidden_states_minus_1_matches_model_logits": 0.010725,
+ "layers": 28,
+ "final_state_per_lens": {
+  "q0_order0": {
+   "before": {
+    "all": [
+     0.779,
+     0.017
+    ],
+    "agrees": [
+     0.923,
+     0.014
+    ],
+    "contradicts": [
+     0.636,
+     0.041
+    ]
+   },
+   "plain_zero": {
+    "all": [
+     0.701,
+     0.107
+    ],
+    "agrees": [
+     0.844,
+     0.114
+    ],
+    "contradicts": [
+     0.558,
+     0.133
+    ]
+   },
+   "strat_zero": {
+    "all": [
+     0.777,
+     0.019
+    ],
+    "agrees": [
+     0.925,
+     0.02
+    ],
+    "contradicts": [
+     0.629,
+     0.045
+    ]
+   },
+   "strat_center": {
+    "all": [
+     0.773,
+     0.018
+    ],
+    "agrees": [
+     0.912,
+     0.024
+    ],
+    "contradicts": [
+     0.634,
+     0.042
+    ]
+   },
+   "strat_best_alpha": {
+    "all": [
+     0.769,
+     0.02
+    ],
+    "agrees": [
+     0.91,
+     0.022
+    ],
+    "contradicts": [
+     0.629,
+     0.044
+    ]
+   },
+   "alpha_chosen_on_training_pairs": [
+    0.93,
+    [
+     0.5,
+     1.0,
+     1.5,
+     2.0,
+     3.0
+    ]
+   ],
+   "cos_direction_vs_probe_reading_direction_last_layer": 0.009,
+   "probe_on_last_layer_all_contradicts": [
+    0.889,
+    0.799
+   ],
+   "mean_abs_change_in_p_after_removal": 0.022,
+   "auc_of_projection_on_held_out_agrees_vs_contradicts": 0.63,
+   "steering_mean_p_at_agree_mean_vs_contradict_mean": [
+    0.449,
+    0.462,
+    0.017
+   ]
+  },
+  "q0_order1": {
+   "before": {
+    "all": [
+     0.776,
+     0.016
+    ],
+    "agrees": [
+     0.932,
+     0.026
+    ],
+    "contradicts": [
+     0.619,
+     0.042
+    ]
+   },
+   "plain_zero": {
+    "all": [
+     0.747,
+     0.059
+    ],
+    "agrees": [
+     0.85,
+     0.082
+    ],
+    "contradicts": [
+     0.644,
+     0.089
+    ]
+   },
+   "strat_zero": {
+    "all": [
+     0.774,
+     0.023
+    ],
+    "agrees": [
+     0.919,
+     0.025
+    ],
+    "contradicts": [
+     0.629,
+     0.045
+    ]
+   },
+   "strat_center": {
+    "all": [
+     0.776,
+     0.019
+    ],
+    "agrees": [
+     0.926,
+     0.03
+    ],
+    "contradicts": [
+     0.626,
+     0.047
+    ]
+   },
+   "strat_best_alpha": {
+    "all": [
+     0.78,
+     0.018
+    ],
+    "agrees": [
+     0.93,
+     0.029
+    ],
+    "contradicts": [
+     0.629,
+     0.043
+    ]
+   },
+   "alpha_chosen_on_training_pairs": [
+    1.02,
+    [
+     0.5,
+     1.0,
+     2.0,
+     3.0
+    ]
+   ],
+   "cos_direction_vs_probe_reading_direction_last_layer": 0.016,
+   "probe_on_last_layer_all_contradicts": [
+    0.881,
+    0.784
+   ],
+   "mean_abs_change_in_p_after_removal": 0.018,
+   "auc_of_projection_on_held_out_agrees_vs_contradicts": 0.638,
+   "steering_mean_p_at_agree_mean_vs_contradict_mean": [
+    0.537,
+    0.544,
+    0.015
+   ]
+  },
+  "q1_order0": {
+   "before": {
+    "all": [
+     0.787,
+     0.03
+    ],
+    "agrees": [
+     0.968,
+     0.013
+    ],
+    "contradicts": [
+     0.607,
+     0.063
+    ]
+   },
+   "plain_zero": {
+    "all": [
+     0.743,
+     0.07
+    ],
+    "agrees": [
+     0.906,
+     0.122
+    ],
+    "contradicts": [
+     0.581,
+     0.095
+    ]
+   },
+   "strat_zero": {
+    "all": [
+     0.785,
+     0.025
+    ],
+    "agrees": [
+     0.97,
+     0.014
+    ],
+    "contradicts": [
+     0.599,
+     0.048
+    ]
+   },
+   "strat_center": {
+    "all": [
+     0.786,
+     0.025
+    ],
+    "agrees": [
+     0.968,
+     0.015
+    ],
+    "contradicts": [
+     0.604,
+     0.049
+    ]
+   },
+   "strat_best_alpha": {
+    "all": [
+     0.785,
+     0.028
+    ],
+    "agrees": [
+     0.971,
+     0.013
+    ],
+    "contradicts": [
+     0.6,
+     0.055
+    ]
+   },
+   "alpha_chosen_on_training_pairs": [
+    0.68,
+    [
+     0.5,
+     1.0,
+     1.5
+    ]
+   ],
+   "cos_direction_vs_probe_reading_direction_last_layer": 0.008,
+   "probe_on_last_layer_all_contradicts": [
+    0.868,
+    0.753
+   ],
+   "mean_abs_change_in_p_after_removal": 0.011,
+   "auc_of_projection_on_held_out_agrees_vs_contradicts": 0.691,
+   "steering_mean_p_at_agree_mean_vs_contradict_mean": [
+    0.471,
+    0.47,
+    0.011
+   ]
+  }
+ },
+ "late_block_intervention_lens0": {
+  "block_output_27_of_28": {
+   "before": {
+    "all": [
+     0.779,
+     0.017
+    ],
+    "agrees": [
+     0.923,
+     0.014
+    ],
+    "contradicts": [
+     0.636,
+     0.041
+    ]
+   },
+   "after_strat_center": {
+    "all": [
+     0.774,
+     0.018
+    ],
+    "agrees": [
+     0.912,
+     0.024
+    ],
+    "contradicts": [
+     0.636,
+     0.043
+    ]
+   },
+   "cos_direction_vs_probe_reading_direction": 0.023
+  },
+  "block_output_25_of_28": {
+   "before": {
+    "all": [
+     0.779,
+     0.017
+    ],
+    "agrees": [
+     0.923,
+     0.014
+    ],
+    "contradicts": [
+     0.636,
+     0.041
+    ]
+   },
+   "after_strat_center": {
+    "all": [
+     0.774,
+     0.018
+    ],
+    "agrees": [
+     0.917,
+     0.022
+    ],
+    "contradicts": [
+     0.631,
+     0.043
+    ]
+   },
+   "cos_direction_vs_probe_reading_direction": 0.022
+  }
+ }
+}

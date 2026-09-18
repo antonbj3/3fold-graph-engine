@@ -40,7 +40,51 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
-__all__ = ["RepresentationProbe", "PROMPT_QUESTION"]
+__all__ = ["RepresentationProbe", "PROMPT_QUESTION", "difference_of_means_direction", "remove_direction"]
+
+
+def difference_of_means_direction(H: np.ndarray, group: Sequence, strata: Optional[Sequence] = None) -> np.ndarray:
+    """Unit direction from mean(H | group is False) to mean(H | group is True) ("difference of means", Marks &
+    Tegmark 2023; the direction used for inference-time intervention in Li et al. 2023).
+
+    `strata` (optional) splits the rows into blocks and the difference is taken INSIDE each block and then averaged,
+    so whatever varies with the strata is cancelled out of the direction. In e29 `group` = "the text agrees with
+    textbook physics" and `strata` = the sign the text asserts, so the returned direction carries the agreement and
+    not the asserted sign (the thing that is supposed to be read). Raises if a block has only one side; blocks are
+    weighted equally. The returned vector has unit norm (or is all-zero if the means coincide).
+    """
+    H = np.asarray(H, dtype=np.float64)
+    g = np.asarray(group)
+    g = g if g.dtype == bool else g > 0
+    if H.ndim != 2 or len(g) != len(H):
+        raise ValueError(f"H must be n x d and match group ({H.shape} vs {len(g)})")
+    blocks = [np.ones(len(g), dtype=bool)] if strata is None else \
+        [np.asarray(strata) == s for s in np.unique(np.asarray(strata))]
+    diffs = []
+    for b in blocks:
+        if not (b & g).any() or not (b & ~g).any():
+            raise ValueError("a stratum has no items on one side of `group`")
+        diffs.append(H[b & g].mean(0) - H[b & ~g].mean(0))
+    d = np.mean(diffs, 0)
+    n = float(np.linalg.norm(d))
+    return d if n == 0 else d / n
+
+
+def remove_direction(H: np.ndarray, d: np.ndarray, alpha: float = 1.0, target: Optional[float] = None) -> np.ndarray:
+    """h' = h - alpha * (h.d_hat - target) * d_hat, with d_hat = d / |d| (target defaults to 0).
+
+    alpha = 1, target = 0 removes the component along `d` entirely; `target` = the mean projection of some reference
+    set moves every row to that projection instead of to the origin (the component is not information-free, so
+    zeroing it is a different intervention from re-centring it — e29 reports both).
+    """
+    H = np.asarray(H, dtype=np.float64)
+    d = np.asarray(d, dtype=np.float64).ravel()
+    n = float(np.linalg.norm(d))
+    if n == 0:
+        return H.copy()
+    d = d / n
+    proj = H @ d
+    return H - alpha * (proj - (0.0 if target is None else float(target)))[:, None] * d[None, :]
 
 PROMPT_QUESTION = "According to the text, when {x} increases, the {y}:"      # e7 QUESTIONS[0]
 
