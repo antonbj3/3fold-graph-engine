@@ -55,7 +55,7 @@ corpus the gate abstains on all 57 papers from title and abstract. The modules b
 | `lens_pooling` | pool several phrasings of one question to one judge | per-stratum Platt scaling, error correlation, tempering, balanced lens sets from a Hadamard array |
 | `pooled_screening` | how many candidates per pooled question | two-stage Dorfman with noisy tests, closed forms |
 | `plan_value` | probing and working in one currency | settle cost per node by a dynamic programme over instruments (cost, reliability) with admission level τ; nodes ordered by (1 − p)/settle cost; cheap-instrument value = S_expensive − S_all ≥ 0 |
-| `record_guarantee` | admit extracted records so that ≥ 1 − α of the admitted are entirely right, distribution-free | score = least certain field; threshold = largest of 20 quantile candidates whose Clopper–Pearson (1 − δ/20) bound is ≤ α (Learn-then-Test); assumes exchangeability only |
+| `record_guarantee` | admit extracted records so that ≥ 1 − α of the admitted are entirely right, distribution-free | score = least certain field; threshold = largest of the unique score quantiles (≤ 20, taken from the calibration scores) whose Clopper–Pearson (1 − δ/grid size) bound is ≤ α (Learn-then-Test; valid because the labels are independent given the scores); assumes exchangeability only |
 | `source_reliability` | how often each independent origin is right, from agreement alone | Dawid–Skene EM with a Beta prior over roots (copies collapsed first); feeds `Federation(reliability_by_root=…)` |
 | `polarity_rules` | the sign a sentence asserts between two quantities, symbolically | one direction word per quantity per clause, negation flips, last clause wins, composition by product; abstains outside its lexicon (English only) |
 | `typed_extraction` | the stubbed prose → `Claim` step of `paper_graph/pipeline.py` | yes/no fields from the target node's claim; balanced lenses; isotonic calibration of the pooled log-odds; confidence = Π max(p, 1−p) = P(whole claim right); `agree` adds the log-odds of a second, independent judge |
@@ -93,12 +93,17 @@ cutoff 107. No gain: the log-linear extrapolation feature (Δ ≤ 0.001), resist
 where the policy is worst (−0.008 on HepPh@95). e3b: among pairs that do get connected, larger resistance distance goes with a
 LOWER citation percentile of the connecting paper (Spearman −0.03 to −0.20, six of six cells).
 
-**A throw is a set, not a pair (e19; 19 674 papers in cit-HepTh/HepPh at two cutoffs).** For each new paper: core = median resistance
-distance between its references, throw = 90th percentile; impact = citation percentile within its month. Core tightness carries the
-impact (Spearman −0.14 to −0.27 in all four cells; partial −0.14 to −0.26). A far throw is negative on its own (−0.07 to −0.22, e3b's
-finding) but POSITIVE given the core (partial +0.02 to +0.11 in all four cells); the tight-core-far-throw quartile has the highest mean
-impact in 4 of 4 cells (0.59–0.66 vs 0.47–0.51 for loose-core-far-throw). Uzzi et al. 2013 in resistance geometry: the proposal to
-score is a conventional core plus one far element; `throws` scores pairs and does not yet do this.
+**A throw is a set, not a pair — mostly a degree effect (e19; 19 674 papers in cit-HepTh/HepPh at two cutoffs).** For each new paper:
+core = median resistance distance between its references, throw = 90th percentile; impact = citation percentile within its month. First
+reading: core tightness carries the impact (Spearman −0.14 to −0.27 in all four cells), a far throw is negative on its own but positive
+given the core (partial +0.02 to +0.11), and the tight-core-far-throw quartile has the highest mean impact in 4 of 4 cells (0.59–0.66 vs
+0.47–0.51) — Uzzi et al. 2013 in resistance geometry. Control, after the question "can this be biased?": resistance distance between two
+nodes is ≈ 1/deg_i + 1/deg_j, so "tight core" is mostly "the references are hubs" (Spearman −0.80 to −0.90 between the core measure and
+the references' mean log in-degree). Given hubness and reference count, core→impact falls to −0.02 to −0.07 and throw→impact given core to
++0.005 to +0.05. What the geometry mostly measured is that papers citing popular papers get cited more. Biases that no control on this
+data removes: references outside hep-th/hep-ph are not in the graph (a far throw out of the field is invisible), only published papers
+exist (rejected far-throw-no-core papers are missing), and used as a policy the pattern rewards itself. `throws` scores pairs; a set
+score is not built, and on this evidence it should not be built from core tightness.
 
 **Throws with outcomes known only for throws made (e8, e8b).** Links found / AP of the final policy on an unseen period (HepTh):
 top-K 3 608 / 0.130; 30 % random 2 795 / 0.137; softmax T = 1 1 417 / 0.161; uniform 527 / 0.162; softmax T = 0.5 with 1/π-weighted
@@ -140,19 +145,23 @@ straight-line (Platt) calibration was tried first and was under-confident (0.44 
 **Speed of the open typed-decision mechanism (e13; Qwen2.5-0.5B-Instruct fp16 on an RTX 5070; one 400-token state, 20 yes/no
 fields).** One forward pass per field 504 ms per state (40 fields/s); all 20 as one batch with the state re-read 490 ms; state
 prefilled once and its KV cache shared by the 20 field suffixes 54.5 ms (367 fields/s). The three give the same probabilities
-(max difference 0.006, fp16). The open replica of the hosted service (read by an agent) does the same: prefill once, tile the
+(max difference 0.009, fp16; an exact-arithmetic check on a random-weight model gives 0.0, so the difference is fp16 noise and does not grow with the spread of suffix lengths). The open replica of the hosted service (read by an agent) does the same: prefill once, tile the
 cache, one batched pass, softmax restricted to the option tokens, no training.
 
 **Two real channels on one field (e14; the 320 labelled TEST sentences of e7).** Symbolic rule: coverage 1.0, accuracy 1.0 on the
-templated sentences and 10/10 on hand-written sentences outside the templates (tests) — templates and lexicon have the same author,
+templated sentences and 9/9 on hand-written sentences outside the templates (tests) — templates and lexicon have the same author,
 so this is not an independent evaluation of the rule. Language model, eight lenses pooled: 0.591. Where both answer and agree
 (59 % of sentences): 1.000; where they disagree the language model is right 0.000. Language model calibrated per sentence form on the
 RULE's answers instead of the labels, held-out quantity pairs: 0.927 (sd 0.025), equal to calibration on true labels (e7b).
 
 **The rule on text by other people (e15; QuaRTz, Tafjord et al. 2019, CC BY 4.0, 405 annotated paragraphs).** Given the paragraph
 and the two annotated property phrases: answers 40 % (86 % when both phrases occur verbatim), right 0.901 where it answers;
-majority class 0.709. After extending the comparative lexicon on the train split only: test split (81 paragraphs) coverage 0.43,
-accuracy where answered 0.857. The same-author 1.0 of e14 does not transfer; 0.86 with abstention on the rest is the number to use.
+majority class 0.709 over all 405. After extending the comparative lexicon: test split (81 paragraphs) coverage 0.42, 29 of 34 answered
+right = 0.853, 95 % Clopper–Pearson [0.69, 0.95], majority class among the answered 0.676. Provenance caveat: the lexicon extension, the
+test-split print and the module docstring landed in one commit, so "train split only" cannot be verified from the history; treat the
+test number as a same-author number on a small sample. The same-author 1.0 of e14 does not transfer; ≈ 0.85 on n = 34 with abstention
+on the rest is what the rule has shown on other people's text. After the review's abstention fixes (cross-sentence composition, third
+quantities, parentheticals inside the negation window, double negation) the split is unchanged within one item.
 
 **One currency for probing and working (e16, SIMULATION; 8 open nodes, one goal, cheap judge cost 1 with reliability r, cell
 cost 20 exact, 600 graphs).** Spend per goal / wrong settlements per goal at admission level τ = 0.99, r = 0.8: existing `priority`
@@ -167,11 +176,36 @@ band or costs more than the cell (test). A first version scored probes by critic
 right).** The product gate Π max(p, 1−p) ≥ 0.9 admits records that are right ~0.65 of the time (level broken in 20 of 20 splits).
 `record_guarantee` at α = 0.1 admits nothing (the level cannot be certified), at α = 0.45 admits 30 %+ and holds the level in 20 of
 20 splits (calibration 600 records, δ = 0.05). Two wrong versions were caught by the held-out test: scanning from the most certain
-record admitted nothing; scanning until a threshold passed broke the level in 8 of 20 splits. Bonferroni over a fixed grid fixed it.
+record admitted nothing; scanning until a threshold passed broke the level in 8 of 20 splits. Bonferroni over the quantile grid fixed it.
 
 **Per-origin reliability (test; 300 questions, five origins with planted accuracies 0.9 / 0.85 / 0.8 / 0.55 / 0.5, no labels).**
-Recovered within 0.07 of the planted values; fused signs with the estimated per-origin weights are > 3 points more accurate than
-with one fixed reliability. Needs ≥ 3 independent origins per question to be identifiable; shared misreadings stay invisible.
+Recovered within 0.07 of the planted values; fused signs with the estimated per-origin weights are 1.3–12 points (mean 7 over 10 seeds) more accurate than
+with one fixed reliability. Needs ≥ 3 independent origins per question (two identify only their agreement rate); shared misreadings stay
+invisible. Not identifiable from agreement alone: the likelihood is symmetric under flipping all truths and all reliabilities, so a
+majority of systematically wrong origins comes out mirrored (review planted 0.9 / 0.2 / 0.2 / 0.15 / 0.15 and got 0.07 for the good one,
+its vote negated). Without an anchor the estimate assumes origins are mostly better than a coin; `known` = a few pinned truths (20 of
+400 suffice in the test) breaks the symmetry from data.
+
+**Model size (e7 rerun with Qwen2.5-1.5B and 3B on GPU; same 320 sentences, same eight lenses).**
+
+| | 0.5B | 1.5B | 3B |
+|---|---|---|---|
+| right per lens | 0.47–0.59 | 0.75–0.80 | 0.83–0.88 |
+| pooled, eight lenses | 0.591 | 0.797 | 0.869 |
+| right when the text agrees with the physics / contradicts it | 0.57 / 0.50 | 0.92 / 0.63 | 0.995 / 0.71 |
+| error correlation, same / swapped option order | +0.61 / −0.08 | +0.67 / +0.58 | +0.75 / +0.74 |
+| N_eff of the eight lenses | 3.2 | 1.5 | 1.3 |
+| composition templates ("reducing X lowers Y") | 0.21–0.35 | 0.43–0.59 | 0.77–0.83 |
+| calibrated per form on the rule's labels, held-out pairs (20 splits) | **0.927** | 0.853 | 0.855 |
+
+Bigger models read better and believe their prior more: the gap between text that agrees with the physics and text that contradicts it
+grows from 7 to 29 points, and stays at 29 from 1.5B to 3B. The lenses stop being different lenses (N_eff 3.2 → 1.3; the swapped
+option order no longer gives an opposite channel). The 0.5B's errors were structural (option position, sentence form) and per-form
+calibration on the rule's labels removes them; the larger models' errors are knowledge-driven and calibration cannot reach them,
+so after calibration the smallest model is the most accurate. The sentence forms here are the rule's own domain (rule 320/320), so
+this measures the reading channel, not the rule. Consequence: the reader that belongs next to the symbolic channel is a small model
+whose position and form biases are calibrated away, not a larger model; a larger model contributes a prior, which the federation
+must keep on a separate lineage from the text.
 
 **Label-free calibration (e18; same 320 sentences).** Raw pooled 0.591; subtracting each lens's batch-mean log-odds (Batch Calibration) 0.572;
 per sentence form 0.603; per-form Platt on the rule's answers 0.927; on true labels 0.927. The option prior is not the fault; the

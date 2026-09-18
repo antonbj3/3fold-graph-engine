@@ -1,0 +1,49 @@
+{
+ "model": "qwen2.5-1.5b-instruct (cuda)",
+ "n_sentences": 320,
+ "lenses": 8,
+ "seconds_for_all": 13.1,
+ "judgments_per_second": 194.8,
+ "deterministic_max_abs_diff_on_repeat": 0.0,
+ "accuracy_per_lens": [
+  0.778,
+  0.778,
+  0.784,
+  0.75,
+  0.781,
+  0.8,
+  0.753,
+  0.769
+ ],
+ "ece_per_lens_mean": 0.165,
+ "accuracy_when_text_agrees_with_physics": 0.917,
+ "accuracy_when_text_contradicts_physics": 0.631,
+ "accuracy_by_template": [
+  0.984,
+  0.838,
+  0.428,
+  0.941,
+  0.866,
+  0.569,
+  0.981,
+  0.588
+ ],
+ "error_correlation_mean": 0.618,
+ "error_correlation_same_option_order": 0.669,
+ "error_correlation_swapped_option_order": 0.58,
+ "n_eff_of_8_lenses": 1.5,
+ "pooled_naive": {
+  "accuracy": 0.797,
+  "ece": 0.207
+ },
+ "pooled_tempered_by_n_eff": {
+  "accuracy": 0.797,
+  "ece": 0.184
+ },
+ "pooled_one_swapped_pair": {
+  "accuracy": 0.784
+ },
+ "pooled_two_same_order": {
+  "accuracy": 0.791
+ }
+}

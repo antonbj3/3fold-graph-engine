@@ -20,12 +20,13 @@ expected cost is Σ_k S_(k) Π_{j<k} p_(j); goals are summed with their weights,
 """
 from __future__ import annotations
 
+import math
 from functools import lru_cache
 from typing import Any
 
 from .unlock_value import expected_cost_of_order, p_of, rank
 
-__all__ = ["settle_cost", "plan", "expected_cost", "cheap_instrument_value"]
+__all__ = ["settle_cost", "plan", "expected_cost_sum_over_goals", "cheap_instrument_value"]
 
 
 def _update(p: float, r: float, yes: bool) -> float:
@@ -33,9 +34,21 @@ def _update(p: float, r: float, yes: bool) -> float:
     return p * r / q if yes else p * (1 - r) / (1 - q)
 
 
-def settle_cost(p: float, instruments: list[tuple[float, float]], tau: float = 0.9, max_steps: int = 6) -> tuple[float, str]:
+def settle_cost(p: float, instruments: list[tuple[float, float]], tau: float = 0.9, max_steps: int | None = None,
+                tol: float = 1e-3) -> tuple[float, str]:
     """(expected cost to settle a node with belief p, name of the first instrument to use).
-    instruments: [(cost, reliability, name)] or [(cost, reliability)]. A reliability of 1.0 settles in one step."""
+    instruments: [(cost, reliability, name)] or [(cost, reliability)]. A reliability of 1.0 settles in one step.
+    The horizon is doubled from 8 until the value changes by less than `tol` (relative); the truncated value converges from
+    below. A fixed horizon of 6 with an infinite terminal value was wrong at e16's own settings (found in review).
+    Raises ValueError when no horizon up to 256 converges (instruments no better than a coin)."""
+    if max_steps is None:
+        prev = None
+        for h in (8, 16, 32, 64, 128, 256):
+            cur = settle_cost(p, instruments, tau, h, tol)
+            if prev is not None and abs(cur[0] - prev[0]) < tol * max(1.0, cur[0]):
+                return cur
+            prev = cur
+        raise ValueError(f"settle cost for belief {p} does not converge by horizon 256: tau={tau}, instruments {instruments}")
     ins = [(c, r, (t[2] if len(t) > 2 else f"i{k}")) for k, t in enumerate(instruments) for c, r in [t[:2]]]
 
     @lru_cache(maxsize=None)
@@ -43,7 +56,7 @@ def settle_cost(p: float, instruments: list[tuple[float, float]], tau: float = 0
         if pb >= tau or pb <= 1 - tau:
             return 0.0, ""
         if steps == 0:
-            return float("inf"), ""
+            return 0.0, ""                     # truncation: the value converges from below as the horizon grows
         best = (float("inf"), "")
         for c, r, name in ins:
             if r >= 1.0:
@@ -72,7 +85,10 @@ def plan(graph: dict[str, Any], p_holds: dict[str, float], instruments: dict[str
             "first_instrument": S[first][1] if first in S else None}
 
 
-def expected_cost(graph: dict[str, Any], p_holds: dict[str, float], instruments: dict[str, list[tuple]], tau: float = 0.9) -> float:
+def expected_cost_sum_over_goals(graph: dict[str, Any], p_holds: dict[str, float], instruments: dict[str, list[tuple]], tau: float = 0.9) -> float:
+    """Σ over goals of the expected settle cost of that goal's chain, in the ranked order. A node under two goals is
+    counted once per goal (two goals sharing one node, p = 0.8, cost 5: 18.0 here, 13.0 when each node is paid once).
+    Use for ranking, not as an absolute spend."""
     from .unlock_value import _below
     nodes = {n["id"]: n for n in graph["nodes"]}; below = _below(nodes)
     gw = {**{g: 1.0 for g, n in nodes.items() if n.get("type") == "GOAL"}, **((graph.get("_meta") or {}).get("goal_weights") or {})}

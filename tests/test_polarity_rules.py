@@ -26,5 +26,21 @@ def test_composition_negation_and_abstention():
     assert all(asserted_sign(t, x, y) == 0 for t, x, y, s in CASES if s == 0 and x != "interval")
 
 
+# review cases: each answered WRONGLY before; the expected value is the truth, or 0 where abstention is the honest answer
+REVIEW = [
+    ("The pressure increases. The volume decreases.", "pressure", "volume", 0),        # two sentences: no relation asserted
+    ("Higher pressure, higher yield, but lower purity.", "pressure", "yield", 1),      # "lower" names a THIRD quantity
+    ("No increase in pressure was observed; the volume increases.", "pressure", "volume", 1),  # "no increase" ≠ a decrease
+
+    ("A larger grain does not, in any way we could measure, increase the strength.", "grain", "strength", -1),
+    ("The pressure does not not increase the volume.", "pressure", "volume", 0),       # double negation: abstain, never flip once
+]
+
+
+def test_review_cases_abstain_instead_of_answering_wrongly():
+    got = [(t, asserted_sign(t, x, y), s) for t, x, y, s in REVIEW]
+    assert [g[1] for g in got] == [g[2] for g in got], got
+
+
 def test_a_direction_word_inside_a_quantity_name_is_not_a_direction():
     assert asserted_sign("The lower bound rises with sample size.", "sample size", "lower bound") == 1

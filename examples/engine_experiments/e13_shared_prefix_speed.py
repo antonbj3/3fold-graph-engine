@@ -41,7 +41,7 @@ def shared():
     lg = model(input_ids=enc.input_ids, attention_mask=mask, past_key_values=cache, use_cache=True).logits
     last = enc.attention_mask.sum(1) - 1; return pa(lg[torch.arange(len(suf)), last])
 
-res = {"model": MODEL if not os.path.isdir(MODEL) else "local directory (set JUDGE_MODEL)", "device": dev + (" " + torch.cuda.get_device_name(0) if dev == "cuda" else ""), "dtype": str(dtype), "state_tokens": int(n_state), "fields": len(FIELDS)}
+res = {"model": MODEL if not os.path.isdir(MODEL) else os.path.basename(os.path.normpath(MODEL)) + " (local directory, set JUDGE_MODEL)", "device": dev + (" " + torch.cuda.get_device_name(0) if dev == "cuda" else ""), "dtype": str(dtype), "state_tokens": int(n_state), "fields": len(FIELDS)}
 ref = None
 for name, fn in [("sequential", sequential), ("batched", batched), ("shared", shared)]:
     fn(); sync(); ts = []
@@ -51,4 +51,4 @@ for name, fn in [("sequential", sequential), ("batched", batched), ("shared", sh
     res[name] = {"ms_per_state": round(1000 * float(np.median(ts)), 1), "fields_per_s": round(len(FIELDS) / float(np.median(ts)), 1), "max_abs_diff_vs_sequential": round(float(np.abs(p - ref).max()), 4)}
     print(name, res[name], flush=True)
 res["answers_A_is_yes"] = [round(float(x), 3) for x in p]
-json.dump(res, open(Path(__file__).parent / f"e13_results_{dev}.json", "w"), indent=1)
+json.dump(res, open(Path(__file__).parent / f"e13_results_{dev}{os.environ.get('JUDGE_TAG', '')}.json", "w"), indent=1)

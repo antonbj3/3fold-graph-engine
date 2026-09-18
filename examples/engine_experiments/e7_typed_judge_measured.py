@@ -12,7 +12,8 @@ import numpy as np, torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 torch.set_num_threads(6); torch.manual_seed(0)
 MODEL = os.environ.get("JUDGE_MODEL", "Qwen/Qwen2.5-0.5B-Instruct")     # a local directory or a Hugging Face id
-tok = AutoTokenizer.from_pretrained(MODEL, padding_side="left"); model = AutoModelForCausalLM.from_pretrained(MODEL, torch_dtype=torch.float32).eval()
+DEV = "cuda" if os.environ.get("E7_DEVICE") == "cuda" and torch.cuda.is_available() else "cpu"; TAG = os.environ.get("JUDGE_TAG", "")
+tok = AutoTokenizer.from_pretrained(MODEL, padding_side="left"); model = AutoModelForCausalLM.from_pretrained(MODEL, dtype=torch.float16 if DEV == "cuda" else torch.float32).to(DEV).eval()
 
 PAIRS = [("temperature", "electrical resistance of copper", 1), ("pressure", "boiling point of water", 1), ("altitude", "air pressure", -1),
          ("grain size", "yield strength of steel", -1), ("cooling rate", "grain size", -1), ("porosity", "fatigue strength", -1),
@@ -41,8 +42,8 @@ A, B = tok.encode("A", add_special_tokens=False)[0], tok.encode("B", add_special
 def p_increase(prompts, orders, bs=32):
     out = []
     for i in range(0, len(prompts), bs):
-        enc = tok(prompts[i:i + bs], return_tensors="pt", padding=True); lg = model(**enc).logits[:, -1, :]
-        pa = torch.softmax(lg[:, [A, B]], -1)[:, 0].numpy(); out.extend(pa)
+        enc = tok(prompts[i:i + bs], return_tensors="pt", padding=True).to(DEV); lg = model(**enc).logits[:, -1, :].float()
+        pa = torch.softmax(lg[:, [A, B]], -1)[:, 0].cpu().numpy(); out.extend(pa)
     pa = np.array(out); return np.where(np.array(orders) == 0, pa, 1 - pa)       # P("increases")
 
 def main():
@@ -66,7 +67,7 @@ def main():
     K = len(lenses); neff = K / (1 + (K - 1) * max(rho_all, 0))
     logit = lambda p: np.log(np.clip(p, 1e-6, 1 - 1e-6) / (1 - np.clip(p, 1e-6, 1 - 1e-6)))
     pool = lambda w: 1 / (1 + np.exp(-w * logit(P).sum(1)))
-    res = {"model": "Qwen2.5-0.5B-Instruct (CPU)", "n_sentences": len(items), "lenses": K, "seconds_for_all": round(elapsed, 1),
+    res = {"model": (MODEL if not os.path.isdir(MODEL) else Path(MODEL).name) + f" ({DEV})", "n_sentences": len(items), "lenses": K, "seconds_for_all": round(elapsed, 1),
            "judgments_per_second": round(len(items) * K / elapsed, 1),
            "deterministic_max_abs_diff_on_repeat": float(np.abs(again - P[:64, 0]).max()),
            "accuracy_per_lens": [round(float(1 - e), 3) for e in err.mean(0)], "ece_per_lens_mean": round(float(np.mean([ece(P[:, k], truth) for k in range(K)])), 3),
@@ -79,8 +80,8 @@ def main():
            "pooled_tempered_by_n_eff": {"accuracy": round(float(((pool(neff / K) > 0.5) == truth).mean()), 3), "ece": round(ece(pool(neff / K), truth), 3)},
            "pooled_one_swapped_pair": {"accuracy": round(float((((logit(P[:, 0]) + logit(P[:, 1])) > 0) == truth).mean()), 3)},
            "pooled_two_same_order": {"accuracy": round(float((((logit(P[:, 0]) + logit(P[:, 2])) > 0) == truth).mean()), 3)}}
-    np.save(Path(__file__).parent / "e7_probabilities.npy", P.astype(np.float32))
-    json.dump(res, open(Path(__file__).parent / "e7_results.json", "w"), indent=1); [print(k, v) for k, v in res.items()]
+    np.save(Path(__file__).parent / f"e7_probabilities{TAG}.npy", P.astype(np.float32))
+    json.dump(res, open(Path(__file__).parent / f"e7_results{TAG}.json", "w"), indent=1); [print(k, v) for k, v in res.items()]
 
 
 if __name__ == "__main__":

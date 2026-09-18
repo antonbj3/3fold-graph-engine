@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src")); sys.path.insert(0, str(ROOT / "src" / "graph_engine" / "tools")); sys.path.insert(0, str(ROOT / "tests"))
-from graph_engine.plan_value import settle_cost, cheap_instrument_value, plan, expected_cost  # noqa: E402
+from graph_engine.plan_value import settle_cost, cheap_instrument_value, plan, expected_cost_sum_over_goals  # noqa: E402
 from test_unlock_value import _graph  # noqa: E402
 
 
@@ -34,4 +34,4 @@ def test_plan_uses_settle_costs_and_names_the_first_instrument():
     pl = plan(g, P, ins)
     assert pl["first_node"] == "n0" and pl["first_instrument"] == "judge"
     only_cell = {i: [(20.0, 1.0, "cell")] for i in P}
-    assert expected_cost(g, P, ins) < expected_cost(g, P, only_cell)
+    assert expected_cost_sum_over_goals(g, P, ins) < expected_cost_sum_over_goals(g, P, only_cell)

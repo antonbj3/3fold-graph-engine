@@ -37,11 +37,24 @@ def root_votes(fed, at_point: dict | None = None) -> dict[tuple, dict[str, int]]
     return {p: {r: (1 if sum(v) > 0 else -1) for r, v in d.items() if sum(v) != 0} for p, d in votes.items()}
 
 
-def estimate(votes: dict[tuple, dict[str, int]], prior=(3.0, 1.5), iters: int = 50, base: float = 0.5) -> dict[str, dict]:
-    """votes: {question: {origin: ±1}} → {origin: {"r": posterior mean, "n": questions answered, "alpha", "beta"}}."""
+def estimate(votes: dict[tuple, dict[str, int]], prior=(3.0, 1.5), iters: int = 50, base: float = 0.5,
+             known: dict[tuple, int] | None = None) -> dict[str, dict]:
+    """votes: {question: {origin: ±1}} → {origin: {"r": posterior mode (MAP), "n": questions answered, "alpha", "beta"}}.
+    Identifiability. The likelihood is invariant under (truth → −truth, r → 1 − r), so agreement alone cannot tell "four
+    origins right and one wrong" from "four wrong and one right" (review planted (0.9, 0.2, 0.2, 0.15, 0.15) and got the
+    mirror, with the reliable origin's vote negated). Without `known` the branch is chosen by the prior Beta(a, b) with
+    a > b — origins are assumed mostly better than a coin — and r is clipped to [0.5, 0.98]; a majority of systematically
+    wrong origins is then mis-scored, and no test on agreement can reveal it. `known` = {question: ±1} pins the truth of
+    a few questions and breaks the symmetry from data instead (test: 20 of 400 suffice)."""
     a, b = prior
-    qs = [q for q, d in votes.items() if len(d) >= 2]; origins = sorted({s for q in qs for s in votes[q]})
+    qs = [q for q, d in votes.items() if len(d) >= 3]          # two origins identify only their agreement rate
+    origins = sorted({s for q in qs for s in votes[q]})
     r = {s: a / (a + b) for s in origins}
+    if known:                                                  # start on the anchored branch: accuracy on the known questions
+        for s in origins:
+            v = [(votes[q][s] == known[q]) for q in qs if q in known and s in votes[q]]
+            if v:
+                r[s] = min(max((sum(v) + a - 1) / (len(v) + a + b - 2), 0.02), 0.98)
     for _ in range(iters):
         post = {}
         for q in qs:
@@ -49,10 +62,13 @@ def estimate(votes: dict[tuple, dict[str, int]], prior=(3.0, 1.5), iters: int = 
             for s, v in votes[q].items():
                 lo += v * math.log(r[s] / (1 - r[s]))
             post[q] = 1 / (1 + math.exp(-lo))
+            if known and q in known:
+                post[q] = 1.0 if known[q] > 0 else 0.0
         cnt, hit = defaultdict(float), defaultdict(float)
         for q in qs:
             for s, v in votes[q].items():
                 cnt[s] += 1; hit[s] += post[q] if v > 0 else 1 - post[q]
         r = {s: (hit[s] + a - 1) / (cnt[s] + a + b - 2) for s in origins}
-        r = {s: min(max(x, 0.02), 0.98) for s, x in r.items()}
+        lo_clip = 0.02 if known else 0.5                       # with an anchor a systematically wrong origin is representable
+        r = {s: min(max(x, lo_clip), 0.98) for s, x in r.items()}
     return {s: {"r": r[s], "n": int(cnt.get(s, 0)), "alpha": hit.get(s, 0) + a, "beta": cnt.get(s, 0) - hit.get(s, 0) + b} for s in origins}

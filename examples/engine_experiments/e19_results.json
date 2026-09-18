@@ -5,6 +5,14 @@
   "spearman_throw_impact": -0.22,
   "partial_throw_given_core": 0.022,
   "partial_core_given_throw": -0.163,
+  "spearman_core_vs_ref_hubness": -0.9,
+  "spearman_hubness_impact": 0.208,
+  "control": {
+   "core_given_hubness": -0.197,
+   "core_given_hubness_nrefs": -0.074,
+   "throw_given_core_hubness_nrefs": 0.012,
+   "hubness_given_core": -0.086
+  },
   "mean_impact": {
    "tight_core_far_throw": 0.63,
    "tight_core_near_throw": 0.632,
@@ -18,6 +26,14 @@
   "spearman_throw_impact": -0.113,
   "partial_throw_given_core": 0.105,
   "partial_core_given_throw": -0.262,
+  "spearman_core_vs_ref_hubness": -0.867,
+  "spearman_hubness_impact": 0.227,
+  "control": {
+   "core_given_hubness": -0.14,
+   "core_given_hubness_nrefs": -0.041,
+   "throw_given_core_hubness_nrefs": 0.049,
+   "hubness_given_core": -0.006
+  },
   "mean_impact": {
    "tight_core_far_throw": 0.657,
    "tight_core_near_throw": 0.603,
@@ -31,6 +47,14 @@
   "spearman_throw_impact": -0.071,
   "partial_throw_given_core": 0.068,
   "partial_core_given_throw": -0.138,
+  "spearman_core_vs_ref_hubness": -0.803,
+  "spearman_hubness_impact": 0.097,
+  "control": {
+   "core_given_hubness": -0.104,
+   "core_given_hubness_nrefs": -0.019,
+   "throw_given_core_hubness_nrefs": 0.005,
+   "hubness_given_core": -0.026
+  },
   "mean_impact": {
    "tight_core_far_throw": 0.594,
    "tight_core_near_throw": 0.577,
@@ -44,6 +68,14 @@
   "spearman_throw_impact": -0.1,
   "partial_throw_given_core": 0.083,
   "partial_core_given_throw": -0.205,
+  "spearman_core_vs_ref_hubness": -0.831,
+  "spearman_hubness_impact": 0.187,
+  "control": {
+   "core_given_hubness": -0.103,
+   "core_given_hubness_nrefs": -0.02,
+   "throw_given_core_hubness_nrefs": 0.019,
+   "hubness_given_core": 0.021
+  },
   "mean_impact": {
    "tight_core_far_throw": 0.596,
    "tight_core_near_throw": 0.588,
