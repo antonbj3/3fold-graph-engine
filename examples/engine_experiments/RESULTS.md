@@ -361,7 +361,9 @@ abstentions, 3 missed. On the hazard ratio for cardiovascular events under inten
 11 % declaration rate, not by the model: where the text does not name its root the engine cannot collapse copies — the reading
 channel for "according to the guideline" without a name is the next hole. Found on the way: `numeric_rules` reads only 11 % of the
 12 135 "95 % CI" mentions in this corpus (the value must sit next to the interval); a surface normalisation in e26 lifts it to 65 %
-and is ported into `numeric_rules` next.
+— ported into `numeric_rules` (grammar-level: separator and unit between value and interval; the label before the value as the
+quantity; ratio quantities HR/OR/RR get σ on the LOG scale with `log_scale: True`): 75.4 % of the 12 135 mentions read; hand check of
+20 new extractions 17 right, 3 wrong (one of them the abstract's own misprint, flagged `value_outside_ci`).
 
 **Label-free calibration (e18; same 320 sentences).** Raw pooled 0.591; subtracting each lens's batch-mean log-odds (Batch Calibration) 0.572;
 per sentence form 0.603; per-form Platt on the rule's answers 0.927; on true labels 0.927. The option prior is not the fault; the

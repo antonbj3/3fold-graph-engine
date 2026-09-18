@@ -17,6 +17,23 @@ A record is emitted ONLY when the text states an uncertainty and a quantity phra
   confidence interval       "1.34 (95% CI 1.10–1.63)", "95% CI [1.10, 1.63]"  → σ = (hi − lo) / (2 · 1.96),
                             value = the stated central value if there is one, else the midpoint; flag `ci`
                             "12.0 ± 1.5 (95% CI)" reads the ± as a half-width: σ = 1.5 / 1.96, flag `ci_halfwidth`
+                            The separators medicine writes between the estimate and the interval are part of the
+                            grammar, not a pre-pass: "HR 0.79; 95% CI, 0.70 to 0.89", "0.79 (95 % confidence
+                            interval: 0.70–0.89)", "(HR, 0.79; 95% CI, 0.70-0.89; P<0.001)" all read. A stated
+                            value that falls OUTSIDE the interval is not the point estimate (it is usually an n or
+                            a percentage picked up across the separator): it is dropped for the midpoint and
+                            flagged `value_outside_ci`.
+  bracket interval          "HR 0.79 [0.70, 0.89]" — an interval with no level stated is read as 95 % ONLY when a
+                            measure label (HR/OR/RR/MD/…) sits right before the value and the value lies inside the
+                            bracket; flag `ci_implied` alongside `ci`. Without the label this stays an abstention.
+  ratio quantities          HR, OR, RR, IRR, SHR, prevalence ratio, …: the CI of a ratio is symmetric on the LOG
+                            scale, not on the ratio itself. For those the record carries `log_scale=True`,
+                            `sigma = (ln hi − ln lo) / (2 z)` and `value` = the ratio as printed (when no central
+                            value is stated the geometric mean √(lo·hi) is used, the midpoint of the log interval).
+                            A caller handing such a record to margin_net must feed it log(value), and exponentiate
+                            the combined estimate back. Difference-type quantities (MD, WMD, absolute risk
+                            reduction, risk difference) keep the linear scale, `log_scale=False`.
+                            Every record has the `log_scale` key; it is False everywhere else.
   range                     "3.2–4.8 GeV", "3.2 to 4.8 ms"  → a uniform: value = midpoint, σ = (w − v) / (2√3),
                             flag `range_uniform` — a range is not a measurement report, the flag says so
   LaTeX                     abstracts are LaTeX source: "$m_t = 172.95 \\pm 0.53$ GeV", "$176.1\\pm 5.1 (stat.) \\gevcc$",
@@ -27,6 +44,10 @@ A record is emitted ONLY when the text states an uncertainty and a quantity phra
                             value and σ are converted to the base unit; `unit` is the base unit, None if none was given
                             (flag `no_unit`). Anything outside the table is kept verbatim in `unit` with flag
                             `unknown_unit` and is NOT converted.
+  quantity (CI)             for an interval, the quantity is the measure LABEL standing immediately before the
+                            value — "HR", "adjusted hazard ratio for cardiovascular events", "RR", "absolute risk
+                            reduction" — reached across nothing but punctuation and copulas. Only when no label is
+                            there does the general rule below apply.
   quantity                  the nearest phrase before the number, inside the same sentence and within
                             `WINDOW` characters: connectors ("of", "=", "is", "measured to be", …) are stripped and up
                             to `MAX_WORDS` words are kept — "m_t = 172.5 ± 0.3 GeV" → "m_t",
@@ -115,10 +136,17 @@ _UNIT_RE = re.compile(
 _VALUE = re.compile(rf"(?<![\w.]){_SN}")
 _POW_RE = re.compile(_POW)
 _CI_TAG = re.compile(r"\s*\(\s*(?:\d{2}(?:\.\d+)?\s*%\s*)?(?:CI|C\.I\.|confidence interval)\s*\)", re.I)
+_CI_LO_HI = rf"(?P<lo>{_SN})\s*(?:,|–|—|‐|−|-|\bto\b)\s*(?P<hi>{_SN})"
+# the estimate and its interval are separated, in medical prose, by a comma or a semicolon and often a bracket:
+# "0.79, 95% CI 0.70-0.89" / "HR 0.79; 95% CI, 0.70 to 0.89" / "0.79 (95 % confidence interval: 0.70–0.89)"
 _CI = re.compile(
-    rf"(?:(?P<v>{_SN})\s*)?[\(\[]?\s*(?:at\s+)?(?P<lvl>\d{{2}}(?:\.\d+)?)\s*%\s*"
-    rf"(?:CI|C\.I\.|confidence interval)\s*[:=]?\s*[\[\(]?\s*(?P<lo>{_SN})\s*(?:,|–|—|-|\bto\b)\s*"
-    rf"(?P<hi>{_SN})\s*[\]\)]?", re.I)
+    rf"(?:(?P<v>{_SN})\s*(?P<vu>%|[A-Za-z][A-Za-z/]{{0,6}})?\s*[,;]?\s*)?[\(\[]?\s*[,;]?\s*(?:at\s+)?"
+    rf"(?P<lvl>\d{{2}}(?:\.\d+)?)\s*%\s*"
+    rf"(?:CIs?|C\.I\.|CrI|confidence intervals?)\s*[:=,]?\s*[\[\(]?\s*" + _CI_LO_HI + r"\s*[\]\)]?", re.I)
+# a comma with no space after it and three digits behind it is a decimal comma, not the separator of an interval
+_DECIMAL_COMMA = re.compile(r"\d,\d{3}(?!\d)")
+# "HR 0.79 [0.70, 0.89]": a level-free bracket, admitted only behind a measure label (see _measure_label)
+_CI_BRACKET = re.compile(rf"(?P<v>{_SN})\s*[\[\(]\s*" + _CI_LO_HI + r"\s*[\]\)]")
 _RANGE = re.compile(rf"(?<![\w.])(?P<lo>{_N})\s*(?:–|—|\s+to\s+|-)\s*(?P<hi>{_N})")
 
 _Z = {1.0: 0.0, 68.0: 1.0, 90.0: 1.6448536269514722, 95.0: 1.959963984540054, 99.0: 2.5758293035489004}
@@ -184,6 +212,42 @@ def _quantity(text: str, start: int) -> str | None:
     return phrase
 
 
+# -- measure labels (the quantity phrase of an interval, and whether it is a ratio) ---------------
+_RATIO_WORDS = r"hazard|odds|risk|rate|incidence[-\s]rate|prevalence|mortality|event[-\s]rate"
+_MEASURE = re.compile(
+    r"(?i:(?:adjusted|unadjusted|multivariable(?:[-\s]adjusted)?|multivariate|age[-\s]adjusted|pooled|overall"
+    r"|summary|crude|estimated)\s+){0,2}"
+    r"(?:"
+    rf"(?i:(?:{_RATIO_WORDS})\s+ratios?|relative\s+risks?|risk\s+reductions?|mean\s+differences?"
+    r"|absolute\s+risk\s+reductions?|risk\s+differences?|net\s+differences?|weighted\s+mean\s+differences?"
+    r"|standardi[sz]ed\s+mean\s+differences?|between[-\s]group\s+differences?|differences?|correlations?)"
+    r"|(?:a?HR|a?OR|a?RR|IRR|SHR|SIR|SMR|PR|MD|WMD|SMD|ARR|RD)"
+    r")"
+    r"(?i:\s+(?:for|in|of|between|with)(?:\s+(?!was\b|were\b|is\b|are\b|and\b|the\b)[\w'/-]+){1,5})?")
+# a ratio's CI is symmetric in the log, a difference's is not
+_RATIO_LABEL = re.compile(rf"(?i:(?:{_RATIO_WORDS})\s+ratio|relative\s+risk)|(?:a?HR|a?OR|a?RR|IRR|SHR|SIR|SMR|PR)\b")
+_DIFF_LABEL = re.compile(r"(?i:difference|reduction|correlation)|(?:MD|WMD|SMD|ARR|RD)\b")
+# what may stand between the label and the value: punctuation, brackets, copulas, "of/at/about"
+_LABEL_GAP = re.compile(r"(?:[\s,;:=()\[\]]|\b(?:was|were|is|are|of|at|about|approximately|estimate|estimated"
+                        r"|point\s+estimate)\b)*", re.I)
+
+
+def _measure_label(text: str, start: int) -> tuple[str, bool] | None:
+    """The measure label ending just before `start`, and whether it is a ratio (log-scale CI)."""
+    pre = text[max(0, start - WINDOW):start]
+    parts = _SENT.split(pre)
+    pre = parts[-1] if parts else pre
+    best = None
+    for m in _MEASURE.finditer(pre):
+        if _LABEL_GAP.fullmatch(pre[m.end():]):
+            best = m
+    if best is None:
+        return None
+    phrase = re.sub(r"\s+", " ", best.group(0)).strip()
+    is_ratio = bool(_RATIO_LABEL.search(phrase)) and not _DIFF_LABEL.search(phrase)
+    return phrase, is_ratio
+
+
 def _delatex(s: str) -> str:
     """$m_{top}$ → m_top, $m_{t}^\\text{pole}$ → m_t^pole: the phrase is a name, its markup is not part of it."""
     s = re.sub(r"\\(?:text|mathrm|rm|mathit|it|ensuremath|bf)\b|\\[,;]", " ", s)
@@ -220,14 +284,24 @@ def _unit_at(text: str, pos: int) -> tuple[str | None, int]:
     return m.group("u") + (m.group("c") or ""), m.end()
 
 
+def _as_unit(tok: str | None) -> str | None:
+    """A unit token sitting between the value and its interval — an English word is not one."""
+    if not tok or tok.lower() in _NOT_A_UNIT or re.fullmatch(r"[a-z]{4,}", tok):   # "patients", "years"
+        return None
+    return tok
+
+
 def _emit(text: str, start: int, end: int, value: float, sigma: float, unit: str | None,
-          flags: list[str]) -> dict[str, Any] | None:
-    q = _quantity(text, start)
+          flags: list[str], quantity: str | None = None, log_scale: bool = False) -> dict[str, Any] | None:
+    q = quantity or _quantity(text, start)
     if q is None or sigma <= 0 or not math.isfinite(sigma) or not math.isfinite(value):
         return None
     v, s, u, uf = normalize_unit(value, sigma, unit)
+    if log_scale:                                  # σ is already on the log scale: a unit factor must not touch it
+        s = sigma
+        flags = list(flags) + ["log_scale"]
     return {"value": v, "sigma": s, "unit": u, "quantity": q, "span": (start, end),
-            "flags": sorted(set(flags) | set(uf))}
+            "log_scale": log_scale, "flags": sorted(set(flags) | set(uf))}
 
 
 def extract_numeric_claims(text: str) -> list[dict[str, Any]]:
@@ -242,18 +316,46 @@ def extract_numeric_claims(text: str) -> list[dict[str, Any]]:
         return all(b <= x or a >= y for x, y in taken)
 
     # 1. confidence intervals (they contain ± -free number pairs and must be claimed first)
-    for m in _CI.finditer(text):
-        lo, hi, lvl = _f(m.group("lo")), _f(m.group("hi")), float(m.group("lvl"))
+    def ci_record(m, lvl: float, flags: list[str]) -> None:
+        raw = text[m.start("lo"):m.end("hi")]
+        if _DECIMAL_COMMA.search(raw) and "." not in raw:
+            return          # "95% CI 0,123-0,594": the comma is this author's decimal point, not the separator
+        lo, hi = _f(m.group("lo")), _f(m.group("hi"))
         if hi <= lo:
-            continue
-        sigma = (hi - lo) / (2 * _z_for(lvl))
-        value = _f(m.group("v")) if m.group("v") else (lo + hi) / 2
+            return
+        start = m.start()
+        label = _measure_label(text, start)        # m.start() is the value when one is stated, else the interval
+        quantity, is_ratio = (label[0], label[1]) if label else (None, False)
+        log_scale = is_ratio and lo > 0
+        z = _z_for(lvl)
+        sigma = (math.log(hi) - math.log(lo)) / (2 * z) if log_scale else (hi - lo) / (2 * z)
+        mid = math.sqrt(lo * hi) if log_scale else (lo + hi) / 2
+        value, stated = mid, False
+        if m.group("v"):
+            v = _f(m.group("v"))
+            if lo <= v <= hi:
+                value, stated = v, True
+            else:                       # not the point estimate — an n or a percent grabbed across the separator
+                flags = flags + ["value_outside_ci"]
         unit, end = _unit_at(text, m.end())
-        if not free(m.start(), end):
-            continue
-        rec = _emit(text, m.start(), end, value, sigma, unit, ["ci"])
+        if unit is None and stated:
+            unit = _as_unit(m.groupdict().get("vu"))   # "-3.2 mmHg (95% CI -4.5 to -1.9)": the unit sits on the value
+        if not free(start, end):
+            return
+        rec = _emit(text, start, end, value, sigma, unit, flags, quantity=quantity, log_scale=log_scale)
         if rec:
-            out.append(rec); taken.append((m.start(), end))
+            out.append(rec); taken.append((start, end))
+
+    for m in _CI.finditer(text):
+        ci_record(m, float(m.group("lvl")), ["ci"])
+
+    # 1b. "HR 0.79 [0.70, 0.89]" — a level-free bracket is read as 95 % only behind a measure label and only when
+    #     the stated value lies inside it. Both guards are needed: otherwise every "n (a, b)" becomes a claim.
+    for m in _CI_BRACKET.finditer(text):
+        lo, hi, v = _f(m.group("lo")), _f(m.group("hi")), _f(m.group("v"))
+        if not (lo < v < hi) or not _measure_label(text, m.start()):
+            continue
+        ci_record(m, 95.0, ["ci", "ci_implied"])
 
     # 2. value ± term(s) [× 10^e] [unit]
     for mv in _VALUE.finditer(text):

@@ -79,10 +79,17 @@ def test_e_notation_on_both_value_and_sigma():
 
 
 def test_confidence_interval_bracket_form():
+    # an odds ratio is a RATIO: the interval is symmetric in the log, so σ is the log-scale one (see log-scale test)
     r = one("The odds ratio was 1.34 (95% CI [1.10, 1.63]).")
     assert r["value"] == pytest.approx(1.34)
-    assert r["sigma"] == pytest.approx((1.63 - 1.10) / (2 * 1.959963984540054))
-    assert "ci" in r["flags"]
+    assert r["sigma"] == pytest.approx((math.log(1.63) - math.log(1.10)) / (2 * 1.959963984540054))
+    assert "ci" in r["flags"] and r["log_scale"] is True and r["quantity"] == "odds ratio"
+
+
+def test_confidence_interval_linear_when_the_quantity_is_not_a_ratio():
+    r = one("The measured cross section is 8.6 (95% CI 7.9, 9.3) pb.")
+    assert r["sigma"] == pytest.approx((9.3 - 7.9) / (2 * 1.959963984540054))
+    assert r["log_scale"] is False and "log_scale" not in r["flags"]
 
 
 def test_pm_annotated_as_a_confidence_interval_is_a_half_width():
@@ -190,3 +197,92 @@ def test_declared_common_lineage_catches_the_same_contradiction_off_the_chi2_axi
     est = _edge(MarginNet(), CONTRADICT, sources_shared=True)
     assert est.n_eff == pytest.approx(1.0, abs=1e-9)
     assert est.p_agree == 0.0 and est.kind == "CONTRADICTION"
+
+
+# -- medical reporting surfaces (paraphrased fragments of PubMed abstracts on blood-pressure trials) ------------
+# numeric_rules used to need the value glued to the interval; medicine puts a comma or a semicolon in between and
+# the label ("HR", "adjusted hazard ratio for stroke") before it. These are the forms measured on the cached corpus.
+Z95 = 1.959963984540054
+
+
+def log_sigma(lo, hi):
+    return (math.log(hi) - math.log(lo)) / (2 * Z95)
+
+
+def test_semicolon_before_the_interval_and_a_worded_label():
+    r = one("The hazard ratio for cardiovascular events was 0.79; 95% CI, 0.70 to 0.89.")
+    assert r["quantity"] == "hazard ratio for cardiovascular events"
+    assert r["value"] == pytest.approx(0.79) and r["sigma"] == pytest.approx(log_sigma(0.70, 0.89))
+    assert r["log_scale"] is True and "ci" in r["flags"]
+
+
+def test_comma_before_the_interval():
+    r = one("Death was less frequent with intensive therapy (relative risk 0.75, 95% CI 0.64-0.89).")
+    assert r["quantity"] == "relative risk" and r["value"] == pytest.approx(0.75)
+    assert r["sigma"] == pytest.approx(log_sigma(0.64, 0.89)) and r["log_scale"] is True
+
+
+def test_interval_without_a_stated_value_takes_the_geometric_mean_for_a_ratio():
+    r = one("The pooled hazard ratio, 95% CI 0.64 to 0.89, excluded unity.")
+    assert r["value"] == pytest.approx(math.sqrt(0.64 * 0.89)) and r["log_scale"] is True
+
+
+def test_parenthesised_label_value_interval_and_p_value():
+    r = one("Intensive control reduced major cardiovascular events (HR, 0.75; 95% CI, 0.64-0.89; P<0.001).")
+    assert r["quantity"] == "HR" and r["value"] == pytest.approx(0.75)
+    assert r["sigma"] == pytest.approx(log_sigma(0.64, 0.89)) and r["log_scale"] is True
+
+
+def test_equals_sign_spaced_percent_and_the_spelled_out_interval():
+    r = one("RR = 0.79 (95 % confidence interval: 0.70 to 0.89) for the primary outcome.")
+    assert r["quantity"] == "RR" and r["value"] == pytest.approx(0.79)
+    assert r["sigma"] == pytest.approx(log_sigma(0.70, 0.89)) and r["log_scale"] is True
+
+
+def test_level_free_bracket_behind_a_label_is_read_as_95_percent():
+    r = one("Adjusted odds ratio 1.28 [1.05, 1.56] for incident heart failure.")
+    assert r["quantity"] == "Adjusted odds ratio" and r["value"] == pytest.approx(1.28)
+    assert r["sigma"] == pytest.approx(log_sigma(1.05, 1.56))
+    assert "ci_implied" in r["flags"] and r["log_scale"] is True
+
+
+def test_level_free_bracket_without_a_label_is_an_abstention():
+    assert extract_numeric_claims("A total of 4733 participants [2371, 2362] were randomised.") == []
+
+
+def test_mean_difference_keeps_the_linear_scale_and_its_unit():
+    r = one("The between-group difference in systolic pressure was -14.8 mmHg (95% CI -16.6 to -13.0).")
+    assert r["value"] == pytest.approx(-14.8) and r["log_scale"] is False
+    assert r["sigma"] == pytest.approx((-13.0 - -16.6) / (2 * Z95))
+    assert r["unit"] == "mmHg" and "unknown_unit" in r["flags"]
+
+
+def test_absolute_risk_reduction_in_percent_is_a_fraction_and_not_a_ratio():
+    r = one("The absolute risk reduction was 2.1%, 95% CI 0.9-3.3.")
+    assert r["quantity"] == "absolute risk reduction" and r["log_scale"] is False
+    assert r["value"] == pytest.approx(0.021) and r["sigma"] == pytest.approx(0.024 / (2 * Z95))
+
+
+def test_a_value_outside_its_own_interval_is_not_the_point_estimate():
+    """"...in 9361 participants, 95% CI 0.70-0.89" — the number across the separator is an n, not the estimate."""
+    r = one("Fewer events occurred among the 9361 adults, 95% CI 0.70-0.89, in the intensive arm.")
+    assert r["value"] == pytest.approx((0.70 + 0.89) / 2) and "value_outside_ci" in r["flags"]
+
+
+def test_log_scale_record_hands_margin_net_the_log_of_the_value():
+    """Two ratio reports of the same effect: combined in the log, as the record's log_scale key instructs."""
+    a = one("The hazard ratio for death was 0.75; 95% CI, 0.64 to 0.89.")
+    b = one("A second trial reported an adjusted hazard ratio of 0.83 (95% CI 0.72-0.96).")
+    assert a["log_scale"] and b["log_scale"]
+    net = MarginNet()
+    net.add_edge("hr", ["hr"], [{"margin": math.log(r["value"]), "sigma": r["sigma"], "sources": [str(i)]}
+                                for i, r in enumerate((a, b))])
+    est = net.estimate("hr")            # margin_net's kind reads a negative margin as VIOLATED; log HR < 0 here,
+    assert est.p_agree > 0.05           # so the question asked of it is agreement, not the sign
+    assert 0.75 < math.exp(est.m) < 0.83 and est.s < min(a["sigma"], b["sigma"])
+
+
+def test_decimal_comma_interval_is_an_abstention_not_a_garbage_claim():
+    """Found in the cached corpus: an author writing "0,123-0,594" means 0.123-0.594, and reading the commas as
+    the interval separator produced the claim 81 ± 41. No claim is the only honest reading here."""
+    assert extract_numeric_claims("Previous disease was a predictor (0,270, 95% CI 0,123-0,594, P<.001).") == []
