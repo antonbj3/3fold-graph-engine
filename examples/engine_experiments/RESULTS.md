@@ -444,6 +444,16 @@ the near arm turns worse than random (+0.23). So "far in the graph" is the right
 which is what the engine is for — and the cheapest correct rule is the plain resistance top decile; the structured rules do not beat
 it yet. e3b/e19/e27/e27c measured prediction of the next co-citation; that is a different question with the opposite answer.
 
+**The replay policy under the densification label (e3d).** Same ten graph-only features as e3, label = bridged within 24 months
+(ρ < 0.5), 200 000 candidate pairs per cell (half uniform, half e3's coupling/chain pool — which is the WORSE densifier, 2.6 % vs
+5.1 %). AP / precision@1000 on held-out cutoffs, both graphs, both transfer directions: random = base rate (0.04–0.08); the plain
+resistance decile 0.07–0.15 / 0.16–0.32; the learned policy 0.13–0.22 / 0.26–0.41 — 1.4–1.9× the resistance rule in AP, and
+`grow_span` adds up to +0.016 (its first pick is hole × hole in 4 of 4). Resistance is no longer inert: as a single feature the best of
+the ten (2.0–2.6× base; under co-citation in e3 it was worth ≤ 0.003), and the fitted weights are the opposite of e3's: hole/resistance
+block +0.5 to +0.85, recency −0.6 to −0.9, pref +0.25 to +0.5, common references NEGATIVE. Geometrically a future bridge is a pair of
+recently appeared, already well-cited papers at mutually distant, high-L⁺ positions with no shared references. The two labels give
+two policies with opposite signs on the same features; the engine's is the second.
+
 **The checker layer (e30, `claim_types`; seed: proof checking blocks mistakes before they enter).** Dimensions over the raw numeric
 extractions of both corpora: hep-ex 1 761 records, 6.9 % rejected (unknown unit 52, mass without unit 29, dimension mismatch 18);
 PubMed 14 467 records, 10.4 % rejected (duration without unit 530, dimension mismatch 355, unknown unit 338, a ratio with a unit 143,
