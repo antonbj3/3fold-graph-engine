@@ -255,6 +255,16 @@ so the prior helps there. The e20 gap is therefore scoped to text that contradic
 graph is for (a surprising measurement, a contradiction between sources) — and on ordinary text the output head is as good. n = 81:
 one item is 1.2 points.
 
+**The reader trained on real text with the rule's labels (e25).** The rule labels real sentences for free: 726 hep-ex abstract sentences
+(2.6 % of all sentences; a heuristic (x, y) span finder) and 108 QuaRTz-train sentences (the rule agrees with the human paragraph
+label on 0.917 of them). Probes trained on those, tested on QuaRTz test (n = 81): hep-ex only 0.77 / 0.82 / 0.88 (0.5B / 1.5B / 3B);
+QuaRTz-train rule-labelled only (68 sentences) 0.75 / 0.84 / 0.91; both 0.84 / 0.85 / 0.88 — against 0.57 / 0.88 / 0.57 from the
+templates and 0.80 / 0.91 / 0.90 from 283 human-labelled paragraphs. Hand check of 20 rule-labelled hep-ex sentences: the sign is
+right in 15, the full (x, y, sign) triple in 4 — the span finder, not the rule, is the weak part, and the probe transfers anyway.
+Verdict: the training GENRE is what carries, not label quantity or purity; 660 noisy real sentences beat 320 perfect templates by
+20+ points on other people's paragraphs, and free labels come within 3–4 points of human ones. Cost: the template set falls
+(0.86 / 0.89 / 0.92 → 0.63 / 0.76 / 0.79), and on QuaRTz no probe beats the token output (the paragraphs agree with the prior).
+
 **The loop closed against a world that answers (e21, `closed_loop.py`; 40 worlds × 12 pairs; per pair the true sign along x changes at
 most once, 5 % of pairs twice; 8 sources with reliabilities 0.6–0.95, 35 % of them copies of another source; instruments: judge cost 1
 r = 0.8, exact cell cost 4 r = 0.99; budget 40; score = measure of the domain wrongly signed against the truth, summed over pairs).**

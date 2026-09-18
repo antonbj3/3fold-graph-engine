@@ -1,0 +1,294 @@
+{
+ "model": "q",
+ "size_tag": "0p5b",
+ "device": "cuda",
+ "mining": {
+  "hepex_sentences_kept": 27814,
+  "hepex_with_candidate_pair": 1047,
+  "hepex_rule_answers": 726,
+  "hepex_rule_coverage_of_kept_sentences": 0.0261,
+  "hepex_rule_coverage_where_a_pair_was_found": 0.6934,
+  "hepex_sign_balance": {
+   "plus": 330,
+   "minus": 396
+  },
+  "quartz_train_paragraphs": 283,
+  "quartz_train_rule_answers": 108,
+  "quartz_train_sign_balance": {
+   "plus": 74,
+   "minus": 34
+  },
+  "quartz_train_rule_label_agrees_with_human_para_label": 0.917,
+  "balanced_train_sizes": {
+   "a_hepex": 660,
+   "b_quartz_train": 68,
+   "c_both": 728
+  }
+ },
+ "probes": {
+  "a_hepex_rule_labelled": {
+   "n_train": 660,
+   "layer": 21,
+   "quartz_test": 0.765,
+   "templates_all": 0.625,
+   "templates_agree_physics": 0.613,
+   "templates_contradict_physics": 0.637
+  },
+  "b_quartz_train_rule_labelled": {
+   "n_train": 68,
+   "layer": 17,
+   "quartz_test": 0.753,
+   "templates_all": 0.659,
+   "templates_agree_physics": 0.662,
+   "templates_contradict_physics": 0.656
+  },
+  "c_both": {
+   "n_train": 728,
+   "layer": 16,
+   "quartz_test": 0.84,
+   "templates_all": 0.631,
+   "templates_agree_physics": 0.688,
+   "templates_contradict_physics": 0.575
+  }
+ },
+ "rule_on_quartz_test": {
+  "coverage": 0.42,
+  "accuracy_where_answered": 0.853
+ },
+ "test_sets": {
+  "quartz_test_n": 81,
+  "quartz_test_majority": 0.716,
+  "templates_n": 320
+ },
+ "e22_reference": {
+  "a_our_templates_rule_labels": [
+   0.57,
+   0.88,
+   0.57
+  ],
+  "b_quartz_train_human_labels": [
+   0.8,
+   0.91,
+   0.9
+  ],
+  "c_token_output": [
+   0.83,
+   0.89,
+   0.93
+  ],
+  "order": [
+   "0.5B",
+   "1.5B",
+   "3B"
+  ]
+ },
+ "hand_check_20_hepex": {
+  "seed": 25,
+  "items": [
+   {
+    "i": 0,
+    "id": "http://arxiv.org/abs/2510.02762v1",
+    "x": "existing neural track trigger",
+    "y": "total track trigger rate",
+    "sign": -1,
+    "text": "Compared to the existing neural track trigger, our implementation reduces the total track trigger rate by 37% while improving average efficiency for the signal tracks from 96% to 98% for charged tracks with transverse momentum > 0.3 GeV.",
+    "triple_right": false,
+    "y_direction_right": true
+   },
+   {
+    "i": 1,
+    "id": "http://arxiv.org/abs/2609.07378v1",
+    "x": "pressure containment",
+    "y": "requirements",
+    "sign": -1,
+    "text": "Operation at NTP also alleviates difficulties with pressure containment and significantly reduces HV requirements.",
+    "triple_right": false,
+    "y_direction_right": true
+   },
+   {
+    "i": 2,
+    "id": "http://arxiv.org/abs/2603.14385v1",
+    "x": "jet peak distributions",
+    "y": "transverse momentum particles broaden",
+    "sign": -1,
+    "text": "The jet-peak distributions of lower transverse momentum particles broaden in both pseudorapidity and azimuth with increasing collision overlap, with the broadening in pseudorapidity being more pronounced.",
+    "triple_right": false,
+    "y_direction_right": false
+   },
+   {
+    "i": 3,
+    "id": "http://arxiv.org/abs/2512.09630v1",
+    "x": "evolve continuously",
+    "y": "energy",
+    "sign": 1,
+    "text": "The presented energy excitation functions of the approximated baryon and meson yields at mid-rapidity reflect the interplay between baryon stopping and particle production, both of which evolve continuously with increasing energy.",
+    "triple_right": false,
+    "y_direction_right": true
+   },
+   {
+    "i": 4,
+    "id": "http://arxiv.org/abs/1311.0643v1",
+    "x": "lead",
+    "y": "theoretical activity",
+    "sign": 1,
+    "text": "This has lead to an increase in theoretical activity to match the experimental accuracy of top anti-top production.",
+    "triple_right": false,
+    "y_direction_right": true
+   },
+   {
+    "i": 5,
+    "id": "http://arxiv.org/abs/2506.09405v2",
+    "x": "findings reveal",
+    "y": "spin alignment",
+    "sign": 1,
+    "text": "Our findings reveal that vorticity increases the spin alignment, while the magnetic fields and anisotropy modify the observables in a state-dependent manner.",
+    "triple_right": false,
+    "y_direction_right": true
+   },
+   {
+    "i": 6,
+    "id": "http://arxiv.org/abs/2608.13710v1",
+    "x": "establishing",
+    "y": "bounds exceeding 750",
+    "sign": -1,
+    "text": "We successfully measure absorption lengths for BC-430 across most of the visible spectrum (2.2-12.4 mm) and for all materials at 372 nm (21-38 mm), while establishing lower bounds exceeding 750 mm for weakly absorbing formulations at longer wavelengths.",
+    "triple_right": false,
+    "y_direction_right": true
+   },
+   {
+    "i": 7,
+    "id": "http://arxiv.org/abs/2602.11283v1",
+    "x": "good convergence",
+    "y": "nucleon momentum",
+    "sign": 1,
+    "text": "Our lattice predictions for the valence-quark PDFs -- extracted from the real part of the correlators -- show good convergence with increasing nucleon momentum and are compatible with the most recent global analyses for all spin structures.",
+    "triple_right": true,
+    "y_direction_right": true
+   },
+   {
+    "i": 8,
+    "id": "http://arxiv.org/abs/2608.19994v2",
+    "x": "carbon equivalent savings",
+    "y": "disk storage requirements",
+    "sign": -1,
+    "text": "Using the example of a ML-based lossless compression algorithm, we compare estimates for the carbon-equivalent of the infrastructure needed for ML training and inference with the carbon-equivalent savings from reduced disk storage requirements, and discuss their break-even point.",
+    "triple_right": true,
+    "y_direction_right": true
+   },
+   {
+    "i": 9,
+    "id": "http://arxiv.org/abs/2512.09046v1",
+    "x": "angular momentum considerations",
+    "y": "long lived particle signals",
+    "sign": 1,
+    "text": "If the lightest composite state in the hidden sector is a scalar, its decay rate back to the Standard Model is suppressed by angular momentum considerations and can naturally be small, giving rise to long-lived particle signals.",
+    "triple_right": false,
+    "y_direction_right": true
+   },
+   {
+    "i": 10,
+    "id": "http://arxiv.org/abs/2503.10521v2",
+    "x": "multi tev energies",
+    "y": "selecting events outside",
+    "sign": 1,
+    "text": "Due to the low CRE rate at multi-TeV energies, we aim to increasing the acceptance by selecting events outside the fiducial volume.",
+    "triple_right": false,
+    "y_direction_right": false
+   },
+   {
+    "i": 11,
+    "id": "http://arxiv.org/abs/2508.01905v1",
+    "x": "measured transparency ratios especially",
+    "y": "proton momenta",
+    "sign": -1,
+    "text": "We find that the GENIE event generator, which is widely used by oscillation experiments to simulate neutrino-nucleus interactions, needs to better describe both the nuclear ground state and proton rescattering in order to reproduce our measured transparency ratios, especially at lower proton momenta.",
+    "triple_right": false,
+    "y_direction_right": true
+   },
+   {
+    "i": 12,
+    "id": "http://arxiv.org/abs/2606.25982v1",
+    "x": "pseudo dirac hnl pair",
+    "y": "sensitivities",
+    "sign": -1,
+    "text": "We find that, although searches for LN violation outperform their LN-blind counterparts, small mass splittings in the pseudo-Dirac HNL pair can drastically reduce the sensitivities in these channels.",
+    "triple_right": false,
+    "y_direction_right": true
+   },
+   {
+    "i": 13,
+    "id": "http://arxiv.org/abs/2502.12308v2",
+    "x": "work highlights",
+    "y": "quenching factors",
+    "sign": -1,
+    "text": "Our work highlights the importance of reducing this uncertainty on quenching factors in order to probe new physics from neutrinos at the low-energy frontier.",
+    "triple_right": false,
+    "y_direction_right": false
+   },
+   {
+    "i": 14,
+    "id": "http://arxiv.org/abs/2606.06436v1",
+    "x": "wilson coefficients",
+    "y": "number",
+    "sign": -1,
+    "text": "By identifying a minimal set of the most sensitive asymmetries, we show that the dominant constraints on the Wilson coefficients can be captured with a reduced number of observables.",
+    "triple_right": false,
+    "y_direction_right": true
+   },
+   {
+    "i": 15,
+    "id": "http://arxiv.org/abs/2503.01452v2",
+    "x": "differences causing",
+    "y": "reweighting accuracy compared",
+    "sign": -1,
+    "text": "Moreover, the AM HLFs are insufficient for describing PY and HW differences, causing lower reweighting accuracy compared with ParT.",
+    "triple_right": true,
+    "y_direction_right": true
+   },
+   {
+    "i": 16,
+    "id": "http://arxiv.org/abs/1210.3011v1",
+    "x": "atlas reported background events",
+    "y": "monte carlo simulated",
+    "sign": -1,
+    "text": "We additionally suggest a simple mechanism for enhancing the capture efficiency of F-SU(5) SUSY multijets, which results in a 93% suppression in ATLAS reported background events, but only a 27% decrease in Monte Carlo simulated F-SU(5) multijet events.",
+    "triple_right": false,
+    "y_direction_right": true
+   },
+   {
+    "i": 17,
+    "id": "http://arxiv.org/abs/2603.26877v2",
+    "x": "corresponding false positive rate",
+    "y": "factor",
+    "sign": -1,
+    "text": "The optimized TFD performance is compared with the performance of the charge-to-light method, with the corresponding false positive rate reduced by up to a factor of two for large scintillation pulses.",
+    "triple_right": false,
+    "y_direction_right": false
+   },
+   {
+    "i": 18,
+    "id": "http://arxiv.org/abs/2505.02739v2",
+    "x": "physics reach",
+    "y": "integrated luminosity",
+    "sign": 1,
+    "text": "It is designed to extend its physics reach by substantially increasing the integrated luminosity.",
+    "triple_right": true,
+    "y_direction_right": true
+   },
+   {
+    "i": 19,
+    "id": "http://arxiv.org/abs/hep-ex/0209026v1",
+    "x": "scalar top quark decouples",
+    "y": "limit",
+    "sign": -1,
+    "text": "When the scalar top quark decouples from the Z0 boson, the lower limit is 95.7 GeV.",
+    "triple_right": false,
+    "y_direction_right": false
+   }
+  ],
+  "n_triples_right": 4,
+  "n_y_direction_right": 15,
+  "criterion": "triple_right = both spans are quantities and the sentence asserts that sign between them; y_direction_right = the sign matches the direction the sentence gives the y span, whatever x is"
+ },
+ "note": "all training labels come from graph_engine.polarity_rules.asserted_sign; no human label is used for fitting. QuaRTz test is touched only at prediction; the layer of each probe is chosen on its own training data."
+}
