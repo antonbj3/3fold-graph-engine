@@ -222,6 +222,7 @@ result not reproducible from this repo.
 | `src/graph_engine/claim_types.py` | VERIFIED-FRESH |
 | `src/graph_engine/decision_cert.py` | VERIFIED-FRESH |
 | `src/graph_engine/guarantees.py` | VERIFIED-FRESH |
+| `src/graph_engine/disagreement_field.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/throws.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/tools/allindex.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/tools/anchor_graph_tools.py` | SYNTHETIC-ONLY |

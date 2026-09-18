@@ -74,6 +74,7 @@ corpus the gate abstains on all 57 papers from title and abstract. The modules b
 | `claim_types` | the checker layer: dimensions, certificates, link typecheck | unit grammar → dimension vector; a claim carries a certificate (deductive from a model over its box, statistical from a fitted guarantee, or none) and readers take r from it; a two-step link must resolve one concept, intersect boxes, agree on scale and dimension |
 | `decision_cert` | trust relative to a DECISION, not global (from the Hollow project's decision certificates): p_flip of a predicate over the beliefs, and which measurement can flip it | sign-on-box (exact posterior mass), margin (Φ), chain (declared independence); `flip_attribution` ranks candidates by P(flip)/cost; listed in `next_actions` as a separate currency |
 | `guarantees` | what is proved about the probe rule and what is not | cell identity Δ_U = Σ w_c I(Z_c; Y); adaptive monotone (proved); NOT adaptive submodular with noisy answers (counter-example); bounds f, g of the allocation lemma; greedy vs adaptive optimum by enumeration |
+| `disagreement_field` | the interval between claims filled twice — by the claims and by a first-principles model — and the gap between the fillings | pointwise JS between P₊^claims and P₊^model; model probes enter with lineage root = the model (K probes = one root); throws ranked by co-moving gaps; a world with planted hidden links (shared latent parameters) as the throw facit without proximity |
 | `closed_loop` | the engine choosing probes against a world with known sign structure, scored against the truth | world of ≤ 1-transition sign functions with sourced, copied, unreliable claims; policies engine / copies / random / oracle; wrong measure and believed wrong measure |
 | `polarity_rules` | the sign a sentence asserts between two quantities, symbolically | one direction word per quantity per clause, negation flips, last clause wins, composition by product; abstains outside its lexicon (English only) |
 | `representation_probe` | a second reader: a linear direction in a frozen model's mid layers, trained on the rule's labels, with its own lineage | reads text that contradicts the model's prior where the token output does not; inherits the genre of its training sentences (e22) |
@@ -503,6 +504,18 @@ closure-filled gap: as δ falls 0.26 → 0.003 the entropy value falls 300× and
 correction: the two rules name DIFFERENT cells only 63 % of the time — in the concentrated regime they often name the same cell and
 the value rule prices it ~10× too low. e21's hole is the price, not the location: the budget is allocated across pairs by expected
 drop, and a correctly priced collision probe would win it.
+
+**Model against claims, and a throw facit without proximity (e37, `disagreement_field`).** The interval between claims is filled
+twice: by the regime posterior and by a first-principles model over its declared parameter box. Two uses, opposite verdicts. As a
+PROBE address (argmax of the pointwise JS divergence) it is bad: 7× worse than the value rule after 20 probes (0.081 vs 0.010; weighting
+by how open the claims still are recovers to 0.023, above random 0.043, never above the value rule) — the gap is dominated by the
+model's own ignorance and re-probes the same x. As a THROW rule it is good: in a world where pairs share a latent parameter (a
+hidden link the claim graph cannot see — the facit that is explicitly not proximity), ranking candidate couples by how their
+model-vs-claims gaps CO-MOVE finds the planted links at precision@5 0.215 ± 0.019 against random 0.045 and resistance proximity in the
+claim graph 0.025 (4.8× and 8.6×) — after 8 probes per pair; from claims alone 0.075. Model probes as evidence: entered with the model
+as one lineage root (K probes = one root) they cost nothing in accuracy and keep the calibration margin; entered as independent they
+are 1.7× worse and eat it. With one model shared by all pairs the gap correlation equals the claims-field correlation to 1e-15 — the
+model supplies the frame, not extra signal; said plainly rather than claimed as a model win.
 
 **Label-free calibration (e18; same 320 sentences).** Raw pooled 0.591; subtracting each lens's batch-mean log-odds (Batch Calibration) 0.572;
 per sentence form 0.603; per-form Platt on the rule's answers 0.927; on true labels 0.927. The option prior is not the fault; the
