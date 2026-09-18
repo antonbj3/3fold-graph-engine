@@ -97,3 +97,18 @@ def test_declared_copies_that_disagree_are_a_contradiction():
     assert n.estimate("torn").kind == "CONTRADICTION" and n.estimate("same").kind == "OK"
     with pytest.raises(ValueError):
         m = MarginNet(); m.add_edge("z", ["a", "b"], [{"margin": 0.1, "sigma": 0.0, "sources": ["p"]}]); m.estimate("z")
+
+
+def test_partially_shared_error_sits_between_independent_and_copy_and_is_not_a_copy():
+    """Three reports from one collaboration with shares rho = 0.5: s is between the independent (1/√3) and the copy (1)
+    case, they may differ without firing the copy check, and with no group declared N_eff equals lineage_information."""
+    def net(sources, reports):
+        n = MarginNet(default_sigma=0.1); n.add_sources(sources); n.add_edge("e", ["a", "b"], reports); return n.estimate("e")
+    reps = [{"margin": 0.30, "sources": ["p1"]}, {"margin": 0.42, "sources": ["p2"]}, {"margin": 0.20, "sources": ["p3"]}]
+    ind = net([{"id": p} for p in ("p1", "p2", "p3")], reps)
+    shared = net([{"id": p, "shares": {"CDF": 0.5}} for p in ("p1", "p2", "p3")], reps)
+    copies = net([{"id": "p1"}, {"id": "p2", "derives_from": ["p1"]}, {"id": "p3", "derives_from": ["p1"]}], reps)
+    assert ind.s < shared.s < 0.1 <= copies.s + 1e-9
+    assert 1.0 < shared.n_eff < 3.0 and abs(ind.n_eff - 3.0) < 1e-9
+    assert shared.kind in ("OK", "STRESSED") and copies.kind == "CONTRADICTION"      # copies must agree; shared may differ
+    assert shared.p_agree > 0.01

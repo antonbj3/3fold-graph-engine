@@ -42,6 +42,15 @@
     "p_agree": 0.0,
     "kind": "CONTRADICTION"
    },
+   "shared_systematics_rho0.5": {
+    "m_hat": 172.538,
+    "s": 0.1223,
+    "n_eff": 73.26,
+    "chi2_Q": 110.81,
+    "dof": 92,
+    "p_agree": 0.0884,
+    "kind": "OK"
+   },
    "pdg": {
     "value": 172.6,
     "sigma": 0.27,
@@ -84,6 +93,15 @@
     "p_agree": 0.0,
     "kind": "CONTRADICTION"
    },
+   "shared_systematics_rho0.5": {
+    "m_hat": 80.3697,
+    "s": 0.0032,
+    "n_eff": 35.06,
+    "chi2_Q": 128.24,
+    "dof": 34,
+    "p_agree": 7.34e-13,
+    "kind": "CONTRADICTION"
+   },
    "pdg": {
     "value": 80.3625,
     "sigma": 0.0077,
@@ -118,6 +136,15 @@
     "dof": 1,
     "p_agree": 0.0,
     "kind": "CONTRADICTION"
+   },
+   "shared_systematics_rho0.5": {
+    "m_hat": 125.2669,
+    "s": 0.0936,
+    "n_eff": 5.05,
+    "chi2_Q": 13.17,
+    "dof": 8,
+    "p_agree": 0.106,
+    "kind": "OK"
    },
    "pdg": {
     "value": 125.13,

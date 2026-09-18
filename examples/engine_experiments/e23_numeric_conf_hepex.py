@@ -13,6 +13,8 @@ AND whose value is inside the stated window in the stated unit (the window is a 
 "m_t" used for a transverse mass; it is a selection and is reported as such) → one report per paper (the one with the
 smallest σ) → margin_net edge, twice:
     per_paper          every paper is its own root source  (N_eff = n)
+    shared_systematics papers of one collaboration share rho = 0.5 of their error variance (margin_net's third lineage
+                       state, added after the first run showed the copy reading is wrong for successive measurements)
     per_collaboration  papers of one collaboration (ATLAS/CMS/CDF/D0/LHCb/ALICE/BaBar/Belle/LEP experiments, detected
                        from the text) derive from one root; papers with no detected collaboration stay their own root.
 Reported per quantity: n, m̂ ± s, N_eff in both modes, Q/dof and its p-value, and the PDG value fetched from pdglive.
@@ -160,6 +162,9 @@ def collect(recs):
     return per_abstract, groups
 
 
+RHO_SHARED = 0.5
+
+
 def run_net(items, mode):
     net = MarginNet()
     reports = []
@@ -167,6 +172,8 @@ def run_net(items, mode):
         collab = it["collab"]
         if mode == "per_collaboration" and collab:
             net.add_sources([{"id": pid, "derives_from": [collab]}])
+        elif mode == "shared_systematics" and collab:                 # third lineage state: rho of the variance shared within a collaboration
+            net.add_sources([{"id": pid, "shares": {collab: RHO_SHARED}}])
         reports.append({"margin": it["claim"]["value"], "sigma": it["claim"]["sigma"], "sources": [pid]})
     net.add_edge("q", ["q"], reports)
     e = net.estimate("q")
@@ -231,6 +238,7 @@ def main():
             "collaborations": dict(sorted(collabs.items(), key=lambda kv: -kv[1])),
             "per_paper": run_net(items, "per_paper"),
             "per_collaboration": run_net(items, "per_collaboration"),
+            "shared_systematics_rho0.5": run_net(items, "shared_systematics"),
             "pdg": PDG[name],
             "values_min_max": [round(min(it["claim"]["value"] for _, it in items), 3),
                                round(max(it["claim"]["value"] for _, it in items), 3)],

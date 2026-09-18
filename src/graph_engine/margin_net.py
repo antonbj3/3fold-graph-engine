@@ -7,7 +7,13 @@ to the boundary of the requirement: m < 0 means violated). Each piece of evidenc
 standard deviation σ_k and names its sources; sources have lineage (`derives_from`).
 
 Combination. Errors are modelled as in claim_federation: the error of report k is σ_k times the mean of its root
-sources' independent unit errors,  e = D M ε,  D = diag(σ), M = row-normalized report×root incidence. The estimate is
+sources' independent unit errors,  e = D M ε,  D = diag(σ), M = row-normalized report×root incidence.
+Third lineage state (added after e23 on 7 201 hep-ex abstracts): successive measurements by one collaboration are neither
+independent nor copies — they share part of their systematic error. A source may declare `shares: {group: ρ}`; its report's
+error becomes σ_k(√(1−ρ) ε_own + √ρ ε_group), so Σ gets a common component per group without becoming singular. The copy
+check (b) below then does not fire on them (they are allowed to differ), the χ² sees the shared part, and N_eff is reported
+as information-based: (1ᵀΣ⁺1) × the harmonic mean of the σ_k² — equal to `lineage_information` when no group is declared
+and all σ are equal (test). The estimate is
         m̂ = (1ᵀ Σ⁺ m) / (1ᵀ Σ⁺ 1),    s² = 1 / (1ᵀ Σ⁺ 1),    Σ = D M Mᵀ D
 (generalized least squares through the pseudo-inverse). It is unbiased and s is its true standard deviation (test). It is
 the minimum-variance estimate when Σ is non-singular; when reports share all their roots Σ is singular and a lower-variance
@@ -87,9 +93,16 @@ class MarginNet:
     edges: dict = field(default_factory=dict)
 
     # -- loading -----------------------------------------------------------------------------------
+    _shares: dict = field(default_factory=dict)
+
     def add_sources(self, sources: list[dict]) -> None:
+        """source = {"id", "derives_from": [ids] (copies), "shares": {group: rho} (partially shared error, 0 < rho < 1)}"""
         for s in sources:
             self._parents[s["id"]] = sorted(set(self._parents.get(s["id"], [])) | set(s.get("derives_from", [])))
+            for g, rho in (s.get("shares") or {}).items():
+                if not 0.0 < rho < 1.0:
+                    raise ValueError(f"source {s['id']}: shares[{g!r}] = {rho} must be in (0, 1)")
+                self._shares.setdefault(s["id"], {})[g] = float(rho)
 
     def add_edge(self, id: str, between: list[str], reports: list[dict], weight: float = 1.0, cost: float = 1.0) -> None:
         """report = {"margin": float, "sigma": float (optional), "sources": [ids], "validity": {var: [lo, hi]} (optional)}"""
@@ -119,6 +132,19 @@ class MarginNet:
         rs = [frozenset().union(*[self.roots(x) for x in (r.get("sources") or [f"{id}#{k}"])]) for k, r in enumerate(R)]
         allr = sorted(set().union(*rs))
         M = np.array([[1.0 if x in r else 0.0 for x in allr] for r in rs]); M /= M.sum(1, keepdims=True)
+        # partially shared errors: each report's group weights are the mean over its sources' declared shares
+        grp: list[dict] = []
+        for k, r in enumerate(R):
+            srcs = r.get("sources") or []; d: dict = {}
+            for x in srcs:
+                for g, rho in self._shares.get(x, {}).items():
+                    d[g] = d.get(g, 0.0) + rho / len(srcs)
+            grp.append(d)
+        groups = sorted({g for d in grp for g in d})
+        if groups:
+            tot = np.array([min(sum(d.values()), 0.999) for d in grp])
+            G = np.array([[math.sqrt(d.get(g, 0.0)) for g in groups] for d in grp])
+            M = np.hstack([np.sqrt(1 - tot)[:, None] * M, G]); allr = allr + [f"shared:{g}" for g in groups]
         B = sig[:, None] * M                                   # e = B ε
         Sigma = B @ B.T
         Sp = np.linalg.pinv(Sigma, rcond=1e-10)
@@ -135,7 +161,7 @@ class MarginNet:
         kind = "VIOLATED" if z < -self.stressed_below_z else "STRESSED" if z < self.stressed_below_z else "OK"
         if p_agree < self.disagree_p:
             kind = "REGIME-BOUNDARY" if self._disjoint_validity(R) else "CONTRADICTION"
-        neff = lineage_information(rs)                          # the same function claim_federation uses
+        neff = lineage_information(rs) if not groups else info * len(sig) / float((1.0 / sig ** 2).sum())
         return EdgeEstimate(id, e["between"], mhat, s, z, pv, len(m), neff, q, dof, p_agree, kind, dict(zip(allr, a)))
 
     @staticmethod

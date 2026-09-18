@@ -296,7 +296,12 @@ so the test does not see the known Tevatron/LHC offset (≤ 2011: 172.86 ± 0.30
 174.30 ± 0.65) — the offset is inside the individual σ. Limit found by the run: with the collaboration as root, margin_net's copy check
 (b) fires on every quantity, and it is right to — successive measurements by one collaboration are not copies of one report, they
 are different measurements sharing part of their systematics. The lineage model has two states (independent / copy) and this
-corpus needs a third: partially shared error, e = D(√(1−ρ) ε_own + √ρ ε_root). Not built; it is the next change to `margin_net`.
+corpus needs a third: partially shared error, e = D(√(1−ρ) ε_own + √ρ ε_root). Built (`shares: {group: ρ}` on a source) and rerun
+with ρ = 0.5 within a collaboration: top mass 172.54 ± 0.12 (N_eff 73, p 0.09, closer to PDG than either other mode), Higgs
+125.27 ± 0.09 (N_eff 5), W unchanged in value with p smaller still (the spread is real). The copy check no longer fires, as
+intended. ρ = 0.5 is a declared assumption, not a measurement; what a collaboration actually shares between two of its
+measurements is in the papers' systematic tables, not in abstracts, and the honest use is to let the graph's owner declare ρ per
+group and see the three readings side by side.
 
 **Label-free calibration (e18; same 320 sentences).** Raw pooled 0.591; subtracting each lens's batch-mean log-odds (Batch Calibration) 0.572;
 per sentence form 0.603; per-form Platt on the rule's answers 0.927; on true labels 0.927. The option prior is not the fault; the
