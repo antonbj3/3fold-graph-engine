@@ -216,6 +216,7 @@ result not reproducible from this repo.
 | `src/graph_engine/precision_form.py` | VERIFIED-FRESH |
 | `src/graph_engine/hidden_variable.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/numeric_rules.py` | VERIFIED-FRESH |
+| `src/graph_engine/provenance_rules.py` | VERIFIED-FRESH |
 | `src/graph_engine/throws.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/tools/allindex.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/tools/anchor_graph_tools.py` | SYNTHETIC-ONLY |

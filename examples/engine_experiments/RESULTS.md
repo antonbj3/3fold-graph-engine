@@ -68,6 +68,7 @@ corpus the gate abstains on all 57 papers from title and abstract. The modules b
 | `hidden_variable` | an overlapping-box disagreement read as a candidate UNDECLARED variable, not a contradiction to settle | data side: the attribute split with the largest χ² (or Gini) drop, permutation p-value, the boxes it would add; mechanism side (`from_mechanism`): the model parameters that can flip the sign of dy/dx inside the declared ranges, before any report |
 | `precision_form` | one quadratic form for structure, margins and regimes; value of one observation or of a SET in bits | J from the Laplacian + lineage-weighted observation blocks + a local Gaussian image of a Bernoulli belief; rank-1 updates; set value ½ log det(I + H C Hᵀ/σ²), submodular, greedy |
 | `numeric_rules` | numbers with uncertainty out of text: v ± s, asymmetric, stat ⊕ syst, CI, ranges, powers of ten, unit prefixes | deterministic; abstains when no quantity phrase is found; feeds `margin_net` (value = margin, σ) |
+| `provenance_rules` | who a report derives from, out of the text itself | copy / derived / shared / cites → `derives_from` or `shares`; abstains when a marker names no source |
 | `closed_loop` | the engine choosing probes against a world with known sign structure, scored against the truth | world of ≤ 1-transition sign functions with sourced, copied, unreliable claims; policies engine / copies / random / oracle; wrong measure and believed wrong measure |
 | `polarity_rules` | the sign a sentence asserts between two quantities, symbolically | one direction word per quantity per clause, negation flips, last clause wins, composition by product; abstains outside its lexicon (English only) |
 | `representation_probe` | a second reader: a linear direction in a frozen model's mid layers, trained on the rule's labels, with its own lineage | reads text that contradicts the model's prior where the token output does not; inherits the genre of its training sentences (e22) |
@@ -331,6 +332,20 @@ with ρ = 0.5 within a collaboration: top mass 172.54 ± 0.12 (N_eff 73, p 0.09,
 intended. ρ = 0.5 is a declared assumption, not a measurement; what a collaboration actually shares between two of its
 measurements is in the papers' systematic tables, not in abstracts, and the honest use is to let the graph's owner declare ρ per
 group and see the three readings side by side.
+
+**Provenance from text on a medical corpus (e26; 5 814 PubMed abstracts on blood-pressure targets, NCBI E-utilities, cached outside
+the repo).** The owner's point: in medicine, authority is many copies of a few trials, and nothing declares it. `provenance_rules`
+finds a provenance statement in 16.9 % of abstracts and a NAMED lineage root in 11.2 %; in 36.7 % a marker fires ("based on",
+"following the guideline") and names nothing — the literature claims provenance three times more often than it names it. Roots:
+SPRINT 151, ACCORD 15, STEP 15, ACC/AHA guideline 15 … (586 distinct). Hand check, all read: 21 of 25 extractions right (4 wrong:
+an acronym that was the paper's own arm, a truncated name, a risk factor read as a source), 12 of 15 empty outputs correct
+abstentions, 3 missed. On the hazard ratio for cardiovascular events under intensive vs standard control (73 abstracts): independent
+0.718 ± 0.006 (N_eff 73); copies of the declared root 0.720 ± 0.007 (N_eff 67); shared ρ = 0.5: 0.715 ± 0.006 (71.7). χ² rejects
+"one number" in every mode (endpoints, populations and follow-ups differ, as they should). The lineage correction is capped by the
+11 % declaration rate, not by the model: where the text does not name its root the engine cannot collapse copies — the reading
+channel for "according to the guideline" without a name is the next hole. Found on the way: `numeric_rules` reads only 11 % of the
+12 135 "95 % CI" mentions in this corpus (the value must sit next to the interval); a surface normalisation in e26 lifts it to 65 %
+and is ported into `numeric_rules` next.
 
 **Label-free calibration (e18; same 320 sentences).** Raw pooled 0.591; subtracting each lens's batch-mean log-odds (Batch Calibration) 0.572;
 per sentence form 0.603; per-form Platt on the rule's answers 0.927; on true labels 0.927. The option prior is not the fault; the

@@ -1,0 +1,963 @@
+{
+ "corpus": {
+  "n_abstracts": 5814,
+  "queries": {
+   "bp_target": "blood pressure target systolic mortality randomized",
+   "bp_intensive_meta": "intensive blood pressure control meta-analysis",
+   "bp_ratio": "\"blood pressure\"[tiab] AND (intensive[tiab] OR target[tiab] OR lowering[tiab]) AND (\"hazard ratio\"[tiab] OR \"relative risk\"[tiab] OR \"risk ratio\"[tiab])",
+   "bp_outcomes": "hypertension[tiab] AND (\"all-cause mortality\"[tiab] OR \"cardiovascular events\"[tiab]) AND (\"hazard ratio\"[tiab] OR \"95% CI\"[tiab])",
+   "bp_secondary": "(\"secondary analysis\"[tiab] OR \"post hoc analysis\"[tiab] OR \"pooled analysis\"[tiab]) AND \"blood pressure\"[tiab]",
+   "sprint": "SPRINT[tiab] AND \"blood pressure\"[tiab]",
+   "intensive_hr": "(\"intensive blood pressure\"[tiab] OR \"blood pressure target\"[tiab]) AND (\"hazard ratio\"[tiab] OR \"95% CI\"[tiab])"
+  },
+  "source": "NCBI E-utilities, db=pubmed (esearch + efetch), cached outside the repo",
+  "years": [
+   "1975",
+   "2026"
+  ]
+ },
+ "coverage": {
+  "fraction_with_at_least_one_provenance_statement": 0.169,
+  "fraction_with_a_lineage_statement_copy_derived_shared": 0.112,
+  "fraction_with_a_marker_but_no_nameable_source": 0.367,
+  "statements_total": 1124,
+  "statements_per_abstract_mean": 0.19,
+  "by_kind": {
+   "shared": 320,
+   "derived": 323,
+   "cites": 398,
+   "copy": 83
+  },
+  "abstention_markers_total": 3849,
+  "distinct_named_roots": 586
+ },
+ "top_roots_all_kinds": [
+  [
+   "SPRINT",
+   216
+  ],
+  [
+   "ACCORD",
+   32
+  ],
+  [
+   "STEP",
+   23
+  ],
+  [
+   "ACC/AHA guideline",
+   15
+  ],
+  [
+   "ACCORD-BP",
+   13
+  ],
+  [
+   "CHARLS",
+   11
+  ],
+  [
+   "LIFE",
+   10
+  ],
+  [
+   "KDIGO guideline",
+   9
+  ],
+  [
+   "OPTIMAL-BP",
+   7
+  ],
+  [
+   "ATACH-2",
+   7
+  ],
+  [
+   "BOX",
+   7
+  ],
+  [
+   "INVEST",
+   6
+  ],
+  [
+   "INTERACT",
+   6
+  ],
+  [
+   "NHLBI guideline",
+   6
+  ],
+  [
+   "ARIC",
+   6
+  ]
+ ],
+ "top_roots_lineage_only": [
+  [
+   "SPRINT",
+   151
+  ],
+  [
+   "ACCORD",
+   15
+  ],
+  [
+   "STEP",
+   15
+  ],
+  [
+   "ACC/AHA guideline",
+   15
+  ],
+  [
+   "ACCORD-BP",
+   11
+  ],
+  [
+   "CHARLS",
+   10
+  ],
+  [
+   "KDIGO guideline",
+   9
+  ],
+  [
+   "OPTIMAL-BP",
+   7
+  ],
+  [
+   "INVEST",
+   6
+  ],
+  [
+   "INTERACT",
+   6
+  ],
+  [
+   "NHLBI guideline",
+   6
+  ],
+  [
+   "TARGET",
+   6
+  ],
+  [
+   "ATACH-2",
+   6
+  ],
+  [
+   "CRHCP",
+   4
+  ],
+  [
+   "DASH",
+   4
+  ]
+ ],
+ "quantities": {
+  "mortality_hr": {
+   "n_reports": 959,
+   "values_min_max": [
+    0.3,
+    2.0
+   ],
+   "median": 1.07,
+   "declared_roots_in_this_group": {
+    "SPRINT": 10,
+    "WHO guideline": 2,
+    "BLAST-AHF": 2,
+    "NHANES": 2,
+    "ARIC": 2,
+    "STEP": 2,
+    "CRHCP": 2,
+    "COMET": 1,
+    "PAC": 1,
+    "GISSI": 1
+   },
+   "independent": {
+    "m_hat": 0.9975,
+    "s": 0.0003,
+    "n_eff": 959.0,
+    "chi2_Q": 40203.3,
+    "dof": 958,
+    "p_agree": 0.0,
+    "kind": "CONTRADICTION",
+    "n_reports": 959,
+    "n_with_declared_lineage": 0
+   },
+   "copies": {
+    "m_hat": 0.9975,
+    "s": 0.0003,
+    "n_eff": 947.0,
+    "chi2_Q": 40014.7,
+    "dof": 943,
+    "p_agree": 0.0,
+    "kind": "CONTRADICTION",
+    "n_reports": 959,
+    "n_with_declared_lineage": 87
+   },
+   "shared_rho0.5": {
+    "m_hat": 0.9975,
+    "s": 0.0003,
+    "n_eff": 959.42,
+    "chi2_Q": 40313.7,
+    "dof": 958,
+    "p_agree": 0.0,
+    "kind": "CONTRADICTION",
+    "n_reports": 959,
+    "n_with_declared_lineage": 87
+   }
+  },
+  "cv_event_hr": {
+   "n_reports": 557,
+   "values_min_max": [
+    0.33,
+    2.0
+   ],
+   "median": 1.05,
+   "declared_roots_in_this_group": {
+    "SPRINT": 12,
+    "STEP": 5,
+    "ACC/AHA guideline": 4,
+    "ACCORD": 3,
+    "CRHCP": 3,
+    "ARIC": 2,
+    "RIKS-HIA": 1,
+    "HYVET": 1,
+    "DASH": 1,
+    "REACH": 1
+   },
+   "independent": {
+    "m_hat": 1.0004,
+    "s": 0.0004,
+    "n_eff": 557.0,
+    "chi2_Q": 12481.9,
+    "dof": 556,
+    "p_agree": 0.0,
+    "kind": "CONTRADICTION",
+    "n_reports": 557,
+    "n_with_declared_lineage": 0
+   },
+   "copies": {
+    "m_hat": 1.0004,
+    "s": 0.0004,
+    "n_eff": 536.0,
+    "chi2_Q": 11999.5,
+    "dof": 533,
+    "p_agree": 0.0,
+    "kind": "CONTRADICTION",
+    "n_reports": 557,
+    "n_with_declared_lineage": 58
+   },
+   "shared_rho0.5": {
+    "m_hat": 1.0003,
+    "s": 0.0004,
+    "n_eff": 557.01,
+    "chi2_Q": 12728.5,
+    "dof": 556,
+    "p_agree": 0.0,
+    "kind": "CONTRADICTION",
+    "n_reports": 557,
+    "n_with_declared_lineage": 58
+   }
+  },
+  "mortality_hr_treatment_contrast": {
+   "n_reports": 64,
+   "values_min_max": [
+    0.3,
+    1.8
+   ],
+   "median": 0.83,
+   "declared_roots_in_this_group": {
+    "SPRINT": 2,
+    "STEP": 1
+   },
+   "independent": {
+    "m_hat": 0.937,
+    "s": 0.0066,
+    "n_eff": 64.0,
+    "chi2_Q": 430.7,
+    "dof": 63,
+    "p_agree": 3.36e-56,
+    "kind": "CONTRADICTION",
+    "n_reports": 64,
+    "n_with_declared_lineage": 0
+   },
+   "copies": {
+    "m_hat": 0.9386,
+    "s": 0.0067,
+    "n_eff": 63.0,
+    "chi2_Q": 421.2,
+    "dof": 62,
+    "p_agree": 0.0,
+    "kind": "CONTRADICTION",
+    "n_reports": 64,
+    "n_with_declared_lineage": 3
+   },
+   "shared_rho0.5": {
+    "m_hat": 0.9342,
+    "s": 0.0066,
+    "n_eff": 63.87,
+    "chi2_Q": 450.7,
+    "dof": 63,
+    "p_agree": 6.17e-60,
+    "kind": "CONTRADICTION",
+    "n_reports": 64,
+    "n_with_declared_lineage": 3
+   }
+  },
+  "cv_event_hr_treatment_contrast": {
+   "n_reports": 73,
+   "values_min_max": [
+    0.4,
+    1.642
+   ],
+   "median": 0.79,
+   "declared_roots_in_this_group": {
+    "SPRINT": 5,
+    "CRHCP": 3,
+    "RIKS-HIA": 1,
+    "ACCORD": 1,
+    "ESPRIT": 1
+   },
+   "independent": {
+    "m_hat": 0.7177,
+    "s": 0.0062,
+    "n_eff": 73.0,
+    "chi2_Q": 574.3,
+    "dof": 72,
+    "p_agree": 2.35e-79,
+    "kind": "CONTRADICTION",
+    "n_reports": 73,
+    "n_with_declared_lineage": 0
+   },
+   "copies": {
+    "m_hat": 0.7195,
+    "s": 0.0065,
+    "n_eff": 67.0,
+    "chi2_Q": 545.7,
+    "dof": 66,
+    "p_agree": 0.0,
+    "kind": "CONTRADICTION",
+    "n_reports": 73,
+    "n_with_declared_lineage": 11
+   },
+   "shared_rho0.5": {
+    "m_hat": 0.7147,
+    "s": 0.0062,
+    "n_eff": 71.65,
+    "chi2_Q": 617.4,
+    "dof": 72,
+    "p_agree": 1.3e-87,
+    "kind": "CONTRADICTION",
+    "n_reports": 73,
+    "n_with_declared_lineage": 11
+   }
+  }
+ },
+ "numeric_channel_gap": {
+  "abstracts_mentioning_95pct_CI": 3933,
+  "CI_mentions_total": 12135,
+  "CI_claims_read_raw": 1327,
+  "CI_claims_read_after_separator_normalisation": 7954,
+  "fraction_of_CI_mentions_read_raw": 0.109,
+  "fraction_of_CI_mentions_read_normalised": 0.655,
+  "note": "numeric_rules' CI regex needs the value adjacent to the interval; the medical forms with a comma or semicolon before '95% CI' are missed. This is a limit of the numeric channel found by this corpus, not of provenance_rules."
+ },
+ "hand_check": {
+  "n_extractions_read": 25,
+  "n_abstentions_read": 15,
+  "seed": 26,
+  "counts": {
+   "wrong": 4,
+   "right": 21,
+   "correct_abstention": 12,
+   "abstained_should_have": 3
+  },
+  "verdicts": {
+   "29564978:RAAS": [
+    "wrong",
+    "'based on the median daily equivalent dose of RAAS blocking drugs' \u2014 RAAS is a physiological system, not a source; the abstract's real root (HALT PKD Study A) is a two-word trial name and is not caught either"
+   ],
+   "42238642:SPRINT": [
+    "right",
+    "'Using data from the Systolic Blood Pressure Intervention Trial (SPRINT)'"
+   ],
+   "40251275:KDIGO guideline": [
+    "right",
+    "'following the 2021 KDIGO guidelines versus the 2012 KDIGO guidelines'"
+   ],
+   "38380494:BOX": [
+    "right",
+    "'secondary analysis of the BOX trial'"
+   ],
+   "18931896:EUROPA": [
+    "right",
+    "'the EUROPA study' \u2014 a mention, kind cites, no lineage edge"
+   ],
+   "38063018:CABL": [
+    "right",
+    "'the CABL study' (Cardiovascular Abnormalities and Brain Lesions), cites"
+   ],
+   "41779383:D2EFT": [
+    "right",
+    "'Secondary analysis of the D2EFT trial'"
+   ],
+   "42541580:NUPRESS": [
+    "right",
+    "'data from the Brazilian multicentre trial (NUPRESS)'"
+   ],
+   "25145522:JNC-8": [
+    "right",
+    "'as recommended by the JNC-8 panel' \u2014 the guideline body with its edition"
+   ],
+   "19757004:FIELD": [
+    "right",
+    "'The FIELD study', cites"
+   ],
+   "27456518:SPRINT": [
+    "right",
+    "'the SPRINT trial', cites"
+   ],
+   "30789921:SSCP": [
+    "wrong",
+    "'The SSCP group' is a study ARM (structured secondary cardiovascular prevention programme) of this paper's own cohort, not a source it copies"
+   ],
+   "35140128:LUST": [
+    "right",
+    "'post hoc analysis of the LUST trial'"
+   ],
+   "41911941:REPRIEVE": [
+    "right",
+    "'The REPRIEVE trial', cites"
+   ],
+   "32067836:SPRINT": [
+    "right",
+    "'within the SPRINT trial including all participants ...'"
+   ],
+   "30170330:NET": [
+    "wrong",
+    "the source is the PE-NET cohort ('the Pre-Eclampsia New Emerging Team [PE-NET] cohort'); the bracketed name is truncated to NET"
+   ],
+   "35489133:MAPT": [
+    "right",
+    "'data from the Multidomain Alzheimer Preventive Trial (MAPT)'"
+   ],
+   "38150260:STRONG-HF": [
+    "right",
+    "'secondary analysis of the STRONG-HF randomized clinical trial'"
+   ],
+   "40845203:SPRINT": [
+    "right",
+    "'post hoc analysis of the SPRINT trial'"
+   ],
+   "29044764:SPRINT": [
+    "right",
+    "'post hoc analysis of the SPRINT.'"
+   ],
+   "40270333:SPRINT": [
+    "right",
+    "'using data from the Systolic Blood Pressure Intervention Trial (SPRINT)'"
+   ],
+   "31412746:ACC/AHA guideline": [
+    "right",
+    "'based on the 2017 ... (ACC/AHA) High Blood Pressure Guidelines'"
+   ],
+   "27289122:ACCORD": [
+    "right",
+    "'the ACCORD trial', cites"
+   ],
+   "31302044:MESA": [
+    "right",
+    "'the MESA cohort', cites"
+   ],
+   "41684662:HVC": [
+    "wrong",
+    "'based on the presence of risk factors ... (either PH or HVC)' \u2014 HVC is heart valve calcification, a risk factor of this paper's own cohort, not a source"
+   ]
+  },
+  "abstained_should_have": {
+   "33448580": "the abstract IS a SPRINT secondary analysis ('SPRINT was a randomized clinical trial in which ...') but never says so with a provenance marker \u2014 no marker, no record",
+   "29449941": "'Data from the Africa Middle East Cardiovascular Epidemiological (ACE) study were used' \u2014 ACE is on the NOT_A_TRIAL list (ACE inhibitors), so the one nameable root in the abstract is suppressed",
+   "40469023": "'global health care data from the TriNetX network' \u2014 a mixed-case source name and 'network' is not a trial word; neither rule reaches it"
+  },
+  "note": "25 extractions (one random record per sampled abstract) and 15 abstracts where the extractor produced nothing, all read by the author; 'unjudged' must stay 0"
+ },
+ "hand_check_items": [
+  {
+   "pmid": "29564978",
+   "key": "29564978:RAAS",
+   "record": {
+    "kind": "derived",
+    "target": "RAAS",
+    "span": [
+     600,
+     710
+    ],
+    "confidence": 0.6
+   },
+   "span_text": "based on the median daily equivalent dose of RAAS blocking drugs used after the initial dose titration period.",
+   "abstract": "BACKGROUND: The HALT PKD trial in early autosomal dominant polycystic kidney disease (ADPKD) showed that intensive control of systolic blood pressure to 95-110 mmHg was associated with a 14% slower rate of kidney volume growth compared to standard control. It is unclear whether this result was due to greater blockade of the renin-angiotensin-aldosterone system (RAAS) by allowing the use of higher drug doses in the low blood pressure arm, or due to the lower blood pressure per se. METHODS: In this secondary analysis of HALT PKD Study A, we categorized participants into high and low dose groups based on the median daily equivalent dose of RAAS blocking drugs used after the initial dose titration period. Using linear mixed models, we compared the percent change in total kidney volume and the slope of estimated glomerular filtration rate (eGFR) between the 2 groups. We also assessed the effects of time-varying dose and time-varying blood pressure parameters on these outcomes. RESULTS: Subjects in the high dose group (n=252) did not experience a slower increase in total kidney volume than those in the low-dose (n=225) group, after adjustment for age, sex, genotype, and BP arm. The chron"
+  },
+  {
+   "pmid": "42238642",
+   "key": "42238642:SPRINT",
+   "record": {
+    "kind": "shared",
+    "target": "SPRINT",
+    "span": [
+     420,
+     575
+    ],
+    "confidence": 0.9
+   },
+   "span_text": "Using data from the Systolic Blood Pressure Intervention Trial (SPRINT), a random under-sampling technique was applied to address class imbalance in the ta",
+   "abstract": "BACKGROUND: Heart failure (HF) is a heterogeneous syndrome affecting over 60 million individuals globally. Patients with hypertension are particularly susceptible to developing HF. Therefore, timely identification and predictive assessment of HF risk have significant clinical implications in this population. Thus, this study aimed to develop a new interpretable machine learning (ML) model for HF prediction. METHODS: Using data from the Systolic Blood Pressure Intervention Trial (SPRINT), a random under-sampling technique was applied to address class imbalance in the target variable, achieving a 1:1 ratio between positive and negative samples. By randomly matching 162 individuals without HF events to those with events, a balanced dataset comprising 324 participants was constructed. The test set comprised 40% of the total dataset to ensure a robust evaluation of model performance. Seven ML algorithms, including support vector machine (SVM), adaptive boosting (Adaboost), na\u00efve Bayes (NB), logistic regression (LR), gradient boosting machine (GBM), random forest (RF), and multilayer perceptron (MLP), were employed to construct the predictive models. Model performance was evaluated using"
+  },
+  {
+   "pmid": "40251275",
+   "key": "40251275:KDIGO guideline",
+   "record": {
+    "kind": "copy",
+    "target": "KDIGO guideline",
+    "span": [
+     231,
+     300
+    ],
+    "confidence": 0.8
+   },
+   "span_text": "following the 2021 KDIGO guidelines versus the 2012 KDIGO guidelines.",
+   "abstract": "The 2021 Kidney Disease: Improving Global Prognosis (KDIGO) guidelines set a target systolic blood pressure (SBP) of 120 mmHg for chronic kidney disease (CKD) patients. This paper aims to compare mortality outcomes in CKD patients following the 2021 KDIGO guidelines versus the 2012 KDIGO guidelines. We used the National Health and Nutrition Examination Survey (NHANES) database to categorize CKD patients into four groups: \"above 2021 KDIGO only\", \"above 2012 KDIGO only\", \"above both targets\" and \"controlled with both targets\". We compared differences in all-cause and cardiovascular deaths among these groups. In total, 10,612 CKD patients from the 2001-2018 NHANES database were identified. Subsequently, 2,226 patients lacking mortality information and 1,157 without crucial laboratory data were excluded. 7,229 CKD patients were enrolled, with 50.67% above both targets, 27.1% controlled within both targets, 1.01% above the 2012 KDIGO target, and 21.22% only above the 2021 KDIGO target. In multivariate analyses, the risk of all-cause mortality was not statistically significant (hazard ratio (HR): 0.91, 95% confidence interval (CI): 0.8-1.02, P = 0.11) for patients above the 2021 KDIGO t"
+  },
+  {
+   "pmid": "38380494",
+   "key": "38380494:BOX",
+   "record": {
+    "kind": "derived",
+    "target": "BOX",
+    "span": [
+     1514,
+     1675
+    ],
+    "confidence": 0.9
+   },
+   "span_text": "secondary analysis of the BOX trial aim to complement the primary frequentist analysis by quantifying the probabilities of beneficial or harmful effects of diffe",
+   "abstract": "BACKGROUND: The management of blood pressure targets during intensive care after out-of-hospital cardiac arrest (OHCA) remains a topic of debate. The blood Pressure and Oxygenation Targets After OHCA (BOX) trial explored the efficacy of two different blood pressure targets in 789 patients during intensive care after OHCA. In the primary frequentist analysis, no statistically significant differences were found for neurological outcome after 90 days. METHODS: This protocol outlines secondary Bayesian analyses of 365-day all-cause mortality and two secondary outcomes: neurological outcome after 365 days, and plasma neuron-specific enolase, a biomarker of brain injury, after 48 h. We will employ adjusted Bayesian logistic and linear regressions, presenting results as relative and absolute differences with 95% confidence intervals. We will use weakly informative priors for the primary analyses, and skeptical and evidence-based priors (where available) in sensitivity analyses. Exact probabilities for any benefit/harm will be presented for all outcomes, along with probabilities of clinically important benefit/harm (risk differences larger than 2%-points absolute) and no clinically importa"
+  },
+  {
+   "pmid": "18931896",
+   "key": "18931896:EUROPA",
+   "record": {
+    "kind": "cites",
+    "target": "EUROPA",
+    "span": [
+     102,
+     118
+    ],
+    "confidence": 0.7
+   },
+   "span_text": "the EUROPA study",
+   "abstract": "AIMS: We determined whether blood pressure (BP) lowering by perindopril was related to its benefit in the EUROPA study. METHODS AND RESULTS: Twelve thousand two hundred eighteen patients with documented coronary artery disease received perindopril 8 mg once daily or matching placebo after a 4-week run-in period in which all patients received perindopril. Patients were excluded if systolic (S) BP was >180 or <100 mmHg. Mean age was 60 years (range 26-89). 27% had a history of hypertension. After 4.2 years of follow-up, the primary endpoint (cardiovascular death, nonfatal myocardial infarction, or resuscitated cardiac arrest) was observed in 603 (9.9%) placebo versus 488 (8.0%) perindopril patients [20% relative risk reduction (RRR), CI 9-29%, P = 0.003]. There was no interaction between baseline SBP levels (using JNC-7 cutoff values) and treatment effect. If anything, the greatest RRR of the primary endpoint (32%) occurred in patients with the lowest SBP (<120 mmHg) in whom perindopril did not reduce SBP. Also, RRR during blinded treatment was comparable, irrespective of whether BP decreased or not or of the extent of BP reduction during perindopril treatment. CONCLUSION: The treatm"
+  },
+  {
+   "pmid": "38063018",
+   "key": "38063018:CABL",
+   "record": {
+    "kind": "cites",
+    "target": "CABL",
+    "span": [
+     473,
+     487
+    ],
+    "confidence": 0.7
+   },
+   "span_text": "the CABL study",
+   "abstract": "BACKGROUND: Aortic arch plaques are associated with an increased risk of ischemic stroke in patients with cryptogenic stroke or prior embolic events. However, this relationship is unclear in the community. We investigated (1) the long-term risk of stroke and cardiovascular events associated with arch plaques and (2) whether statin therapy prescribed for any indication modified the association. METHODS: A total of 934 stroke-free participants (72\u00b19 years; 37% men) from the CABL study (Cardiovascular Abnormalities and Brain Lesion) were evaluated. Arch plaques were assessed by suprasternal transthoracic echocardiography; plaques \u22654 mm in thickness were classified as large plaques. The primary outcome was ischemic stroke; the secondary outcome was combined cardiovascular events (ischemic stroke, myocardial infarction, and cardiovascular death). The plaque-related risk of outcomes was also analyzed according to the presence of statin treatment. No plaque was used as a reference. RESULTS: Aortic arch plaques were present in 645 participants (69.1%), with large plaques in 114 (12.2%). During a mean follow-up of 11.3\u00b13.6 years, 236 (25.3%) cardiovascular events occurred (76 ischemic strok"
+  },
+  {
+   "pmid": "41779383",
+   "key": "41779383:D2EFT",
+   "record": {
+    "kind": "derived",
+    "target": "D2EFT",
+    "span": [
+     219,
+     307
+    ],
+    "confidence": 0.9
+   },
+   "span_text": "Secondary analysis of the D2EFT trial, a randomized open-label trial in people with HIV.",
+   "abstract": "OBJECTIVES: To examine changes in weight after initiating different dolutegravir-based second-line antiretroviral regimens and to measure the impact of observed weight change on blood pressure and serum lipids. DESIGN: Secondary analysis of the D2EFT trial, a randomized open-label trial in people with HIV. METHODS: In D 2 EFT, ritonavir-boosted darunavir plus dolutegravir (DTG + DRV/r) and dolutegravir with tenofovir disoproxil fumarate plus either lamivudine or emtricitabine (DTG + TDF/XTC) were compared to ritonavir-boosted darunavir plus two nucleoside reverse transcriptase inhibitors (DRV/r + 2NRTIs). We used linear mixed effects models for weight, blood pressure and lipid changes and generalized estimating equations for \u22655% weight gain. RESULTS: Eight hundred and twenty-six participants were included. Significantly greater body weight and BMI gains at 48 and 96 weeks were observed in individuals taking DTG + DRV/r or DTG + TDF/XTC than in individuals taking DRV/r + 2NRTIs. Treatment arm (DTG + DRV/r and DTG + TDF/XTC), female gender, Black and Hispanic/Latino ethnicity, lower baseline CD4 + count, and higher baseline HIV RNA were all associated with weight gain in multivariabl"
+  },
+  {
+   "pmid": "42541580",
+   "key": "42541580:NUPRESS",
+   "record": {
+    "kind": "shared",
+    "target": "NUPRESS",
+    "span": [
+     353,
+     502
+    ],
+    "confidence": 0.9
+   },
+   "span_text": "data from the Brazilian multicentre trial (NUPRESS), which compared a Dietary Approach to Stop Hypertension (DASH) diet (control group) with a multic",
+   "abstract": "PURPOSE: This study aimed to investigate whether genetic variability, assessed through polygenic risk scores (PRSs), predicts blood pressure (BP) changes in individuals with systemic arterial hypertension (SAH), and to explore potential interactions between genetic risk and dietary interventions. METHODS: This study represents a secondary analysis of data from the Brazilian multicentre trial (NUPRESS), which compared a Dietary Approach to Stop Hypertension (DASH) diet (control group) with a multicomponent intervention (intervention group) over 180 days in adults with SAH. Participants underwent anthropometric assessment, cardiovascular risk evaluation, dietary assessment, and genotyping using a genomic microarray. Single nucleotide polymorphisms (SNPs) associated with BP changes were identified and used to construct PRSs. Multiple linear regression models were employed to examine associations between PRSs, dietary interventions, and changes in systolic (\u0394SBP) and diastolic BP (\u0394DBP). RESULTS: A total of 114 SNPs were associated with \u0394SBP and 101 with \u0394DBP. The resulting PRSs showed strong correlations with both \u0394SBP (r = 0.85; p < 0.0001) and \u0394DBP (r = 0.84; p < 0.0001). No signifi"
+  },
+  {
+   "pmid": "25145522",
+   "key": "25145522:JNC-8",
+   "record": {
+    "kind": "copy",
+    "target": "JNC-8",
+    "span": [
+     2823,
+     2943
+    ],
+    "confidence": 0.6
+   },
+   "span_text": "as recommended by the JNC-8 panel was associated with less benefit than the previously recommended target of <140 mm Hg.",
+   "abstract": "BACKGROUND: The 2014 Eighth Joint National Committee panel recommendations for management of high blood pressure (BP) recommend a systolic BP threshold for initiation of drug therapy and a therapeutic target of <150 mm Hg in those \u226560 years of age, a departure from prior recommendations of <140 mm Hg. However, it is not known whether this is an optimal choice, especially for the large population with coronary artery disease (CAD). OBJECTIVES: This study sought to evaluate optimal BP in patients \u226560 years of age. METHODS: Patients 60 years of age or older with CAD and baseline systolic BP >150 mm Hg randomized to a treatment strategy on the basis of either atenolol/hydrochlorothiazide or verapamil-SR (sustained release)/trandolapril in INVEST (INternational VErapamil SR Trandolapril STudy) were categorized into 3 groups on the basis of achieved on-treatment systolic BP: group 1, <140 mm Hg; group 2, 140 to <150 mm Hg; and group 3, \u2265150 mm Hg. Primary outcome was first occurrence of all-cause death, nonfatal myocardial infarction (MI), or nonfatal stroke. Secondary outcomes were all-cause mortality, cardiovascular mortality, total MI, nonfatal MI, total stroke, nonfatal stroke, heart"
+  },
+  {
+   "pmid": "19757004",
+   "key": "19757004:FIELD",
+   "record": {
+    "kind": "cites",
+    "target": "FIELD",
+    "span": [
+     1647,
+     1662
+    ],
+    "confidence": 0.7
+   },
+   "span_text": "The FIELD study",
+   "abstract": "PURPOSE: Intensive multifactorial risk factor intervention, targeting blood glucose, blood pressure and low-density lipoprotein cholesterol, is central to therapeutic management of type 2 diabetes. This strategy reduces, but does not eliminate the risk for cardiovascular complications, and microvascular complications such as diabetic retinopathy and nephropathy still continue to develop or progress. Fibrates have been shown to be effective in managing mixed dyslipidemia characterized by elevated triglycerides and low high-density lipoprotein cholesterol (HDL-C), typically associated with type 2 diabetes. METHODS: Data were reviewed from the largest fibrate study to date, the Fenofibrate Intervention and Event Lowering in Diabetes (FIELD) study which evaluated the effect of fenofibrate treatment in 9,795 patients with type 2 diabetes (about 80% without prior cardiovascular disease or microvascular complications). RESULTS: Although FIELD did not show a significant benefit with fenofibrate for major coronary events (the primary outcome), there was significant reduction in total cardiovascular events (relative risk reduction [RRR] 11%, p = 0.035 vs. placebo). The clinical benefits of f"
+  },
+  {
+   "pmid": "27456518",
+   "key": "27456518:SPRINT",
+   "record": {
+    "kind": "cites",
+    "target": "SPRINT",
+    "span": [
+     1332,
+     1348
+    ],
+    "confidence": 0.7
+   },
+   "span_text": "the SPRINT trial",
+   "abstract": "Several randomized trials compared a more versus less intensive blood pressure-lowering strategy on the risk of major cardiovascular events and death. Cumulative meta-analyses and trial sequential analyses can establish whether and when firm evidence favoring a specific intervention has been reached from accrued literature. Therefore, we conducted a cumulative trial sequential analysis of 18 trials that randomly allocated 53 405 patients to a more or less intensive blood pressure-lowering strategy. We sought to ascertain the extent to which trial evidence added to previously accrued data. Outcome measures were stroke, myocardial infarction, heart failure, cardiovascular death, and all-cause death. Achieved blood pressure was 7.6/4.5 mm Hg lower with the more intensive than the less intensive blood pressure-lowering strategy. For stroke and myocardial infarction, the cumulative Z curve crossed the efficacy monitoring boundary solely after the SPRINT (Systolic Blood Pressure Intervention Trial) study, thereby providing firm evidence of superiority of a more intensive over a less intensive blood pressure-lowering strategy. For cardiovascular death and heart failure, the cumulative Z c"
+  },
+  {
+   "pmid": "30789921",
+   "key": "30789921:SSCP",
+   "record": {
+    "kind": "cites",
+    "target": "SSCP",
+    "span": [
+     911,
+     925
+    ],
+    "confidence": 0.7
+   },
+   "span_text": "The SSCP group",
+   "abstract": "BACKGROUND: Structured secondary cardiovascular prevention programs (SSCP) following acute coronary syndromes (ACS) may reduce major adverse cardiovascular events (MACE) through better adherence to post-ACS recommendations. METHODS: Through a prospective multicenter cohort study, we compared the outcomes of two sequential post-ACS patient cohorts, the initial one receiving standard care (SC) followed by one receiving additional interventions (SSCP) aimed at improving patient education as well as healthcare provider and hospital systems. The primary endpoint was MACE at one year. Secondary endpoints included adherence to recommended therapies, attendance to cardiac rehabilitation (CR) and successful achievement of cardiovascular risk factor (CVRF) targets. RESULTS: In total, 2498 post-ACS patients from 4 Swiss university hospitals were included: 1210 vs 1288 in the SC and SSCP groups, respectively. The SSCP group demonstrated a significant increase in attendance to CR programs (RR 1.08, 95%CI 1.02-1.14, P = 0.006), despite not achieving the primary MACE endpoint (HR 0.97, 95%CI 0.77-1.22, P = 0.79). After age-stratification, significant reductions in cardiac death, MI and stroke eve"
+  },
+  {
+   "pmid": "35140128",
+   "key": "35140128:LUST",
+   "record": {
+    "kind": "derived",
+    "target": "LUST",
+    "span": [
+     1117,
+     1277
+    ],
+    "confidence": 0.9
+   },
+   "span_text": "post hoc analysis of the LUST trial showed that the use of lung ultrasound reduces the risk for repeated episodes of acute heart failure and repeated cardiovasc",
+   "abstract": "Fluid overload is a common complication in patients with CKD, particularly patients with kidney failure, a population with a very high risk for pulmonary edema. Lung ultrasound is now a well-validated technique that allows for reliable estimates of lung water in clinical practice. Several studies in patients with kidney failure documented a high prevalence of asymptomatic lung congestion of moderate to severe degree in this population, and this alteration was only weakly related with fluid excess as measured by bioimpedance spectroscopy. Furthermore, in these studies, lung congestion correlated in a dose-dependent fashion with death risk. In the Lung Water by Ultra-Sound Guided Treatment to Prevent Death and Cardiovascular Complications in High Risk Kidney Failure Patients with Cardiomyopathy (LUST) trial, a treatment strategy guided by lung ultrasound safely relieved lung congestion but failed to significantly reduce the risk for a combined end point including death, nonfatal myocardial infarction, and decompensated heart failure. However, in line with three trials in patients with heart failure, a post hoc analysis of the LUST trial showed that the use of lung ultrasound reduces "
+  },
+  {
+   "pmid": "41911941",
+   "key": "41911941:REPRIEVE",
+   "record": {
+    "kind": "cites",
+    "target": "REPRIEVE",
+    "span": [
+     660,
+     678
+    ],
+    "confidence": 0.7
+   },
+   "span_text": "The REPRIEVE trial",
+   "abstract": "BACKGROUND: Integrase strand-transfer inhibitors (INSTIs) are linked to weight gain, but data on their cardiometabolic effects, particularly major adverse cardiovascular events (MACE), are scarce. We aimed to estimate the risk of obesity, diabetes, hypertension, and MACE after switching to an INSTI in people with HIV at low-to-moderate cardiovascular risk. METHODS: In this retrospective cohort study, we used data from the global Randomized Trial to Prevent Vascular Events in HIV (REPRIEVE) to emulate a series of trials comparing switching to an INSTI versus remaining on a non-INSTI regimen on risk of incident obesity, diabetes, hypertension, and MACE. The REPRIEVE trial collected data across 12 countries from participants aged 40-75 years, on a stable antiretroviral therapy regimen for at least 6 months, with a CD4 count of >100 cells per \u03bcL, and with low-to-moderate risk for atherosclerotic cardiovascular disease. From this cohort, we included participants without a previous diagnosis of the outcomes or previous INSTI use and used data for a follow-up period of 5 years, until the outcome event, loss to follow-up, death, or study end. Data from emulated trials were pooled and hazar"
+  },
+  {
+   "pmid": "32067836",
+   "key": "32067836:SPRINT",
+   "record": {
+    "kind": "shared",
+    "target": "SPRINT",
+    "span": [
+     526,
+     631
+    ],
+    "confidence": 0.9
+   },
+   "span_text": "within the SPRINT trial including all participants who had information required to calculate a SCD score.",
+   "abstract": "BACKGROUND: Recent data suggest that population screening for risk of sudden cardiac death (SCD) may be feasible with risk scores that can be implemented in the electronic health record. But, there are no established therapeutic strategies to target lowering risk for SCD in the general population. Our aim was to evaluate the effect of the Systolic Blood Pressure Intervention Trial (SPRINT) intensive blood pressure intervention on SCD risk and cardiovascular (CV) outcomes. METHODS: We conducted a prospective cohort study within the SPRINT trial including all participants who had information required to calculate a SCD score. We classified SPRINT participants at baseline by randomized arm into high, intermediate and low SCD risk and followed them for a period of 12 months. We determined changes in SCD risk by comparing the baseline SCD risk score with the 12-month recalculated SCD risk score and determined the incidence of the primary SPRINT outcome and all-cause mortality. We used both linear regression and Cox proportional models to evaluate outcomes adjusted for CV risk, prevalent CV diseases, and randomization site. RESULTS: We included 8052 SPRINT participants who met our inclus"
+  },
+  {
+   "pmid": "30170330",
+   "key": "30170330:NET",
+   "record": {
+    "kind": "derived",
+    "target": "NET",
+    "span": [
+     398,
+     559
+    ],
+    "confidence": 0.9
+   },
+   "span_text": "secondary analysis of two published postpartum databases (the Pre-Eclampsia New Emerging Team [PE-NET] cohort and the Maternal Health Clinic [MHC] cohort) to det",
+   "abstract": "Cardiovascular disease (CVD) is the leading cause of death and disability among women, with more than half occurring in individuals with hypertension. New blood pressure criteria for the diagnosis of hypertension from the American College of Cardiology/American Heart Association recognize that there is no specific blood pressure threshold that is associated with vascular disease. We performed a secondary analysis of two published postpartum databases (the Pre-Eclampsia New Emerging Team [PE-NET] cohort and the Maternal Health Clinic [MHC] cohort) to determine the impact of the change in blood pressure criteria on the diagnosis of hypertension. The prevalence of hypertension in women with uncomplicated pregnancies (PE-NET control) was 22% compared with 56.4% in those who have had a pregnancy complicated by preeclampsia (PE, PE-NET patient) and 67.2% in those referred to the MHC due to a pregnancy complicated by any of the hypertensive disorders of pregnancy. It is well established that certain complications in pregnancy can reliably identify women with risk factors for future CVD. Thus, pregnancy and the postpartum afford a new opportunity for cardiovascular risk screening that coul"
+  },
+  {
+   "pmid": "35489133",
+   "key": "35489133:MAPT",
+   "record": {
+    "kind": "shared",
+    "target": "MAPT",
+    "span": [
+     192,
+     341
+    ],
+    "confidence": 0.9
+   },
+   "span_text": "data from the Multidomain Alzheimer Preventive Trial (MAPT), in which 1394 non-frail community-dwelling participants aged \u226570 years were followed up ",
+   "abstract": "OBJECTIVES: To examine the association of (1) high and low blood pressure (BP) and (2) antihypertensive (AH) drug use with incident frailty. STUDY DESIGN: We conducted a secondary analysis of data from the Multidomain Alzheimer Preventive Trial (MAPT), in which 1394 non-frail community-dwelling participants aged \u226570 years were followed up for 5 years. BP was measured once at baseline in a lying position using a validated electronic device. High BP was defined as systolic BP \u2265 140 mm Hg and/or diastolic BP \u2265 90 mm Hg, and low BP as systolic BP \u2264 110 mm Hg and/or diastolic BP \u2264 70 mm Hg. AH drugs were assessed at baseline and classified according to the Anatomical Therapeutic Chemical (ATC) code. MAIN OUTCOME MEASURES: Incident frailty over the 5 years was assessed using the Fried phenotype. Cox proportional hazards models were used for the analyses. RESULTS: Low BP was associated with a greater risk of frailty (HR = 1.43, 95% CI [1.07-1.92], p = 0.02) after adjustment for age, sex, education, AH drug use, BMI, diabetes, ischemic heart disease, congestive heart failure, AF, stroke, MAPT randomization group, sit-to-stand chair test and pre-frailty. Participants with low BP and those o"
+  },
+  {
+   "pmid": "38150260",
+   "key": "38150260:STRONG-HF",
+   "record": {
+    "kind": "derived",
+    "target": "STRONG-HF",
+    "span": [
+     531,
+     636
+    ],
+    "confidence": 0.6
+   },
+   "span_text": "secondary analysis of the STRONG-HF randomized clinical trial, conducted from May 2018 to September 2022.",
+   "abstract": "IMPORTANCE: The Safety, Tolerability, and Efficacy of Rapid Optimization, Helped by N-Terminal Pro-Brain Natriuretic Peptide Testing of Heart Failure Therapies (STRONG-HF) trial strived for rapid uptitration aiming to reach 100% optimal doses of guideline-directed medical therapy (GDMT) within 2 weeks after discharge from an acute heart failure (AHF) admission. OBJECTIVE: To assess the association between degree of GDMT doses achieved in high-intensity care and outcomes. DESIGN, SETTING, AND PARTICIPANTS: This was a post hoc secondary analysis of the STRONG-HF randomized clinical trial, conducted from May 2018 to September 2022. Included in the study were patients with AHF who were not treated with optimal doses of GDMT before and after discharge from an AHF admission. Data were analyzed from January to October 2023. INTERVENTIONS: The mean percentage of the doses of 3 classes of HF medications (renin-angiotensin system inhibitors, \u03b2-blockers, and mineralocorticoid receptor antagonists) relative to their optimal doses was computed. Patients were classified into 3 dose categories: low (<50%), medium (\u226550% to <90%), and high (\u226590%). Dose and dose group were included as a time-depende"
+  },
+  {
+   "pmid": "40845203",
+   "key": "40845203:SPRINT",
+   "record": {
+    "kind": "derived",
+    "target": "SPRINT",
+    "span": [
+     1384,
+     1495
+    ],
+    "confidence": 0.9
+   },
+   "span_text": "post hoc analysis of the SPRINT trial, exaggerated SBP increase on standing independently predicts incident AF.",
+   "abstract": "Exaggerated orthostatic changes in systolic blood pressure (SBP) were associated with adverse cardiovascular events. We aim to assess the association between orthostatic SBP changes and incident atrial fibrillation (AF). We performed a post hoc analysis of SPRINT (Systolic Blood Pressure Intervention Trial). Orthostatic SBP changes were defined as standing SBP minus seated SBP. Patients were grouped into tertiles of orthostatic SBP changes. We used Cox proportional regression models to assess the association of orthostatic SBP changes with incident AF. Among 8455 participants included in this analysis, 327 incident AF cases occurred during follow-up. After adjusting for age, female, race, smoking, alcohol use, history of cardiovascular disease, history of chronic kidney disease, and body mass index, an SBP increase \u22656 mmHg to standing was independently associated with a 43% higher risk of incident AF (HR: 1.43; 95% CI: 1.07-1.90; p = 0.014) compared to nonsignificant orthostatic SBP changes (>-4 to <6 mmHg). A SBP decrease \u22654 mmHg to standing showed a nonsignificant higher risk of developing AF compared to SBP changes of >-4 to <6 mmHg. In subgroup analysis, the results presented a"
+  },
+  {
+   "pmid": "29044764",
+   "key": "29044764:SPRINT",
+   "record": {
+    "kind": "derived",
+    "target": "SPRINT",
+    "span": [
+     376,
+     408
+    ],
+    "confidence": 0.6
+   },
+   "span_text": "post hoc analysis of the SPRINT.",
+   "abstract": "BACKGROUND: The Systolic Blood Pressure Intervention Trial (SPRINT; ClinicalTrials.gov, NCT01206062) reported reduced cardiovascular events by intensive blood pressure (BP) control amongst hypertensive patients without diabetes. However, the risk-benefit profile of intensive BP control may differ across estimated glomerular filtration rate (eGFR) levels. METHODS: This is a post hoc analysis of the SPRINT. Nondiabetic hypertensive adults (n = 9361) with eGFR >20 mL per min per 1.73 m2 were enrolled from 102 US facilities between November 2010 and March 2013 and were followed up until August 2015 (median follow-up, 3.26 years). Patients were randomly assigned to either a systolic BP target of <120 or <140 mmHg (for intensive or standard treatment, respectively). The outcomes of interests were the development of (i) fatal and nonfatal major cardiovascular events and (ii) acute kidney injury (AKI). RESULTS: The cardiovascular benefit from intensive treatment was attenuated with lower eGFR (Pinteraction = 0.019), whereas eGFR did not modify the adverse effect on AKI (Pinteraction = 0.179). Amongst 891 participants with eGFR <45 mL per min per 1.73 m2 , intensive treatment did not reduce"
+  },
+  {
+   "pmid": "40270333",
+   "key": "40270333:SPRINT",
+   "record": {
+    "kind": "shared",
+    "target": "SPRINT",
+    "span": [
+     282,
+     354
+    ],
+    "confidence": 0.9
+   },
+   "span_text": "using data from the Systolic Blood Pressure Intervention Trial (SPRINT).",
+   "abstract": "Visit-to-visit blood pressure variability (BPV) has been recognized as a cardiovascular risk factor, but its association with new-onset atrial fibrillation (AF) remains underexplored. This study investigated the relationship between BPV and AF incidence among hypertensive patients using data from the Systolic Blood Pressure Intervention Trial (SPRINT). Visit-to-visit BPV was quantified using standard deviation (SD), coefficient of variation (CV), and average real variability (ARV) of systolic and diastolic blood pressure measurements. Participants were stratified into three groups based on systolic BPV tertiles. AF cases were identified via follow-up electrocardiograms and reports of AF-related serious adverse events. After excluding individuals with baseline AF or missing BPV data, 7378 patients were analyzed over a median follow-up of 3.8 years. The incidence of new-onset AF increased across ascending tertiles of systolic BPV (CV), with rates of 2.5% (62 cases), 4.1% (104 cases), and 5.2% (127 cases) observed in the lowest to highest tertiles, respectively. After adjusting for age, race, blood pressure, and cardiovascular risk factors, the hazard ratios for AF in the second and t"
+  },
+  {
+   "pmid": "31412746",
+   "key": "31412746:ACC/AHA guideline",
+   "record": {
+    "kind": "copy",
+    "target": "ACC/AHA guideline",
+    "span": [
+     192,
+     334
+    ],
+    "confidence": 0.8
+   },
+   "span_text": "based on the 2017 American College of Cardiology/American Heart Association (ACC/AHA) High Blood Pressure Guidelines has not been established.",
+   "abstract": "Background Arterial stiffness predicts both cardiovascular events and incident hypertension. However, whether brachial-ankle pulse wave velocity (baPWV) is predictive of incident hypertension based on the 2017 American College of Cardiology/American Heart Association (ACC/AHA) High Blood Pressure Guidelines has not been established. We performed a large cohort study to investigate whether incident hypertension could be predicted from baPWV measurements as a measure of arterial stiffness, even when applying updated hypertension criteria. Methods and Results A total of 10 360 Korean adults who underwent baPWV examination during a health-screening program between 2010 and 2016 were enrolled. Hypertension was defined according to the 2017 ACC/AHA Guidelines as 130/80 mm Hg. Cox proportional hazard analysis was used to assess the risk of incident hypertension according to baPWV quartiles. The mean age of the study subjects was 40.2 years and 75.6% were men. During the follow-up period (median 2.17 years), 2000 subjects (19.3%) developed hypertension. The subjects in the highest baPWV quartile group showed an increased risk of hypertension compared with the lowest baPWV quartile group as"
+  },
+  {
+   "pmid": "27289122",
+   "key": "27289122:ACCORD",
+   "record": {
+    "kind": "cites",
+    "target": "ACCORD",
+    "span": [
+     837,
+     853
+    ],
+    "confidence": 0.7
+   },
+   "span_text": "the ACCORD trial",
+   "abstract": "OBJECTIVES: This study investigated whether the beneficial effects of intensive glycemic control and fenofibrate treatment of dyslipidemia in reducing retinopathy progression demonstrated in the Action to Control Cardiovascular Risk in Diabetes (ACCORD) Eye Study persisted beyond the clinical trial. RESEARCH DESIGN AND METHODS: The ACCORD Study (2003-2009) randomized participants with type 2 diabetes to intensive or standard treatment for glycemia (A1C level at <6.0% [42 mmol/mol] vs. 7.0-7.9% [53-63 mmol/mol]), systolic blood pressure (<120 vs. 140 mmHg), and dyslipidemia (fenofibrate [160 mg] plus simvastatin or placebo plus simvastatin). ACCORD Eye Study participants, who had baseline and year 4 eye examinations and fundus photographs, were reexamined in the ACCORD Follow-On (ACCORDION) Eye Study (2010-2014) 4 years after the ACCORD trial closeout. The outcome measure was diabetic retinopathy progression of three or more steps on the Early Treatment Diabetic Retinopathy Study scale. RESULTS: Diabetic retinopathy progressed in 5.8% with intensive glycemic treatment versus 12.7% with standard (adjusted odds ratio [aOR] 0.42, 95% CI 0.28-0.63, P < 0.0001), 7.5% with intensive blood"
+  },
+  {
+   "pmid": "31302044",
+   "key": "31302044:MESA",
+   "record": {
+    "kind": "cites",
+    "target": "MESA",
+    "span": [
+     583,
+     598
+    ],
+    "confidence": 0.7
+   },
+   "span_text": "the MESA cohort",
+   "abstract": "OBJECTIVES: The aim of this study was to determine if plasma eicosapentaenoic acid (EPA) abundance (%EPA) is associated with reduced hazard for primary heart failure (HF) events in the MESA (Multi-Ethnic Study of Atherosclerosis) trial. BACKGROUND: Clinical trials suggest that omega-3 polyunsaturated fatty acids (\u03c93 PUFAs) prevent sudden death in coronary heart disease and HF, but this is controversial. In mice, the authors demonstrated that the \u03c93 PUFA EPA prevents contractile dysfunction and fibrosis in an HF model, but whether this extends to humans is unclear. METHODS: In the MESA cohort, the authors tested if plasma phospholipid EPA predicts primary HF incidence, including HF with reduced ejection fraction (EF) (EF <45%) and HF with preserved EF (EF \u226545%) using Cox proportional hazards modeling. RESULTS: A total of 6,562 participants 45 to 84 years of age had EPA measured at baseline (1,794 black, 794 Chinese, 1,442 Hispanic, and 2,532 white; 52% women). Over a median follow-up period of 13.0 years, 292 HF events occurred: 128 HF with reduced EF, 110 HF with preserved EF, and 54 with unknown EF status. %EPA in HF-free participants was 0.76% (0.75% to 0.77%) but was lower in pa"
+  },
+  {
+   "pmid": "41684662",
+   "key": "41684662:HVC",
+   "record": {
+    "kind": "derived",
+    "target": "HVC",
+    "span": [
+     585,
+     709
+    ],
+    "confidence": 0.9
+   },
+   "span_text": "based on the presence of risk factors: group 1 (no risk factors), group 2 (either PH or HVC), and group 3 (both PH and HVC).",
+   "abstract": "INTRODUCTION: Cardiovascular disease remains the leading cause of mortality in maintenance hemodialysis (MHD) patients. While both pulmonary hypertension (PH) and heart valve calcification (HVC) are established independent risk factors for adverse outcomes in this population, the synergistic effect of these two echocardiographic parameters on cardiovascular prognosis has not been well investigated. METHODS: In this prospective study, we analyzed clinical and echocardiographic data from 302 MHD patients over a two-year follow-up period. Patients were stratified into three groups based on the presence of risk factors: group 1 (no risk factors), group 2 (either PH or HVC), and group 3 (both PH and HVC). Survival analysis was performed using Kaplan-Meier curves, and Cox regression models were employed to evaluate the impact on all-cause mortality, cardiovascular mortality, and new-onset cardiovascular events (CV events). RESULTS: During follow-up, 63 patients (20.9%) died from all causes, with 36 deaths (57.1%) attributed to CV events. Cardiovascular mortality was significantly higher in groups 2 (13.2%) and 3 (30.2%) compared to group 1 (5.1%; p < 0.001). New-onset CV events occurred "
+  }
+ ],
+ "hand_check_abstentions": [
+  {
+   "pmid": "6140277",
+   "abstract": "A double-blind crossover trial was performed to assess the effect of metoprolol in 10 patients (mean age 55 years) with severe dilated cardiomyopathy. All patients clinically had idiopathic dilated cardiomyopathy; however, at coronary angiography, four had occult coronary disease. All were in New York Heart Association functional class III with a left ventricular ejection fraction less than 35% as assessed by rest radionuclide ventriculography. Studies were performed before treatment, after 4 weeks of metoprolol therapy and after 4 weeks of placebo administration. Erect bicycle sprint exercise was used to determine maximal work load. Hemodynamic variables and radionuclide left ventricular ejection fraction were recorded at rest and during graded supine bicycle exercise. Cardiac medications were unchanged throughout the trial. The mean (+/- standard error of the mean) dose of metoprolol was 130 +/- 13 mg/day. Metoprolol did not change symptoms, chest X-ray findings or exercise tolerance (baseline 700 +/- 73, placebo 690 +/- 85, metoprolol 710 +/- 81 kilopond-meters [kpm]/min). Metoprolol produced a significant decrease in heart rate at rest and during exercise (p less than 0.001). M",
+   "markers": []
+  },
+  {
+   "pmid": "37793365",
+   "abstract": "INTRODUCTION: Hyporesponsiveness to erythropoiesis-stimulating agents (ESAs) has been associated with increased mortality and cardiovascular events in patients with chronic kidney disease. We hypothesized that the prediction of ESA resistance during ESA administration would be very useful in deciding on a treatment plan. METHODS: Patients enrolled in a randomized controlled trial to evaluate renal prognosis in anemic patients with non-dialysis-dependent chronic kidney disease with hyporesponsiveness to ESA were included; the patients had different target hemoglobin levels. A landmark analysis was performed at 3 months into the study. To construct a predictive model for the severe ESA hypo-responder group, in which there was no increase in hemoglobin even with active treatment, background factors and serum test items that affect anemia at study entry were included in a logistic regression model, the area under the curve (AUC) and 95% confidence intervals (CI) were estimated, and sensitivity and specificity were calculated. This study was a post hoc sub-analysis of a randomized controlled trial. RESULTS: The AUC for the 19 existing risk factors as predictors was 0.783 (95% CI: 0.711-",
+   "markers": [
+    "Patients enrolled in"
+   ]
+  },
+  {
+   "pmid": "39160218",
+   "abstract": "BACKGROUND AND OBJECTIVES: Individuals with obesity often face obesity bias, which may influence the delivery of appropriate medical care. Our aim is to evaluate the adequacy of therapeutic decisions regarding the pharmacological treatment for hypertension in patients with diabetes, both with and without obesity. METHODS: This is a multicentric cross-sectional study of patients with type 2 diabetes and arterial hypertension who received outpatient care in Southern Brazil. Participants were stratified into two groups according to their body mass index (BMI): lower weight (BMI < 25.0 kg/m2) and with obesity (BMI \u2265 30.0 kg/m2). The primary outcome evaluated was the difference in pharmacological treatment decisions for hypertension between groups, considering individualized hypertension targets from American Diabetes Association (ADA), European Society of Hypertension (ESH), and European Society of Cardiology (ESC) guidelines. Data were analyzed as a binary endpoint (failure to receive treatment intensification vs. receiving treatment intensification when necessary) and groups were compared using multivariable logistic regression. RESULTS: This study included 204 participants, of which",
+   "markers": [
+    "according to"
+   ]
+  },
+  {
+   "pmid": "32764524",
+   "abstract": "A healthy lifestyle and regular physical activity are highly recommended for older adults. However, there has been limited research into testing lifestyle intervention effects on physical activity in older adults with hypertension. The purpose of this study was to assess the association of lifestyle intervention effects with physical activity and blood pressure in older adults with hypertension, accounting for social support and perceived stress as control variables. This study performed a secondary analysis of a two-arm randomized controlled trial. A total of 196 participants were randomly assigned to a six-month lifestyle intervention group or a control group. Hierarchical multiple regression analyses demonstrated that lifestyle intervention effects were not significantly associated with improvements in physical activity and blood pressure, but the final regression models were statistically significant (all p < 0.001). The result revealed that only physical activity frequency at baseline was significantly related to improvement in physical activity. Systolic blood pressure (SBP) at baseline and monthly income were significantly associated with change in SBP, while age and diastol",
+   "markers": [
+    "secondary analysis of"
+   ]
+  },
+  {
+   "pmid": "33091627",
+   "abstract": "BACKGROUND: Both hypertension and grip strength (GS) are predictors of mortality and cardiovascular disease (CVD), but whether these risk factors interact to affect CVD and all-cause mortality is unknown. This study sought to investigate the associations of GS with the risk of major CVD incidence, CVD mortality, and all-cause mortality in patients with hypertension. METHODS: GS was measured using a Jamar dynamometer (Sammons Preston, Bolingbrook, IL, USA) in participants aged 35-70 years from 12 provinces included in the Prospective Urban Rural Epidemiology China Study. Cox frailty proportional hazards models were used to examine the associations of GS and hypertension and the outcomes of all-cause mortality and CVD incidence/mortality. RESULTS: Among 39,862 participants included in this study, 15,964 reported having hypertension, and 9095 had high GS at baseline. After a median follow-up of 8.9 years (interquartile range, 6.7-9.9 years), 1822 participants developed major CVD, and 1250 deaths occurred (388 as a result of CVD). Compared with normotensive participants with high GS, hypertensive patients with high GS had a higher risk of major CVD incidence (hazard ratio (HR) = 2.39; ",
+   "markers": []
+  },
+  {
+   "pmid": "31403360",
+   "abstract": "Background: Hypertension is a major modifiable risk factor for coronary artery disease (CAD), the main cause of death in women. While association between the two is frequent, limited data exist regarding the feasibility of blood pressure (BP) management and outcomes in women across the spectrum of CAD. Accordingly, we analyzed patient characteristics, BP control rates, and outcomes among hypertensive women with CAD, enrolled in The INternational VErapamil SR-trandolapril STudy (INVEST). Methods: The 11,770 hypertensive women with CAD in INVEST were studied based on presence (n = 3,879) or absence (n = 7,891) of history of myocardial infarction (MI) or coronary revascularization, to evaluate outcomes across risk groups based on severity of CAD. Results: Women with prior MI or revascularization were older (4 years, p < 0.0001), were predominantly white (62% vs. 29%), and had more associated comorbidities than women without these events. At 24 months, JNC VI (sixth report of the Joint National Committee on Prevention, Detection, Evaluation, and Treatment of High Blood Pressure) BP control rates were lower in women with prior MI or revascularization (57% vs. 64%, p < 0.0001), despite m",
+   "markers": []
+  },
+  {
+   "pmid": "21090924",
+   "abstract": "The rate of control of hypertension remains suboptimal despite widespread educational programs and an increasing number of novel medications. The combination of drugs with different mechanisms of action has become an alternative to improve blood pressure reduction and control, enhance adherence to the treatment and reduce adverse events. Telmisartan and amlodipine in monotherapy provide effective blood pressure lowering at all clinically relevant doses, but less than 50% of stage 1 and 2 achieve the target blood pressure. This article presents most of the relevant results of combinations of telmisartan plus amlodipine, at different doses, in hypertensive patients and a post hoc analysis of subgroups including the elderly, Type 2 diabetics, those with systolic hypertension and obese patients.",
+   "markers": [
+    "post hoc analysis of"
+   ]
+  },
+  {
+   "pmid": "21962618",
+   "abstract": "BACKGROUND: Vasoconstrictor therapy has been advocated as treatment for hepatorenal syndrome (HRS). Our aim was to explore across all tested vasoconstrictors whether achievement of a substantial increase in arterial blood pressure is associated with recovery of kidney function in HRS. STUDY DESIGN: Pooled analysis of published studies identified by electronic database search. SETTING & POPULATION: Data pooled across 501 participants in 21 studies. SELECTION CRITERIA FOR STUDIES: Human studies evaluating the efficacy of a vasoconstrictor administered for 72 hours or longer in adults with HRS type 1 or 2. INTERVENTION: Vasoconstrictor therapy. OUTCOMES & MEASUREMENTS: Cohorts' mean arterial pressure (MAP), serum creatinine level, urinary output, and plasma renin activity (PRA) at baseline and subsequent times during treatment. Linear regression models were constructed to estimate mean daily changes in MAP, serum creatinine level, urinary output, and PRA for each study subgroup. Correlations were used to assess for association between variables. RESULTS: An increase in MAP is associated strongly with a decrease in serum creatinine level, but is not associated with an increase in urina",
+   "markers": [
+    "Pooled analysis of",
+    "participants in"
+   ]
+  },
+  {
+   "pmid": "37101049",
+   "abstract": "Metabolic diseases dramatically affect the life of men and women from infancy up to old age in different and manifold ways and are a major challenge for the healthcare system. The treating physicians are confronted with the different needs of women and men in the clinical routine. Gender-specific differences affect pathophysiology, screening, diagnostic and treatment strategies of diseases as well as the development of complications and mortality rates. Impairments in glucose and lipid metabolism, regulation of energy balance and body fat distribution and therefore the associated cardiovascular diseases, are greatly influenced by steroidal and sex hormones. Furthermore, education, income and psychosocial factors play an important role in the development of obesity and diabetes differently in men and women. Males appear to be at greater risk of diabetes at a younger age and at a lower body mass index (BMI) compared to women but women feature a dramatic increase in the risk of diabetes-associated cardiovascular diseases after the menopause. The estimated future years of life lost owing to diabetes is somewhat higher in women than men, with a higher increase in vascular complications ",
+   "markers": []
+  },
+  {
+   "pmid": "40469023",
+   "abstract": "BACKGROUND: GLP-1RAs (glucagon-like peptide-1 receptor agonists) have consistently demonstrated a protective effect against ischemic stroke. However, whether this benefit also extends to nontraumatic intracerebral hemorrhage (ICH) remains unknown. Given the blood pressure-lowering and anti-inflammatory properties of GLP-1RAs, we aimed to evaluate their potential impact on ICH risk in patients with type 2 diabetes. METHODS: We conducted a retrospective cohort study using global health care data from the TriNetX network. Patients with type 2 diabetes who used GLP-1RAs (n=326 777) were compared with those who did not (n=643 614). Propensity score matching (1:1) was performed to balance baseline characteristics, and follow-up was conducted for up to 4 years. The primary outcomes included all-cause mortality, ischemic stroke, and ICH (overall and by location). Hazard ratios and 95% CIs were calculated to assess the mean treatment effect in the treated group. RESULTS: After propensity score matching (resulting in 2 balanced groups of 255 460 individuals each), GLP-1RAs use was associated with a lower risk of ICH (hazard ratio, 0.743 [95% CI, 0.684-0.807]). The lower ICH risk associated w",
+   "markers": [
+    "data from"
+   ]
+  },
+  {
+   "pmid": "25427719",
+   "abstract": "BACKGROUND: Partial agonists are a subclass of beta blockers used to treat hypertension in many countries. Partial agonist act by stimulating beta receptors when they are quiescent and blocking beta receptors when they are active. The blood pressure (BP) lowering effect of partial agonist beta blockers has not been quantified. OBJECTIVES: To quantify the dose-related effects of various partial agonists beta blockers on systolic blood pressure (SBP), diastolic blood pressure (DBP) and heart rate versus placebo in patients with primary hypertension. SEARCH METHODS: We searched the Hypertension Group Specialised Register, the Cochrane Central Register of Controlled Trials (CENTRAL), MEDLINE, MEDLINE In-Process, EMBASE and ClinicalTrials.gov for randomized controlled trials up to October 2014. The WHO International Clinical Trials Registry Platform (ICTRP) is searched for inclusion in the Group's Specialised Register. SELECTION CRITERIA: Randomized double-blinded placebo-controlled parallel or cross-over trials. Studies must contain a partial agonist monotherapy arm with fixed dose. Patients enrolled into the studies must have primary hypertension at baseline (defined as SBP/DBP > 140/",
+   "markers": [
+    "Based on the"
+   ]
+  },
+  {
+   "pmid": "29449941",
+   "abstract": "BACKGROUND: A significant number of cardiovascular disease (CVD)-related deaths occur in developing countries. An increasing prevalence of CVD is associated with a change in the macro-economy of these countries. In this post hoc analysis, CVD risk factor (CVDRF) prevalence is evaluated across countries based on national income in the Africa and Middle East Region (AfME). METHODS: Data from the Africa Middle East Cardiovascular Epidemiological (ACE) study were used; a cross-sectional study in 14 AfME countries (94 clinics) from July 2011-April 2012, which evaluated CVDRF prevalence in stable adult outpatients. World Bank definitions were used to classify countries as low-income (LI), lower-middle-income (LMI), upper-middle-income (UMI) or high-income (HI) countries. Four thousand three hundred seventy-eight subjects were recruited where 260 (6%), 1324 (30%), 1509 (35%) and 1285 (29%) were from LI, LMI, UMI, and HI countries, respectively. RESULTS: Of all the CVDRFs evaluated, almost two-thirds of the study population across the national income groups had abdominal obesity and dyslipidemia. Countries in the HI category were associated with a higher prevalence of diabetes (32%), obesi",
+   "markers": [
+    "Data from",
+    "in line with"
+   ]
+  },
+  {
+   "pmid": "28770972",
+   "abstract": "BACKGROUND: Low cardiac output syndrome remains a serious complication, and accounts for substantial morbidity and mortality in the postoperative course of paediatric patients undergoing surgery for congenital heart disease. Standard prophylactic and therapeutic strategies for low cardiac output syndrome are based mainly on catecholamines, which are effective drugs, but have considerable side effects. Levosimendan, a calcium sensitiser, enhances the myocardial function by generating more energy-efficient myocardial contractility than achieved via adrenergic stimulation with catecholamines. Thus potentially, levosimendan is a beneficial alternative to standard medication for the prevention of low cardiac output syndrome in paediatric patients after open heart surgery. OBJECTIVES: To review the efficacy and safety of the postoperative prophylactic use of levosimendan for the prevention of low cardiac output syndrome and mortality in paediatric patients undergoing surgery for congenital heart disease. SEARCH METHODS: We identified trials via systematic searches of CENTRAL, MEDLINE, Embase, and Web of Science, as well as clinical trial registries, in June 2016. Reference lists from pri",
+   "markers": [
+    "according to",
+    "participants in",
+    "meta-analysis of"
+   ]
+  },
+  {
+   "pmid": "41679077",
+   "abstract": "BACKGROUND: Pulmonary arterial hypertension (PAH) is a progressive vasculopathy with substantial mortality. Although clinical risk stratification is established, the prognostic contribution of psychological factors remains insufficiently defined, particularly in Asian cohorts. OBJECTIVE: To evaluate psychological and clinical predictors of all-cause mortality in Taiwanese adults with PAH. METHODS: In this single-center observational study, 80 patients with confirmed PAH underwent assessment of affect using the Positive and Negative Affect Schedule and health-related quality of life using the Minnesota Living with Heart Failure Questionnaire in Pulmonary Hypertension (MLHF-pH); clinical risk was classified by the COMPERA 2.0 model. Survival was ascertained from medical records through June 2025. Cox proportional hazards models were applied to identify mortality predictors. RESULTS: Survival rates at 1, 3, 5, and 10 years were 97.5%, 87.5%, 78.7%, and 65.2%, respectively. In univariable analyses, age \u2265 60 years, unemployment, lower positive affect, higher negative affect, higher MLHF-pH scores, and higher COMPERA risk were significantly associated with mortality. In multivariable ana",
+   "markers": []
+  },
+  {
+   "pmid": "33448580",
+   "abstract": "AIMS: To determine whether a strategy of intensive blood pressure control reduces the risk of heart failure (HF) events consistently across the spectrum of kidney function and albuminuria. METHODS AND RESULTS: SPRINT was a randomized clinical trial in which 9361 individuals \u226550 years, at high risk for or with cardiovascular disease, a systolic blood pressure of 130-180 mmHg, but without diabetes, were randomized to intensive (target <120 mmHg) vs. standard (target <140 mmHg) blood pressure control. We assessed whether estimated glomerular filtration rate (eGFR) and urine albumin-to-creatinine ratio (UACR) modified the effects of the blood pressure control strategy in reducing HF events (either hospitalization or emergency department visits) and the composite of HF events or cardiovascular death, using Cox proportional hazards regression and restricted cubic splines. Of the 9361 individuals included in SPRINT, eGFR and UACR were available for 9324 (99.6%) and 8913 (95.2%) subjects, respectively, including 2650 (28.4%) with eGFR <60 mL/min/1.73 m2 and 248 (2.8%) with UACR >300 mg/g. During a median follow-up of 3.2 years (range 0-4.8 years), 160 (1.8%) participants had HF events and ",
+   "markers": []
+  }
+ ]
+}
