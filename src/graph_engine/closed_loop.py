@@ -251,7 +251,7 @@ def _flags(policy: str) -> set:
     f = set(parts[1:])
     if "all" in f:
         f = {"guard", "reliability", "replay"}
-    if f - {"guard", "guard2", "burst", "eopt", "eoptmix", "reliability", "replay", "majority"}:
+    if f - {"guard", "guard2", "burst", "eopt", "eoptmix", "total", "reliability", "replay", "majority"}:
         raise ValueError(policy)
     if len(f & {"guard", "guard2", "burst", "eopt", "eoptmix"}) > 1:
         raise ValueError(policy)

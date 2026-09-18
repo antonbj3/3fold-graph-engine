@@ -503,3 +503,10 @@ def test_e_optimal_probe_is_flat_in_the_exact_max_min_and_decides_on_the_tied_we
     twin = RegimePosterior(0.0, 1.0, n_grid=8); twin.claims = list(rp.claims); twin.probes = list(rp.probes)
     twin.weakest_direction_probe(0.95, mix=True)
     assert abs(twin._eopt_lambda * g_star - d_star) < 1e-12, (twin._eopt_lambda, g_star, d_star)
+
+
+def test_total_value_probe_is_at_least_the_sign_value_and_exact():
+    from graph_engine.regime_posterior import RegimePosterior
+    rp = RegimePosterior(0.0, 1.0); rp.add_claim(0.05, 0.25, 1, 3); rp.add_claim(0.75, 0.95, 1, 3)
+    xs, gs = rp.best_probe(0.95); xm, gm = rp.model_check_probe(0.95); xt, gt = rp.total_value_probe(0.95)
+    assert gt >= max(gs, gm) - 1e-12 and gt <= gs + gm + 1e-12

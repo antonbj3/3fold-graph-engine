@@ -331,6 +331,13 @@ Three additions to the loop, same 40 worlds, paired against `engine` (1.24 at bu
   4 of 25 collisions (baseline 7), the mixed rule +0.17. The second transition is not unidentifiable in the max-min sense; it is
   LOW-PRIOR, and what buys it is the pair purchase with a learned p_two and the majority reading. Two allocation rules refuted
   (burst, E-optimal); the diagnosis stands as a budget statement.
+- **the correctly priced one-step rule (e21e, `total_value_probe` = ΔU + ΔH_family in the same bits):** with replay and majority
+  1.053 (−0.026 ± 0.07 paired, 19 of 40), the best-calibrated run so far (gap −0.015), but 3 of 25 collisions; without replay 0 of 25.
+  Conclusion, with e33's theorem: the price was not the whole story. The first probe toward a second transition has ≈ 0 marginal value
+  on its own (the one-transition family still explains everything) and the second has a large value GIVEN the first — increasing
+  returns, the non-submodular case e33 exhibited. A one-step greedy rule cannot buy that at any price; a two-step purchase can, which
+  is why the probe PAIR (guard2) is the only rule that found collisions (7 of 25). Rule: purchases with increasing returns need
+  lookahead of their own depth; the value rule is one-step by construction.
 
 **One quadratic form (e24, `precision_form`).** Exact to machine precision: effective resistance = (e_i−e_j)ᵀJ⁺(e_i−e_j) (1e-16);
 the GLS estimate and variance of `margin_net` = posterior mean and variance of the observation block (0.0 / 4e-18, including a

@@ -225,6 +225,32 @@ class RegimePosterior:
                 best = (float(x), now - after)
         return best
 
+    def total_value_probe(self, reliability: float = 0.95, lam: float = 1.0) -> tuple[float, float]:
+        """(x, gain) maximizing ΔU(x) + λ·ΔH_family(x): the sign potential's expected drop PLUS the expected drop of the entropy
+        of the one-vs-two-transition indicator, both in bits, exact over the two outcomes. e33 proved the value rule prices a
+        collision probe ~10× too low when the one-transition family already explains the claims (the hole in e21 is the price,
+        not the location); adding the family entropy to the same currency is the correctly priced rule. λ = 1 = same bits."""
+        cells, w, F, post = self._with_probes()
+        pp = post @ F; now_u = float(self._u(pp) @ w)
+        two = np.zeros(len(post)); two[self._n_one:] = 1.0
+        h = lambda p: 0.0 if p <= 0 or p >= 1 else -(p * math.log2(p) + (1 - p) * math.log2(1 - p))
+        now_f = h(float(post @ two)) if len(post) > self._n_one else 0.0
+        best = (float(cells[0].mean()), -1.0)
+        for c in range(len(cells)):
+            f = F[:, c]; after_u = after_f = 0.0
+            for sg in (1, -1):
+                like = (f if sg > 0 else 1 - f) * reliability + (1 - (f if sg > 0 else 1 - f)) * (1 - reliability)
+                pout = float(post @ like)
+                if pout <= 0:
+                    continue
+                q = post * like / pout
+                after_u += pout * float(self._u(q @ F) @ w)
+                after_f += pout * (h(float(q @ two)) if len(post) > self._n_one else 0.0)
+            gain = (now_u - after_u) + lam * (now_f - after_f)
+            if gain > best[1]:
+                best = (float(cells[c].mean()), gain)
+        return best
+
     def model_check_probe(self, reliability: float = 0.95) -> tuple[float, float]:
         """(x, expected drop of the entropy of the FAMILY indicator one-vs-two transitions). The value rule `best_probe`
         buys probes that lower the sign potential; when the one-transition family already explains the claims it never
