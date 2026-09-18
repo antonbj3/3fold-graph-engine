@@ -2,8 +2,10 @@
 
 Every number below is produced by a script in this directory (`python3 examples/engine_experiments/<script>.py`;
 seeds fixed; result JSON next to the script). e1, e3, e3b, e3c, e6, e8, e8b download the public SNAP graphs
-cit-HepTh / cit-HepPh to `$HUNT_DATA`. e7 needs a local copy of Qwen2.5-0.5B-Instruct (`$JUDGE_MODEL`); its
-measured answers are shipped as `e7_probabilities.npy`, so e7b, e9, e10 run without the model.
+cit-HepTh / cit-HepPh to `$HUNT_DATA`; e19 also uses the SNAP cit-HepTh abstracts; e23 fetches hep-ex abstracts from the
+arXiv API into `$HUNT_DATA`. e7, e13, e14, e20, e22 need a local Qwen2.5-Instruct (`$JUDGE_MODEL`, 0.5B / 1.5B / 3B; `JUDGE_TAG`
+suffixes the output; `E7_DEVICE=cuda`); the 0.5B answers are shipped as `e7_probabilities.npy` (1.5B and 3B as `_1p5b`, `_3b`),
+so e7b, e9, e10, e18 run without the model. e15 and e22 use QuaRTz (Tafjord et al. 2019, CC BY 4.0) from the Hugging Face hub.
 Test graphs with planted truth are labelled TEST; `curated_two_graphs.json` is a hand-written fixture from public
 textbook relations. No private graph is included or was used for any number in this file.
 
@@ -12,10 +14,15 @@ textbook relations. No private graph is included or was used for any number in t
 A graph is a JSON object. All four record types share `sources`, the lineage that decides what counts as independent.
 
 ```
-sources   [{"id": "Hall1951", "derives_from": []}, {"id": "Textbook", "derives_from": ["Hall1951", "Petch1953"]}]
+sources   [{"id": "Hall1951", "derives_from": []}, {"id": "Textbook", "derives_from": ["Hall1951", "Petch1953"]},
+           {"id": "CDF-2012", "shares": {"CDF": 0.5}}]        three lineage states: independent / copy / partially shared error
+concepts  [{"id": "grain_size", "aliases": ["d", "mean grain diameter"]}]   the alias table two graphs are joined through
 claims    [{"id", "subject", "object", "sign": +1|-1, "validity": {"grain_size_nm": [25, 1e5]}, "evidence": [source ids], "cost"}]
-edges     [{"id", "between": [var, var], "reports": [{"margin": 0.12, "sigma": 0.05, "sources": [ids], "validity": {...}}], "weight", "cost"}]
+edges     [{"id", "between": [var, var], "reports": [{"margin": 0.12, "sigma": 0.05, "sources": [ids], "validity": {...},
+                                                      "attributes": {"age": 63, "site": "B"}}], "weight", "cost"}]
+                                                     attributes = what is known about the report's setting; hidden_variable reads them
 scales    {"grain_size_nm": "log"}                       optional; default linear
+profile   EngineProfile as JSON (profile.py): the owner's assumptions, validated; shipped next to the graph
 nodes     the existing ANCHOR_GRAPH node: id, claim, type, status, depends_on, risk, cost, evidence
 ```
 `margin` = (capacity − demand) / scale, negative = violated. `sigma` is its standard deviation; without it
@@ -63,6 +70,7 @@ corpus the gate abstains on all 57 papers from title and abstract. The modules b
 | `numeric_rules` | numbers with uncertainty out of text: v ± s, asymmetric, stat ⊕ syst, CI, ranges, powers of ten, unit prefixes | deterministic; abstains when no quantity phrase is found; feeds `margin_net` (value = margin, σ) |
 | `closed_loop` | the engine choosing probes against a world with known sign structure, scored against the truth | world of ≤ 1-transition sign functions with sourced, copied, unreliable claims; policies engine / copies / random / oracle; wrong measure and believed wrong measure |
 | `polarity_rules` | the sign a sentence asserts between two quantities, symbolically | one direction word per quantity per clause, negation flips, last clause wins, composition by product; abstains outside its lexicon (English only) |
+| `representation_probe` | a second reader: a linear direction in a frozen model's mid layers, trained on the rule's labels, with its own lineage | reads text that contradicts the model's prior where the token output does not; inherits the genre of its training sentences (e22) |
 | `typed_extraction` | the stubbed prose → `Claim` step of `paper_graph/pipeline.py` | yes/no fields from the target node's claim; balanced lenses; isotonic calibration of the pooled log-odds; confidence = Π max(p, 1−p) = P(whole claim right); `agree` adds the log-odds of a second, independent judge |
 
 ## Measured
