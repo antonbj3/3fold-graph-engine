@@ -169,6 +169,7 @@ class InferredLink:
 @dataclass
 class Federation:
     reliability: float = 0.75     # prior P(an independent origin reports the true sign)
+    reliability_by_root: dict = field(default_factory=dict)   # per-origin overrides (source_reliability.estimate)
     transitivity: float = 0.6     # prior P(a two-step chain composes), used only to score inferred links
     use_lineage: bool = True      # False = every evidence item counts as independent (the naive baseline)
     use_validity: bool = True     # False = boxes ignored (plain ABC / plain vote baseline)
@@ -255,7 +256,15 @@ class Federation:
         pos = [s for c in cl if c["sign"] > 0 for s in c["evidence"]]
         neg = [s for c in cl if c["sign"] < 0 for s in c["evidence"]]
         npos, nneg = self.n_eff(pos), self.n_eff(neg)
-        lo = (npos - nneg) * math.log(self.reliability / (1 - self.reliability))
+        if self.reliability_by_root:
+            # per-origin weights: each root votes once (copies collapsed), with log-odds log(r_root/(1−r_root))
+            lo = 0.0
+            for sign, srcs in ((1, pos), (-1, neg)):
+                for root in {r for s in srcs for r in self.roots(s)}:
+                    rr = self.reliability_by_root.get(root, self.reliability)
+                    lo += sign * math.log(rr / (1 - rr))
+        else:
+            lo = (npos - nneg) * math.log(self.reliability / (1 - self.reliability))
         return 1 / (1 + math.exp(-lo)), npos, nneg
 
     # -- conf / boundary ---------------------------------------------------------------------------

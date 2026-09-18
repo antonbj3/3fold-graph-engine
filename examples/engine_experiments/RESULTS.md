@@ -56,6 +56,7 @@ corpus the gate abstains on all 57 papers from title and abstract. The modules b
 | `pooled_screening` | how many candidates per pooled question | two-stage Dorfman with noisy tests, closed forms |
 | `plan_value` | probing and working in one currency | settle cost per node by a dynamic programme over instruments (cost, reliability) with admission level τ; nodes ordered by (1 − p)/settle cost; cheap-instrument value = S_expensive − S_all ≥ 0 |
 | `record_guarantee` | admit extracted records so that ≥ 1 − α of the admitted are entirely right, distribution-free | score = least certain field; threshold = largest of 20 quantile candidates whose Clopper–Pearson (1 − δ/20) bound is ≤ α (Learn-then-Test); assumes exchangeability only |
+| `source_reliability` | how often each independent origin is right, from agreement alone | Dawid–Skene EM with a Beta prior over roots (copies collapsed first); feeds `Federation(reliability_by_root=…)` |
 | `polarity_rules` | the sign a sentence asserts between two quantities, symbolically | one direction word per quantity per clause, negation flips, last clause wins, composition by product; abstains outside its lexicon (English only) |
 | `typed_extraction` | the stubbed prose → `Claim` step of `paper_graph/pipeline.py` | yes/no fields from the target node's claim; balanced lenses; isotonic calibration of the pooled log-odds; confidence = Π max(p, 1−p) = P(whole claim right); `agree` adds the log-odds of a second, independent judge |
 
@@ -160,6 +161,10 @@ right).** The product gate Π max(p, 1−p) ≥ 0.9 admits records that are righ
 `record_guarantee` at α = 0.1 admits nothing (the level cannot be certified), at α = 0.45 admits 30 %+ and holds the level in 20 of
 20 splits (calibration 600 records, δ = 0.05). Two wrong versions were caught by the held-out test: scanning from the most certain
 record admitted nothing; scanning until a threshold passed broke the level in 8 of 20 splits. Bonferroni over a fixed grid fixed it.
+
+**Per-origin reliability (test; 300 questions, five origins with planted accuracies 0.9 / 0.85 / 0.8 / 0.55 / 0.5, no labels).**
+Recovered within 0.07 of the planted values; fused signs with the estimated per-origin weights are > 3 points more accurate than
+with one fixed reliability. Needs ≥ 3 independent origins per question to be identifiable; shared misreadings stay invisible.
 
 **Mechanism signature (tests).** Electrostatic pull-in, Semenov thermal runaway and shallow-truss snap-through: one limit point,
 order 2.00, β 0.50, γ 0.50, at (1/3, 4/27), (1, 1/e), (1 − 1/√3, ·). Symmetric column: odd, γ 1.00. Cusp, linear, saturating: no limit point.

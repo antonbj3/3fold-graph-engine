@@ -209,6 +209,7 @@ result not reproducible from this repo.
 | `src/graph_engine/scene_eyes_coverage_audit.py` | VERIFIED-FRESH |
 | `src/graph_engine/scene_eyes_neff_leg.py` | VERIFIED-FRESH |
 | `src/graph_engine/stage_decorrelation_verifier.py` | VERIFIED-FRESH |
+| `src/graph_engine/source_reliability.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/throws.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/tools/allindex.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/tools/anchor_graph_tools.py` | SYNTHETIC-ONLY |
