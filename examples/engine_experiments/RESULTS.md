@@ -56,7 +56,8 @@ corpus the gate abstains on all 57 papers from title and abstract. The modules b
 | `pooled_screening` | how many candidates per pooled question | two-stage Dorfman with noisy tests, closed forms |
 | `plan_value` | probing and working in one currency | settle cost per node by a dynamic programme over instruments (cost, reliability) with admission level τ; nodes ordered by (1 − p)/settle cost; cheap-instrument value = S_expensive − S_all ≥ 0 |
 | `record_guarantee` | admit extracted records so that ≥ 1 − α of the admitted are entirely right, distribution-free | score = least certain field; threshold = largest of the unique score quantiles (≤ 20, taken from the calibration scores) whose Clopper–Pearson (1 − δ/grid size) bound is ≤ α (Learn-then-Test; valid because the labels are independent given the scores); assumes exchangeability only |
-| `source_reliability` | how often each independent origin is right, from agreement alone | Dawid–Skene EM with a Beta prior over roots (copies collapsed first); feeds `Federation(reliability_by_root=…)` |
+| `source_reliability` | how often each independent origin is right, from agreement, plus a few pinned truths to break the mirror symmetry | Dawid–Skene EM with a Beta prior over roots (copies collapsed first); feeds `Federation(reliability_by_root=…)` |
+| `closed_loop` | the engine choosing probes against a world with known sign structure, scored against the truth | world of ≤ 1-transition sign functions with sourced, copied, unreliable claims; policies engine / copies / random / oracle; wrong measure and believed wrong measure |
 | `polarity_rules` | the sign a sentence asserts between two quantities, symbolically | one direction word per quantity per clause, negation flips, last clause wins, composition by product; abstains outside its lexicon (English only) |
 | `typed_extraction` | the stubbed prose → `Claim` step of `paper_graph/pipeline.py` | yes/no fields from the target node's claim; balanced lenses; isotonic calibration of the pooled log-odds; confidence = Π max(p, 1−p) = P(whole claim right); `agree` adds the log-odds of a second, independent judge |
 
@@ -215,6 +216,38 @@ so after calibration the smallest model is the most accurate. The sentence forms
 this measures the reading channel, not the rule. Consequence: the reader that belongs next to the symbolic channel is a small model
 whose position and form biases are calibrated away, not a larger model; a larger model contributes a prior, which the federation
 must keep on a separate lineage from the text.
+
+**Reading the representation before the collapse to a token (e20; same 320 sentences, lens 0, hidden state of the last prompt
+token at every layer, linear probe trained on the RULE's labels over 10 quantity pairs and tested on the other 10, 20 splits; the
+layer is chosen on the training pairs only).**
+
+| | 0.5B | 1.5B | 3B |
+|---|---|---|---|
+| token output: all / text contradicts physics | 0.52 / 0.48 | 0.78 / 0.64 | 0.85 / 0.71 |
+| linear probe, layer chosen on training pairs | 0.86 / 0.87 | 0.89 / 0.83 | **0.92 / 0.87** |
+| probe on the last layer, contradicting text | 0.86 | 0.80 | 0.71 |
+
+The reading lives in the middle of the network (best layers 18 of 25, 21 of 29, 24 of 37) and the prior is applied in the last
+layers: in the 3B the probe on contradicting text falls from 0.92 at layer 21 to 0.71 at the output — the token output's number — and
+in the 0.5B it does not fall at all. So "a larger model reads worse" (model-size table above) is a statement about the output head.
+The representation of the larger model reads better than the smaller one's and without the model's belief, when it is read before
+the collapse. The probe is trained on the symbolic rule's labels, no human labels; it is a second reader whose errors are not the
+rule's (the rule is silent outside its forms, the probe is not) and not the output head's. Prior work: Burns et al. 2022 (probe beats
+output by 4 points), Li et al. 2023 (steering along a probe direction). Not built yet: the probe as a lens in `lens_pooling` with its
+own lineage; a probe on text outside the templates (QuaRTz) to see whether the 0.92 transfers.
+
+**The loop closed against a world that answers (e21, `closed_loop.py`; 40 worlds × 12 pairs; per pair the true sign along x changes at
+most once, 5 % of pairs twice; 8 sources with reliabilities 0.6–0.95, 35 % of them copies of another source; instruments: judge cost 1
+r = 0.8, exact cell cost 4 r = 0.99; budget 40; score = measure of the domain wrongly signed against the truth, summed over pairs).**
+Wrong measure at budget 0 → 40: random probes 2.27 → 2.00; engine (expected potential drop per cost, lineage-weighted claims)
+2.27 → 1.24; paired difference −0.76 ± 0.09, engine better in 37 of 40 worlds. Copies counted as independent: 2.48 → 1.29; paired
+against the engine −0.04 ± 0.05 (22 of 40) — on accuracy the lineage weighting gives nothing here, because a copy repeats a report that
+is mostly right and the extra confidence lands on the right side; where it costs is calibration: after the budget the engine believes it has 0.97 wrongly signed and has 1.20 (gap 0.23 ± 0.10, 12 worlds); with copies counted as independent it believes 0.76 and has 1.24 (gap 0.47 ± 0.08). Both are over-confident (the claim reliability inside the posterior is a fixed 0.75 while probes enter at their own reliability); counting copies doubles the over-confidence. Negative: the
+collision family did not flag the two-transition pairs (engine 0 of 25, copies 2 of 25, 1–2 false flags) at this budget — the
+two-transition posterior needs probes on both sides of both transitions, and the value rule never buys them because the
+single-transition reading explains the claims. The oracle policy is implemented but not run (25 × 12 × 2 posterior copies per step).
+This is the first measurement in this package of the engine choosing experiments end to end; the world is functions with the sign
+structure of e17's mechanisms, not a simulator.
 
 **Label-free calibration (e18; same 320 sentences).** Raw pooled 0.591; subtracting each lens's batch-mean log-odds (Batch Calibration) 0.572;
 per sentence form 0.603; per-form Platt on the rule's answers 0.927; on true labels 0.927. The option prior is not the fault; the

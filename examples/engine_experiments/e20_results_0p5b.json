@@ -1,0 +1,78 @@
+{
+ "model": "q",
+ "layers": 25,
+ "output_token": {
+  "accuracy": 0.519,
+  "on_contradicting_text": 0.481
+ },
+ "probe_best_layer": 18,
+ "probe_best": {
+  "accuracy": 0.889,
+  "sd_over_splits": 0.021,
+  "on_contradicting_text": 0.893
+ },
+ "probe_nested_layer_choice": {
+  "accuracy": 0.858,
+  "sd_over_splits": 0.056,
+  "on_contradicting_text": 0.874
+ },
+ "last_layer": {
+  "accuracy": 0.871,
+  "on_contradicting_text": 0.86
+ },
+ "probe_by_layer": [
+  0.5,
+  0.561,
+  0.611,
+  0.593,
+  0.603,
+  0.63,
+  0.643,
+  0.635,
+  0.6,
+  0.606,
+  0.605,
+  0.671,
+  0.705,
+  0.741,
+  0.772,
+  0.873,
+  0.886,
+  0.88,
+  0.889,
+  0.863,
+  0.88,
+  0.874,
+  0.866,
+  0.873,
+  0.871
+ ],
+ "probe_contradicting_by_layer": [
+  0.515,
+  0.641,
+  0.666,
+  0.706,
+  0.679,
+  0.699,
+  0.656,
+  0.607,
+  0.568,
+  0.546,
+  0.491,
+  0.624,
+  0.696,
+  0.751,
+  0.785,
+  0.872,
+  0.897,
+  0.899,
+  0.893,
+  0.866,
+  0.894,
+  0.884,
+  0.881,
+  0.88,
+  0.86
+ ],
+ "note": "probe fitted on the rule's labels over 10 quantity pairs, tested on the other 10; lens 0 only"
+}
