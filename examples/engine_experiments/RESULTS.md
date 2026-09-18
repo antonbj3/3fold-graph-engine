@@ -75,6 +75,7 @@ corpus the gate abstains on all 57 papers from title and abstract. The modules b
 | `decision_cert` | trust relative to a DECISION, not global (from the Hollow project's decision certificates): p_flip of a predicate over the beliefs, and which measurement can flip it | sign-on-box (exact posterior mass), margin (Φ), chain (declared independence); `flip_attribution` ranks candidates by P(flip)/cost; listed in `next_actions` as a separate currency |
 | `guarantees` | what is proved about the probe rule and what is not | cell identity Δ_U = Σ w_c I(Z_c; Y); adaptive monotone (proved); NOT adaptive submodular with noisy answers (counter-example); bounds f, g of the allocation lemma; greedy vs adaptive optimum by enumeration |
 | `disagreement_field` | the interval between claims filled twice — by the claims and by a first-principles model — and the gap between the fillings | pointwise JS between P₊^claims and P₊^model; model probes enter with lineage root = the model (K probes = one root); throws ranked by co-moving gaps; a world with planted hidden links (shared latent parameters) as the throw facit without proximity |
+| `alarm` | model-error alarm with an exact false-alarm bound: a nonnegative martingale on realized − predicted drops (Ville) | mixture of bets with the model's exact conditional cumulant; α holds for adaptively chosen probes, no exchangeability; power measured only |
 | `closed_loop` | the engine choosing probes against a world with known sign structure, scored against the truth | world of ≤ 1-transition sign functions with sourced, copied, unreliable claims; policies engine / copies / random / oracle; wrong measure and believed wrong measure |
 | `polarity_rules` | the sign a sentence asserts between two quantities, symbolically | one direction word per quantity per clause, negation flips, last clause wins, composition by product; abstains outside its lexicon (English only) |
 | `representation_probe` | a second reader: a linear direction in a frozen model's mid layers, trained on the rule's labels, with its own lineage | reads text that contradicts the model's prior where the token output does not; inherits the genre of its training sentences (e22) |
@@ -373,6 +374,13 @@ Three additions to the loop, same 40 worlds, paired against `engine` (1.24 at bu
   run and is withdrawn: e33's increasing returns explain why the single price undervalues by ~10×, not why it would be zero.
   What none of the no-share rules fixes is the over-confidence they buy (gap +0.09 to +0.34 against −0.08 for the guard share):
   the family term spends probes where the sign potential's own calibration is not repaired. That is the alarm's job (e21g).
+- **the alarm (e21g, `alarm`): the guarantee is exact and the power is not there.** A nonnegative martingale on the residual (each bet
+  centred by the model's exact conditional cumulant, so P(wealth ever ≥ 1/α) ≤ α for adaptively chosen probes, no exchangeability):
+  null false alarms 1 of 200 at α = 0.05; a planted second transition with 12 probes swept fires 146 of 200 — but with the same 12
+  probes placed by the value rule 21 of 200, and in the loop (2–3 probes per pair) it latches on 1 % of pairs: 0 of 25 collisions,
+  and the bundles' over-confidence unchanged (+0.087). The alarm only sees a defect the probes visit; 12 value-placed probes carry
+  ≈ 2σ of residual evidence against the 20-fold wealth it must reach. The allocation limit of e21b/e28 with a number on it: an
+  alarm-driven λ needs ~12 probes on a pair, i.e. a sweep instrument.
 
 **One quadratic form (e24, `precision_form`).** Exact to machine precision: effective resistance = (e_i−e_j)ᵀJ⁺(e_i−e_j) (1e-16);
 the GLS estimate and variance of `margin_net` = posterior mean and variance of the observation block (0.0 / 4e-18, including a

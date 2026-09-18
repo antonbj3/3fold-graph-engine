@@ -61,6 +61,21 @@ random numbers (`engine+guard`, `engine+reliability`, `engine+replay`, `engine+a
                 every earlier no-guard-share rule found 0 of 25 without replay (+total 0, +eoptmix 0), and the priced
                 bundle finds 6 with no learned prior and no majority reading. The cost is accuracy: sign error is
                 0.09-0.30 worse because pairs are bought on pairs where the sign potential would have paid.
+  +alarm        no guard share and no fixed family weight: one `alarm.Alarm(alpha)` per PAIR is fed the price of every
+                probe bought on that pair and the drop the answer actually produced. Under a correct model the residual
+                realized − predicted is a martingale difference (e33), so the wealth is a test martingale and
+                P(it ever reaches 1/alpha) ≤ alpha exactly, for adaptively chosen probes, with no exchangeability
+                assumption. While a pair's alarm is latched on, that pair's probes are valued with the family weight
+                raised to `alarm_lam` (total_value_probe / bundle_value with that lam) and the weight is lowered back
+                when the wealth returns below 1. With no alarm anywhere the policy is its own non-alarm counterpart
+                probe for probe — that is the point: nothing is reserved in advance. Combinable with +bundle.
+                MEASURED (e21g, same 40 worlds, budget 40, alpha 0.05): NEGATIVE at this budget. +alarm+replay+majority
+                1.100 (+0.020 ± 0.051 paired against +guard2+replay+majority's 1.080, 19 of 40 wins), gap −0.012,
+                0 tp of 25 — the alarm latched on 5 of 480 pairs; +alarm+bundle+replay+majority 1.173, gap +0.087,
+                6 tp, 2 of 480 pairs. The test is not the problem: with 12 probes SWEPT over one pair it fires on a
+                planted second transition in 146 of 200 sequences (tests), but the loop gives each pair 2-3 probes and
+                places them by value, and the residual evidence in 12 value-placed probes is ~2 sigma against the 1/alpha
+                = 20 the alarm has to reach. Same allocation limit as e21b/e28, now with a number attached.
   +majority     the box claims are read as majority reports (RegimePosterior claim_model="majority") instead of
                 pointwise r-accurate labels — the reading the +reliability result points at as the seat of the loop's
                 over-confidence.
@@ -112,6 +127,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+from .alarm import Alarm, drop_outcomes, out_mean
 from .claim_federation import lineage_information
 from .regime_posterior import RegimePosterior
 from .source_reliability import estimate as estimate_reliability
@@ -266,7 +282,7 @@ def _flags(policy: str) -> set:
     f = set(parts[1:])
     if "all" in f:
         f = {"guard", "reliability", "replay"}
-    if f - {"guard", "guard2", "burst", "eopt", "eoptmix", "total", "bundle", "reliability", "replay", "majority"}:
+    if f - {"guard", "guard2", "burst", "eopt", "eoptmix", "total", "bundle", "alarm", "reliability", "replay", "majority"}:
         raise ValueError(policy)
     if len(f & {"guard", "guard2", "burst", "eopt", "eoptmix", "bundle"}) > 1:
         raise ValueError(policy)
@@ -275,7 +291,7 @@ def _flags(policy: str) -> set:
 
 def run(world: World, policy: str, budget: float, instruments=((1.0, 0.8), (4.0, 0.99)), seed: int = 0,
         record_every: float = 5.0, guard: float = 0.2, burst_n: int = 6, rel_bins: int = 3, rel_every: float = 1.0,
-        replay_prior: dict | None = None, **kw) -> dict:
+        replay_prior: dict | None = None, alarm_alpha: float = 0.05, alarm_lam: float = 4.0, **kw) -> dict:
     """Returns {"cost": [...], "wrong": [...]} sampled every `record_every` cost units, plus the final state.
 
     policy: "random" | "oracle" | "copies" | "engine" with any of "+guard", "+reliability", "+replay" (or "+all").
@@ -284,6 +300,12 @@ def run(world: World, policy: str, budget: float, instruments=((1.0, 0.8), (4.0,
         on every bin its box overlaps. 3 is what e21 ran: with 1 (the whole pair) most questions get fewer than the three
         origins Dawid-Skene needs, with 4 the bins are narrower than the claims.
     replay_prior: {"p_flip", "p_two", "reliability"} from earlier worlds (policies with +replay); None = the defaults.
+    alarm_alpha / alarm_lam: policies with +alarm. One alarm.Alarm(alpha) per PAIR, fed the price and the realized drop
+        of every probe bought on that pair. While a pair's alarm is latched on (its wealth reached 1/alpha and has not
+        fallen back below 1), that pair's probes are valued with the family weight raised to `alarm_lam`
+        (total_value_probe / bundle_value with lam = alarm_lam) instead of the default 1; with no alarm anywhere the
+        policy is bit-for-bit its non-alarm counterpart (`engine` / `engine+bundle`), which is what replaces the fixed
+        guard share: nothing is reserved, the weight is bought only where the test rejects.
     """
     flags = _flags(policy)
     base = policy.split("+")[0]
@@ -298,6 +320,7 @@ def run(world: World, policy: str, budget: float, instruments=((1.0, 0.8), (4.0,
         kw.setdefault("reliability", float(replay_prior["reliability"]))
     default_rel = kw.get("reliability", RegimePosterior(0.0, 1.0).reliability)
     posts, roots_of = _posteriors(world, independent_copies=(base == "copies"), with_roots=True, **kw)
+    alarms = [Alarm(alpha=alarm_alpha) for _ in range(world.n_pairs)] if "alarm" in flags else None
     probe_log: list[list] = [[] for _ in range(world.n_pairs)]
     spent, spent_guard, curve = 0.0, 0.0, [(0.0, wrong_measure(world, posts))]
     next_rec, next_rel = record_every, rel_every
@@ -332,14 +355,16 @@ def run(world: World, policy: str, budget: float, instruments=((1.0, 0.8), (4.0,
             best = (-1.0, None)
             for p in range(world.n_pairs):
                 for c, r in instruments:
+                    lam_p = (alarm_lam if (alarms is not None and alarms[p].alarm) else 1.0)   # +alarm: the family weight
                     if "bundle" in flags:                      # +bundle: singles AND pairs, priced in the same bits
-                        bv = posts[p].bundle_value(r)          # (U + λ·H_family), compared on gain per cost; no guard share
+                        bv = posts[p].bundle_value(r, lam=lam_p)  # (U + λ·H_family), compared on gain per cost; no guard share
                         for xs_c, gain, n in ((list(bv["single"][:1]), bv["single"][1], bv["single"][2]),
                                               (list(bv["pair"][0]), bv["pair"][1], bv["pair"][2])):
                             if gain / (n * c) > best[0]:
                                 best = (gain / (n * c), (p, xs_c, c, r))
                         continue
-                    x, gain = (posts[p].weakest_direction_probe(r, mix=True) if "eoptmix" in flags
+                    x, gain = (posts[p].total_value_probe(r, lam=lam_p) if lam_p != 1.0   # +alarm fired on this pair:
+                               else posts[p].weakest_direction_probe(r, mix=True) if "eoptmix" in flags   # buy the family
                                else posts[p].total_value_probe(r) if "total" in flags      # +total: ΔU + ΔH_family, one step
                                else posts[p].best_probe(r))   # +eoptmix: EVERY probe by the mixed rule, no guard share
                     if gain / c > best[0]:
@@ -371,8 +396,13 @@ def run(world: World, policy: str, budget: float, instruments=((1.0, 0.8), (4.0,
                 spent += c; spent_guard += c
             xs_now = []
         for x in xs_now:
+            if alarms is not None:                             # the price of the probe that is actually bought, and the
+                out = drop_outcomes(posts[p], x, r)            # model's own law of its drop — both BEFORE the answer
+                before_u = posts[p].potential_value()
             ans = world.probe(p, x, r, rng)
             posts[p].add_probe(x, ans, r)
+            if alarms is not None:
+                alarms[p].update(out_mean(out), before_u - posts[p].potential_value(), out)
             probe_log[p].append((float(x), int(ans), float(r)))
             spent += c
             if kind == "model":
@@ -391,4 +421,6 @@ def run(world: World, policy: str, budget: float, instruments=((1.0, 0.8), (4.0,
     return {"policy": policy, "cost": [c for c, _ in curve], "wrong": [w for _, w in curve], "final_wrong": curve[-1][1],
             "believed_wrong": believed, "gap": curve[-1][1] - believed, "collision_flagged": flagged,
             "collision_true": two, "spent": spent, "spent_guard": spent_guard,
-            "reliabilities": rs_final, "world_stats": _world_stats(world, posts, probe_log, rs_final)}
+            "reliabilities": rs_final, "world_stats": _world_stats(world, posts, probe_log, rs_final),
+            "alarm": ([a.state() for a in alarms] if alarms is not None else None),
+            "alarm_hits": (sum(a.hit for a in alarms) if alarms is not None else 0)}
