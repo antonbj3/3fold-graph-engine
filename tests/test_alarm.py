@@ -41,7 +41,7 @@ def null_sequence(seed, alpha=ALPHA, T=T, r=0.95, place="grid", outcomes=True):
     _claims(rp, rng)
     cells, _w, F, post = rp._with_probes()
     h = int(rng.choice(len(post), p=post))                      # the world this belief considers possible
-    al = Alarm(alpha=alpha)
+    al = Alarm(alpha=alpha, require_law=outcomes)       # no law supplied ⇒ the bounded path, asked for
     xs = (np.arange(T) + 0.5) / T
     ws = []
     for t in range(T):
@@ -142,12 +142,14 @@ def test_power_needs_the_probes_to_visit_the_defect():
 
 
 def test_bounded_fallback_is_valid_and_much_weaker():
-    """Without the outcome list the alarm falls back to a clipped bet: still no false alarms, but the planted
-    worlds do not move it — a single huge surprise can multiply the wealth by at most 1 + lam."""
+    """Without the outcome list the alarm falls back to a clipped bet (which has to be asked for, see below):
+    still no false alarms, but the planted worlds do not move it — a single huge surprise can multiply the
+    wealth by at most 1 + lam."""
     hits = sum(null_sequence(s, outcomes=False)[0].hit for s in range(100))
     assert hits == 0
     al, _ = null_sequence(0, outcomes=False)
     assert al.n == T and al.wealth > 0
+    assert al.state()["n_bounded"] == T and al.state()["require_law"] is False
 
 
 def test_latch_turns_on_at_threshold_and_off_below_one():
@@ -191,3 +193,86 @@ def test_loop_flag_changes_the_probes_once_an_alarm_latches():
     assert hot["alarm_hits"] > 0
     assert hot["spent"] == base["spent"]                        # the budget, not a share of it, is what is spent
     assert hot["wrong"] != base["wrong"]
+
+
+# -- the law is required -------------------------------------------------------------------------------
+#
+# The α is a statement about the model's own predictive law of the drop. A caller without such a law does
+# not get a weaker guarantee of the same kind — it gets none, so `update` refuses by default instead of
+# downgrading to the bounded path in silence. What that refusal is worth was measured on a domain that has
+# no predictive law at all: an iterative solver's per-sweep residual drop, a deterministic function of the
+# iterate. There the exact path could only be run on an INVENTED two-point law; with the convergence rate
+# fitted to the sequence itself the wealth never left its peak 1.00 in three scenes, with the rate frozen
+# the alarm fired at sweep 247 against a stagnation heuristic's sweep 104 at the SAME final error
+# 2.384e-7, and on the two ill-conditioned scenes — where the stagnation rule stops at sweep 6 with
+# 99.6 % / 99.7 % relative error — it never fired at all. The sequence below is that shape: a geometric
+# residual (rate 0.853554, the measured per-sweep factor of the well-conditioned island) decaying to a
+# float32 floor (2.980e-8, the measured floor of that scene).
+
+RATE, RES0, FLOOR = 0.853554, 0.25, 2.980e-8
+
+
+def _solver_residuals(n=400):
+    """[(predicted drop, realized drop)] under the frozen-rate model: predictable until the floor binds."""
+    r, out = RES0, []
+    for _ in range(n):
+        nxt = max(RATE * r, FLOOR)
+        out.append((r * (1 - RATE), r - nxt))
+        r = nxt
+    return out
+
+
+def test_update_refuses_a_drop_that_comes_with_no_predictive_law():
+    al = Alarm()
+    with pytest.raises(ValueError, match="predictive law"):
+        al.update(0.1, 0.2)
+    with pytest.raises(ValueError, match="predictive law"):
+        al.update(0.1, 0.2, [])                                   # an empty law is not a law
+    assert al.n == 0 and al.wealth == 1.0 and not al.hit          # the refusal leaves no state behind
+    assert Alarm().state()["require_law"] is True
+
+
+def test_the_bounded_path_has_to_be_asked_for_and_is_counted():
+    al = Alarm(require_law=False)
+    for predicted, realized in _solver_residuals(20):
+        al.update(predicted, realized)
+    assert al.n == 20 and al.state()["n_bounded"] == 20
+    al_exact = Alarm()
+    al_exact.update(0.5, 1.0, [(0.5, 0.0), (0.5, 1.0)])
+    assert al_exact.state()["n_bounded"] == 0                     # the exact path is not the fallback
+
+
+def test_a_perfectly_predictable_drop_cannot_be_tested():
+    """The null is 'the price is the conditional expectation of the realized drop'. Where the drop is a
+    deterministic function of the iterate and the model is fitted to it, the residual is 0 at every step:
+    the wealth stays at exactly 1 forever. That is not power, it is the absence of anything to test —
+    the mechanism behind the measured peak wealth 1.00."""
+    al = Alarm(require_law=False)
+    r = RES0
+    for _ in range(100):
+        nxt = RATE * r                                            # no floor: the frozen rate is exact
+        al.update(r * (1 - RATE), r - nxt)
+        r = nxt
+    assert abs(al.wealth - 1.0) < 1e-12 and al.peak <= 1.0 + 1e-12 and not al.hit
+
+
+def test_where_the_fallback_does_fire_a_one_line_heuristic_already_stopped():
+    """Taken deliberately on the law-free sequence, the alarm crosses 1/alpha only after the residual has
+    been sitting on its floor for several sweeps — later than a stagnation rule that reaches the same
+    residual. The measured ordering (247 against 104, same final error) reproduces: here 110 against 106."""
+    al = Alarm(alpha=ALPHA, require_law=False)
+    fired = None
+    for i, (predicted, realized) in enumerate(_solver_residuals(), 1):
+        al.update(predicted, realized)
+        if al.hit and fired is None:
+            fired = i
+    r, run, stagnated = RES0, 0, None
+    for i in range(1, 401):
+        nxt = max(RATE * r, FLOOR)
+        run = run + 1 if (r - nxt) / r < 1e-3 else 0
+        if run >= 5 and stagnated is None:
+            stagnated = i
+        r = nxt
+    assert (stagnated, fired) == (106, 110)
+    assert stagnated < fired
+    assert r == FLOOR                                             # both stop at the same residual

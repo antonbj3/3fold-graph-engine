@@ -9,9 +9,35 @@ sim-conditioning identifiability 3b766fcb2):
   mode. A single/coarse observable is generically RANK-DEFICIENT (sigma_min ~ 0); observation DIVERSITY lifts it.
   This tool answers, for a candidate pool of observables:
     * identifiability(S) = sigma_min of the summed Fisher  (report-the-bound: also the worst-mode direction)
-    * greedy_oed(pool, k) = the k observables that MAXIMIZE sigma_min (which measurements to add)
+    * greedy_oed(pool, k) = the k observables to add, RANK FIRST and then value per cost (see below)
     * optimal_amount(param_fn, grid) = the diversity AMOUNT that peaks sigma_min (SELECT don't MAXIMIZE: an interior
       optimum when too-much diversity loses SNR) -- the JWST defocus d* finding, generalized.
+
+THE PLATEAU, AND WHY THE E-OPTIMAL ARGMAX ALONE IS NOT A SELECTION RULE (measured on contact-solver
+friction identification, a pool of 32 micro-slip probes -- 8 contacts x 4 directions -- for 8 friction
+parameters). While the accumulated Fisher is rank-deficient, sigma_min is 0 for EVERY candidate: it is
+exactly 0 for any parameter no selected observable has excited, so the argmax has no gradient over the
+whole regime k < K and degenerates to input order. Measured there: the sigma_min-only rule bought four
+redundant copies of contact 0, then four of contact 1, then four of contact 2 -- rank(F) 3/8 after
+twelve probes, sigma_min = 0 at every step, 1.2515 N s spent. The fix in `greedy_oed` is lexicographic:
+
+    (d rank / cost, d value_bits / cost)
+
+RANK FIRST -- on the plateau the only term that moves is the rank, and dividing by cost picks one probe
+per uncovered parameter in ASCENDING COST ORDER -- and the tie is broken by the engine's own PRICED
+objective, the Gaussian information gain in bits, value_bits = 1/2 log2 det(I + (F_acc + prior)^-1 F_i)
+(precision_form's value(h) = 1/2 log2(1 + h^T C h / sigma^2) for a matrix observable). Same pool, same
+costs: rank 8/8 and sigma_min 0 -> 6.33e5 at k = 8 for 0.64906 N s, the trace continuing 1.27e6, 1.90e6,
+2.28e6 at k = 9, 10, 11.
+
+WHY THE TIE-BREAK IS THE PRICED OBJECTIVE AND NOT sigma_min/cost. A second measurement (the same probe
+pool read as a sequential-selection problem against the adaptive optimum by full decision-tree
+enumeration) priced the two candidate rules: a sigma_min-gain-per-cost objective reaches only 0.29-0.61
+of the adaptive optimum of the engine's own entropy potential and falls BELOW 1 - 1/e = 0.6321 in 30 of
+50 random Dirichlet priors (worst 0.2031), while the same cost-aware greedy run on the engine's own
+priced objective stays at 0.77-0.92 and never falls below 1 - 1/e in those 50 priors. The bound is about
+greedy on the objective being maximized: price the engine's objective by cost, do not swap the objective.
+`tie_break="sigma_min"` reproduces the ungradiented E-optimal argmax (the shipped defect) for comparison.
 
 Numpy-only, no project deps. Each F_o is a (K,K) symmetric PSD matrix (the caller builds it from its physics:
 reproj Jacobian J^T J, ellipsometry d(psi,Delta)/d(n,k), PSF Poisson Fisher, relaxation-timescale Fisher,...).
@@ -42,32 +68,97 @@ def identifiability(fishers):
                 worst_mode_vec=V[:, 0].tolist(),
                 rank_deficient=bool(sigmin < 1e-9 * (sigmax + 1e-300)))
 
-def greedy_oed(pool, k, base=None):
-    """Greedy E-optimal selection: pick k observables from `pool` (list of (K,K) Fishers) that maximize sigma_min of
-    the accumulated Fisher (optionally starting from `base` Fishers already committed). Returns (indices, sigmin_trace).
-    This is the anchor-OED (main-mission node 1) generalized to any observable pool -- pick the measurement that most
-    lifts the WORST-identified mode, iterate. Diversity-not-count: correlated observables add little sigma_min."""
+def _spectrum(F, tol=1e-10):
+    """(sigma_min, rank, smallest POSITIVE eigenvalue) of one symmetric matrix from a single eigendecomposition.
+    The rank tolerance is RELATIVE to the largest eigenvalue, so the three readings are unit-invariant (a Fisher
+    in different units is the same Fisher). Fails closed on a non-finite matrix, exactly as `identifiability`."""
+    F = np.asarray(F, float)
+    if not np.all(np.isfinite(F)):
+        raise ValueError("spectrum: matrix carries non-finite (NaN/inf) entries -- cannot safely eigendecompose "
+                         "(a degenerate/unmeasurable observable contributed NaN)")
+    w = np.linalg.eigvalsh(0.5 * (F + F.T))
+    top = max(float(w[-1]), 1e-300)
+    pos = w[w > tol * top]
+    return float(max(float(w[0]), 0.0)), int(pos.size), (float(pos[0]) if pos.size else 0.0)
+
+
+def value_bits(acc, F, prior):
+    """The engine's PRICED objective for a matrix observable: the Gaussian information gain in bits of adding the
+    Fisher F to the accumulated Fisher `acc`, under a proper prior precision `prior` (a positive scalar ridge or a
+    (K,K) matrix):  1/2 log2 det(I + (acc + prior)^-1 F).  This is precision_form's value(h) = 1/2 log2(1 +
+    h^T C h / sigma^2) with C = (acc + prior)^-1 and a matrix-valued observable; log-det gain is submodular, which
+    is why greedy on it keeps the 1 - 1/e property that a sigma_min-per-cost rule does not."""
+    acc = np.asarray(acc, float); F = np.asarray(F, float)
+    P = np.eye(acc.shape[0]) * float(prior) if np.ndim(prior) == 0 else np.asarray(prior, float)
+    if not (np.all(np.isfinite(acc)) and np.all(np.isfinite(F)) and np.all(np.isfinite(P))):
+        raise ValueError("value_bits: non-finite Fisher or prior -- a degenerate observable cannot be priced")
+    A = 0.5 * ((acc + P) + (acc + P).T)
+    sign, logdet_a = np.linalg.slogdet(A)
+    sign_b, logdet_b = np.linalg.slogdet(0.5 * ((A + F) + (A + F).T))
+    if sign <= 0 or sign_b <= 0:
+        raise ValueError("value_bits: prior + accumulated Fisher is not positive definite -- raise `prior`")
+    return float((logdet_b - logdet_a) / (2.0 * np.log(2.0)))
+
+
+def greedy_oed(pool, k, base=None, costs=None, tie_break="rank", prior=1e-9):
+    """Greedy selection: pick k observables from `pool` (list of (K,K) Fishers) to add to `base`, and return
+    (indices, sigmin_trace) -- sigma_min of the accumulated Fisher after each pick.
+
+    tie_break="rank" (default, the measured fix): maximize the lexicographic key
+
+        (d rank / cost, d value_bits / cost)
+
+    RANK FIRST, then the engine's own priced objective. On a rank-deficient accumulation sigma_min is exactly 0
+    for every candidate (any parameter no selected observable excites contributes a zero column), so an E-optimal
+    argmax has no gradient there and reduces to input order -- it buys redundant copies of one observable and
+    never leaves sigma_min = 0. See the module docstring for the measured numbers, and for why the tie-break is
+    the priced objective rather than sigma_min per cost.
+
+    tie_break="sigma_min": the ungradiented E-optimal argmax as originally shipped (kept so the defect stays
+    reproducible). `costs` is one positive number per pool entry (default 1.0 = count the measurements).
+    `prior` is the prior precision for value_bits, relative to the mean eigenvalue scale of the whole pool, so
+    the ranking is invariant to the units of the Fishers; pass a (K,K) matrix for a real prior.
+    Diversity-not-count: correlated observables add little rank and few bits."""
     pool = [np.asarray(F, float) for F in pool]
     K = pool[0].shape[0]
+    if tie_break not in ("rank", "sigma_min"):
+        raise ValueError(f"tie_break must be 'rank' or 'sigma_min': {tie_break!r}")
+    if costs is None:
+        costs = np.ones(len(pool))
+    else:
+        costs = np.asarray(costs, float).ravel()
+        if costs.shape != (len(pool),) or not np.all(np.isfinite(costs)) or not np.all(costs > 0):
+            raise ValueError("costs must be one positive finite number per pool entry")
     acc = np.zeros((K, K)) if base is None else np.sum(list(base), axis=0).astype(float)
+    if np.ndim(prior) == 0:                                   # scale-free ridge: relative to the pool's own scale
+        finite = [float(np.trace(F)) for F in pool if np.all(np.isfinite(F))]   # a degenerate candidate must
+        scale = (float(np.mean(finite)) if finite else 1.0) / max(K, 1)          # not poison the prior's scale
+        P = float(prior) * max(scale, 1e-300) * np.eye(K)
+    else:
+        P = np.asarray(prior, float)
     chosen, trace, remaining = [], [], list(range(len(pool)))
+    s_acc, r_acc, _ = _spectrum(acc)
     for _ in range(min(k, len(pool))):
-        best_i, best_s = None, -np.inf
+        best_i, best_key = None, None
         for i in remaining:
             #: a candidate observable whose Fisher carries a genuine degeneracy (NaN/inf) cannot be safely
             # scored -- exclude it from selection (never picked) rather than letting it crash the whole greedy
             # search or (worse) silently win via eigh's unreliable NaN ordering (see identifiability docstring).
             try:
-                s = identifiability([acc + pool[i]])["sigmin"]
+                s, r, _sp = _spectrum(acc + pool[i])
+                key = (s,) if tie_break == "sigma_min" else \
+                      ((r - r_acc) / costs[i], value_bits(acc, pool[i], P) / costs[i])
             except ValueError:
                 continue
-            if s > best_s:
-                best_s, best_i = s, i
+            if best_key is None or key > best_key:
+                best_key, best_i = key, i
         if best_i is None:
             break   # every remaining candidate was degenerate -- stop, don't fabricate a pick
-        chosen.append(best_i); trace.append(float(best_s))
-        acc = acc + pool[best_i]; remaining.remove(best_i)
+        acc = acc + pool[best_i]
+        s_acc, r_acc, _ = _spectrum(acc)
+        chosen.append(best_i); trace.append(float(s_acc)); remaining.remove(best_i)
     return chosen, trace
+
 
 def compose_typed(stages):
     """TWO-ALGEBRA composition (H 05d92f338, validated on real temple): route each cert quantity to its OWN algebra.

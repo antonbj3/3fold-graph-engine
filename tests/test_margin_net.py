@@ -230,3 +230,50 @@ def test_rho_interpolates_the_two_old_states_continuously():
     ss = np.array(ss)
     assert abs(ss[0] - sig / m_rep ** 0.5) < 1e-12 and abs(ss[-1] - sig) < 1e-12
     assert (np.diff(ss) > 0).all() and abs(ss[10] - sig * ((1 + 5 * 0.5) / 6) ** 0.5) < 1e-12
+
+
+# -- units are not evidence ------------------------------------------------------------------------
+#
+# Measured on a five-channel cross-solver edge (one compiled reference implementation plus four
+# configurations of a second solver, agreeing on a penetration requirement to ~1e-7 in the margin's own
+# units): under an ABSOLUTE rank tolerance the edge reported Q = 3.77614e6 with dof = -1, p_agree = 1,
+# "OK" — a negative dof is not a statistic, and the chi^2 disagreement test could not fire at all —
+# while the same edge with every margin and sigma multiplied by 1e6 reported dof = 4, p_agree = 0,
+# CONTRADICTION. The reconstruction below carries the measured margins and sigmas of that edge.
+
+CUBE_MARGINS = (0.99768, 1 - 7.5405e-8 / 0.5, 1 - 1.892e-10 / 0.5, 1 - 2.71917e-9 / 0.5, 1 - 2.77556e-16 / 0.5)
+CUBE_SIGMAS = (1.192e-6, 1.281e-7, 1.281e-7, 1.281e-7, 1.281e-7)
+CUBE_CHANNELS = ("ref", "b_exact_gpu", "b_convex_gpu", "b_exact_cpu", "b_convex_cpu")
+
+
+def _cross_solver_edge(scale):
+    n = MarginNet()
+    n.add_sources([{"id": c} for c in CUBE_CHANNELS])
+    n.add_edge("penetration", ["a", "b"],
+               [{"margin": m * scale, "sigma": s * scale, "sources": [c]}
+                for c, m, s in zip(CUBE_CHANNELS, CUBE_MARGINS, CUBE_SIGMAS)])
+    return n.estimate("penetration")
+
+
+def test_estimate_is_invariant_to_the_units_of_the_margin():
+    """A change of units is not a change of evidence: z, Q, dof, p_agree and kind are identical over twelve
+    orders of magnitude of scale."""
+    base = _cross_solver_edge(1.0)
+    for scale in (1e-6, 1e-3, 1e3, 1e6):
+        e = _cross_solver_edge(scale)
+        assert (e.dof, e.kind) == (base.dof, base.kind), f"scale {scale:g}"
+        assert e.z == pytest.approx(base.z, rel=1e-6) and e.q == pytest.approx(base.q, rel=1e-6)
+        assert e.p_agree == pytest.approx(base.p_agree, abs=1e-12)
+        assert e.m == pytest.approx(base.m * scale, rel=1e-9)
+        assert e.s == pytest.approx(base.s * scale, rel=1e-6)
+
+
+def test_a_disagreement_at_small_sigma_still_fires():
+    """The measured edge: five channels whose spread is ~1e4 times their declared sigma. dof = 4 (five
+    reports estimating one number), Q = 3.777e6, and the verdict is CONTRADICTION at every scale — not
+    the "OK" an absolute rank tolerance produced when Sigma's entries fell to ~1e-14."""
+    e = _cross_solver_edge(1.0)
+    assert e.dof == 4
+    assert e.q == pytest.approx(3.777e6, rel=1e-3)
+    assert e.p_agree == 0.0 and e.kind == "CONTRADICTION"
+    assert np.linalg.matrix_rank(np.diag([s ** 2 for s in CUBE_SIGMAS]), tol=1e-10) == 0   # the absolute read

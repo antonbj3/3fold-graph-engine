@@ -79,7 +79,9 @@ that part's form PLUS the other's contribution, so every direction inside one pa
 quotient ≥ that part's σ_min. A joint weakness is therefore ALWAYS a cross-part mode. Two consequences
 measured in e31: the shared variable carries the mode's ENERGY (share 1.000 against ≤ 0.025 for every
 other node) while its AMPLITUDE there is exactly 0 — it sits at the neutral point, so ranking nodes by
-eigenvector loading does not find the mediator; and observing the LEVEL of that variable, h = e_s, is
+eigenvector loading does not find the mediator, which is why `criticality` returns the two reads side by
+side (`loading` and `energy_loading`, with their argmaxes and whether they agree) rather than leaving the
+energy share to be noticed; and observing the LEVEL of that variable, h = e_s, is
 orthogonal to the mode and does NOT repair it (σ_min 0.050 → 0.0165 at σ = 1, → 0.0498 at σ = 0.05: a
 perfect pin only approaches the old value from below, because an absolute measurement also spends the
 gauge). The repair that works is a CONTRAST across the seam, h = e_a − e_b: σ_min 0.050 → 0.148, and
@@ -449,7 +451,8 @@ class PrecisionForm:
         connectivity λ₂ (Fiedler); on a form that also carries measurement blocks it is the smallest
         posterior precision of any contrast the data actually constrain.
 
-        Returns {sigma_min, direction, loading, energy_share, null_dim, n_blocks, spectrum}:
+        Returns {sigma_min, direction, loading, energy_share, energy_loading, amplitude_argmax,
+        energy_argmax, amplitude_finds_the_load, null_dim, n_blocks, spectrum}:
           direction    the eigenvector v (unit) of that eigenvalue, in the form's coordinates;
           loading      [(node, v_i)] for the `top` coordinates by |v_i| — where the soft mode lives
                        in AMPLITUDE;
@@ -460,6 +463,21 @@ class PrecisionForm:
                        read: a mediating variable sits near the neutral point of the mode (amplitude
                        ≈ 0) while carrying nearly all of its energy, so amplitude loading alone will
                        not find it (see `joint_criticality`).
+          energy_loading  [(node, share)] for the `top` coordinates by energy share — the same list as
+                       `loading`, read in the currency that finds the mediator, REPORTED BESIDE IT so a
+                       caller cannot take the amplitude ranking for the answer;
+          amplitude_argmax / energy_argmax / amplitude_finds_the_load
+                       the top node under each read and whether they agree. They routinely do not.
+                       MEASURED on a contact-solver chain (seven contacts, a mediating body between two
+                       sub-stacks, the mediator's inverse mass as the conductance of edge (3,4)): with a
+                       heavy mediator σ_min collapses 4.3705e-2 → 2.4903e-4 (×175) and the mode is
+                       |amplitude| [0.5003 0.5002 0.4999 0.4996 0.0015 0.0010 0.0005], energy_share
+                       [0.0001 0.0003 0.0008 0.9967 0.9971 0.0020 0.0020] — the amplitude argmax is
+                       node 0, which mediates nothing, while the energy read names both mediating
+                       contacts at 0.997. The other direction is the limit of this read: a LIGHT
+                       mediator (the classic 1000:1 mass ratio) moves σ_max, not σ_min — σ_min changes
+                       by 1.6 % between conductance 1e3 and 1e1 while σ_max changes by 95×, so
+                       `criticality` is blind to it and reports the wrong node (6) throughout.
         """
         N = self.gauge_null(atol)
         if N.shape[1]:
@@ -476,12 +494,19 @@ class PrecisionForm:
         D = (v[:, None] - v[None, :]) ** 2
         per_node = (W_off * D).sum(1) + r * v ** 2                # each edge counted at both endpoints
         tot = float(v @ self.J @ v)
+        share = per_node / max(tot, 1e-300)
+        e_order = np.argsort(-share)[:top]
+        amp_arg, e_arg = int(np.argmax(np.abs(v))), int(np.argmax(share))
         nb, _ = self._blocks()
         return {
             "sigma_min": float(lam[0]),
             "direction": v,
             "loading": [(int(i), float(v[i])) for i in order],
-            "energy_share": per_node / max(tot, 1e-300),
+            "energy_share": share,
+            "energy_loading": [(int(i), float(share[i])) for i in e_order],
+            "amplitude_argmax": amp_arg,
+            "energy_argmax": e_arg,
+            "amplitude_finds_the_load": bool(amp_arg == e_arg),
             "null_dim": int(N.shape[1]),
             "n_blocks": int(nb),
             "spectrum": lam,

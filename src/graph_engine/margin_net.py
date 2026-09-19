@@ -31,6 +31,12 @@ Disagreement ("conf" for margins), two parts.
      difference has variance 0, so Q cannot see it (three copies at −0.50, +0.50, +0.52 with σ = 0.05 gave Q = 1e-14,
      "OK" — found in review). The component r = (I − ΣΣ⁺)(m − m̂·1) is therefore checked separately: |r_k| above
      `copy_tolerance`·σ_k means the values contradict the declared lineage.
+ (c) Both readings are SCALE-FREE, and that is a requirement, not a property: multiplying every margin and every σ of
+     an edge by a constant is a change of units, and z, Q, dof, p_agree and `kind` must come out unchanged. The rank
+     behind (a) is therefore taken relative to Σ's largest singular value, the same cutoff the pseudo-inverse uses.
+     Found by that probe on a five-channel cross-solver edge whose σ were ~1e-7 in the margin's own units: under an
+     absolute 1e-10 rank tolerance Σ read as rank 0, the edge reported Q = 3.77614e6, dof = -1, p_agree = 1, "OK",
+     and the same edge in units 1e6 larger reported dof = 4, p_agree = 0, CONTRADICTION.
 Either one firing means the reports do not estimate one number: either their validity boxes are disjoint (a regime
 boundary — report it as such) or they overlap (a contradiction — open the edge, do not average it away).
 
@@ -165,7 +171,15 @@ class MarginNet:
         mhat = float(one @ Sp @ m) / info; s = math.sqrt(1.0 / info)
         w = (Sp @ one) / info                                  # GLS weights on reports, sum to 1
         a = B.T @ w                                            # weights on root errors: m̂ − m = aᵀε, ‖a‖ = s
-        q = max(float(m @ Sp @ m) - mhat * mhat * info, 0.0); dof = int(np.linalg.matrix_rank(B @ B.T, tol=1e-10)) - 1
+        q = max(float(m @ Sp @ m) - mhat * mhat * info, 0.0)
+        # The dof is the rank of Sigma AS THE PSEUDO-INVERSE ABOVE SEES IT, so the cutoff is RELATIVE to the
+        # largest singular value (`rcond`), never absolute. With an absolute 1e-10 an edge whose sigma are
+        # ~1e-7 in the margin's own units has Sigma entries ~1e-14, reads as rank 0, and its chi^2
+        # disagreement test cannot fire at all: measured on a five-channel cross-solver edge, the SAME edge
+        # in units differing by 1e6 reported Q = 3.77614e6, dof = -1, p_agree = 1, OK at one scale and
+        # dof = 4, p_agree = 0, CONTRADICTION at the other. A change of units is not a change of evidence.
+        sv = np.linalg.svd(Sigma, compute_uv=False)
+        dof = int((sv > 1e-10 * float(sv[0])).sum()) - 1 if float(sv[0]) > 0 else -1
         p_agree = float(chi2.sf(q, dof)) if dof > 0 else 1.0
         off = (np.eye(len(m)) - Sigma @ Sp) @ (m - mhat)       # what the declared lineage cannot explain at all
         if (np.abs(off) > self.copy_tolerance * sig).any():

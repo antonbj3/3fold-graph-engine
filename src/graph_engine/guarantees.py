@@ -136,6 +136,29 @@ the value rule and loses every comparison, whatever cell it would have probed.
 So the value rule going blind is forced by the objective, not by tuning: `model_check_probe` is the
 quantity that survives the δ → 0 limit. The monotone growth of the ratio is MEASURED on these
 configurations; what is proved is Δ_U ≤ f(δ) → 0 and max Δ_T ≥ g(q,r,s) > 0 whenever q > 0, s > 0.
+
+WHAT OF THIS LEMMA TRANSFERS OUT OF THIS POSTERIOR — measured against a budget split across the
+independent sub-problems of an iterative solver (two islands with no shared variables, so the operator is
+block-diagonal; island A well conditioned with per-sweep residual factor ρ = 0.853554, island B
+ill conditioned with ρ = 0.999003), where the currency is a residual rather than a posterior.
+  • THE CLOSED FORMS DO NOT. f(δ) and g(q,r,s) are bits over a reliability r and a posterior mass δ; a
+    residual is a non-negative real in impulse units and carries neither. Importing the constants is not
+    justified, and `f(0.05, 1, 0.95) = 0.584291` / `g(0.05, 0.95, 1) = 0.111015` bits mean nothing there.
+  • GREEDY IS NOT OPTIMAL THERE EITHER, by a different mechanism. The objective is separable across the
+    islands, but a residual is not convex in the sweep count during the transient, so the marginal drops
+    are not non-increasing and the set function is not submodular. Measured greedy/optimal over budgets
+    4–64: 1.00–1.17, worst at K = 8 (greedy (6,2) for Σ res 9.4747e-2 against the optimum (7,1) for
+    8.1076e-2). Same shape as (a)–(c) above, different reason — a non-geometric transient, not noise.
+  • THE MECHANISM REPRODUCES EXACTLY. Allocating by residual DROP starves the ill-conditioned island: at
+    K = 128 greedy (126, 2) leaves island A at relative error 3.58e-9 and island B at 1.0 — unchanged —
+    while an equal split (64, 64) leaves 6.58e-5 and 0.941. The currency collapses while what matters does
+    not, which is f(δ) → 0 in this file's terms. Re-weighting the drop does not repair it (the identical
+    split, because a per-island constant cannot change which island has the larger marginal drop); a rule
+    on the error-bound LEVEL does change the split, at a worse total residual. The analogue of g > 0 is
+    therefore the condition number, and it has to enter as a level, not as a drop.
+  • WHAT TRANSFERS IS A DIFFERENT RULE: a per-island budget from the asymptotic rate. Measure ρ_i once and
+    allocate k_i = log(tol/r_i0) / log ρ_i. Measured against sweeps to 1e-8: 107.6 predicted against 108
+    (island A) and 11 539.7 against 11 542 (island B) — 0.4 % and 0.0 %.
 """
 from __future__ import annotations
 

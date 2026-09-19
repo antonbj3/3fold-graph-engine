@@ -50,8 +50,21 @@ WHAT IS NOT GUARANTEED.
     much weaker — a single huge surprise can move it by at most a factor 1 + lam. Measured on the same planted worlds:
     0 of 200. Use `drop_outcomes` and pass the outcomes whenever the posterior is at hand.
 
+THE LAW IS REQUIRED, AND `update` REFUSES WITHOUT ONE (`require_law`, default True). The α above is a statement about
+the model's own predictive law of the drop; a caller that has no such law does not have a weaker guarantee, it has no
+guarantee of the stated kind, so the default is a refusal rather than a silent downgrade to the fallback path.
+MEASURED, on a domain that has no predictive law at all — an iterative solver's per-sweep residual drop, which is a
+deterministic function of the iterate rather than a draw from a model: fitted to a trailing rate estimate the residual
+is predictable by construction, the null is violated only during the transition, and the wealth never leaves its peak
+1.00 in any of three scenes; with the rate frozen instead, the alarm fires at sweep 247 against a one-line stagnation
+heuristic's sweep 104 with the SAME final error 2.384e-7; and on the two ill-conditioned scenes, where a stagnation
+rule stops at sweep 6 with 99.6 % / 99.7 % relative error, the alarm never fires at all. It correctly refuses to be
+fooled there, and it buys nothing — the exact-α path was running either the fallback or an INVENTED two-point law,
+for which α is exact for that invention and not for the sequence. Pass `require_law=False` to take the bounded path
+deliberately; `state()["n_bounded"]` then counts the updates that ran without a law.
+
 USE.
-    out = drop_outcomes(post, x, r)          # BEFORE the probe: the model's own law of the drop
+    out = drop_outcomes(post, x, r)          # BEFORE the probe: the model's own law of the drop (required)
     before = post.potential_value()
     post.add_probe(x, answer, r)
     wealth, alarm = al.update(out_mean(out), before - post.potential_value(), out)
@@ -105,11 +118,13 @@ class Alarm:
     lam: float = 0.5                  # fallback path only: the bounded bet, factors in [1 − lam, 1 + lam]
     m: float = 4.0                    # fallback path only: clip of the standardized residual
     scale0: float = 0.05              # fallback path only: scale before any residual is seen
+    require_law: bool = True          # refuse an update with no predictive law instead of downgrading silently
     n: int = 0
     hit: bool = False                 # has the wealth EVER reached 1/alpha — this is what alpha covers
     alarm: bool = False               # latched switch: on at 1/alpha, off again below 1
     n_alarms: int = 0
     n_clipped: int = 0
+    n_bounded: int = 0                # updates taken on the fallback path (require_law=False)
     peak: float = 1.0
     legs: np.ndarray | None = None
     _wp: float = 1.0
@@ -164,8 +179,16 @@ class Alarm:
         d = float(realized) - float(predicted)
         if outcomes:
             self._exact(d, outcomes)
+        elif self.require_law:
+            raise ValueError(
+                "Alarm.update: no predictive law was supplied for this drop, so the exact-alpha martingale cannot be "
+                "formed and the alpha guarantee does not hold. Pass the model's own law of the drop as `outcomes` "
+                "([(probability, drop)], e.g. from drop_outcomes(post, x, r)); if the quantity has no predictive law "
+                "(a deterministic residual, a rate fitted to the sequence itself), construct the Alarm with "
+                "require_law=False to take the documented-weaker bounded path deliberately.")
         else:
             self._bounded(d)
+            self.n_bounded += 1
         self.n += 1
         self._ss += d * d
         w = self.wealth
@@ -181,4 +204,5 @@ class Alarm:
 
     def state(self) -> dict:
         return {"n": self.n, "wealth": self.wealth, "peak": self.peak, "alarm": self.alarm, "hit": self.hit,
-                "n_alarms": self.n_alarms, "n_clipped": self.n_clipped}
+                "n_alarms": self.n_alarms, "n_clipped": self.n_clipped, "n_bounded": self.n_bounded,
+                "require_law": self.require_law}

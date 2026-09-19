@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pytest
 from scipy.stats import spearmanr
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -872,3 +873,75 @@ def test_e35_exact_set_value_is_submodular_on_one_belief():
     gains = [exact_bernoulli_one_belief(0.4, [0.8] * k) - exact_bernoulli_one_belief(0.4, [0.8] * (k - 1))
              for k in range(1, 9)]
     assert all(gains[i] > gains[i + 1] for i in range(len(gains) - 1))        # strictly diminishing
+
+
+# ---------------------------------------------------------------------------------------------------
+# T16: the energy read beside the amplitude read, on a measured chain.
+#
+# A contact-solver study formed the Delassus operator G = J M⁻¹ Jᵀ of the chain
+# ground – A0 A1 A2 – [mediator] – B0 B1 B2 explicitly: seven contacts, and the mediating body's
+# INVERSE MASS is the conductance of the contact-space edge (3,4), so the two directions of an
+# unhealthy mediator land at opposite ends of the spectrum. The form below is that contact graph —
+# a 7-node chain, unit conductances except edge (3,4) = 1/m, and the far end anchored — and it
+# reproduces that study's σ_min, σ_max, amplitude and energy_share row by row.
+# ---------------------------------------------------------------------------------------------------
+
+def _mediator_chain(m_mediator):
+    """The measured contact-space form: conductance 1/m on the mediating edge (3,4), B-side anchored."""
+    f = PrecisionForm.zeros(7)
+    w = [1.0] * 6
+    w[3] = 1.0 / m_mediator
+    f.add_laplacian([(i, i + 1) for i in range(6)], w)
+    f.J[6, 6] += 1.0
+    return f
+
+
+# measured: m_mediator, σ_min(G), σ_max(G), node carrying the largest energy share
+MEDIATOR_SWEEP = ((1e-3, 5.0949e-2, 2.0010e+3, 6), (1e-2, 5.0876e-2, 2.0101e+2, 6),
+                  (1e-1, 5.0154e-2, 2.1053e+1, 6), (1e+0, 4.3705e-2, 3.8271e+0, 6),
+                  (1e+1, 1.7643e-2, 3.4227e+0, 4), (1e+2, 2.4059e-3, 3.4150e+0, 4),
+                  (1e+3, 2.4903e-4, 3.4143e+0, 4), (1e+4, 2.4990e-5, 3.4142e+0, 4))
+
+
+def test_t16_criticality_reproduces_the_measured_sweep():
+    """σ_min and σ_max of the eight measured rows, to four digits. A HEAVY mediator collapses σ_min by
+    175× (4.3705e-2 → 2.4903e-4) — that is the coupling criticality this read is for. A LIGHT one moves
+    σ_max instead (2.0010e+3 at m = 1e-3 against 3.8271e+0 at m = 1) while σ_min moves by 16 %, which is
+    the documented blind spot: the classic mass-ratio bottleneck is not a σ_min finding."""
+    for m, sigma_min, sigma_max, _ in MEDIATOR_SWEEP:
+        f = _mediator_chain(m)
+        r = f.criticality()
+        assert r["sigma_min"] == pytest.approx(sigma_min, rel=1e-4), f"m = {m:g}"
+        assert float(np.linalg.eigvalsh(f.J)[-1]) == pytest.approx(sigma_max, rel=1e-4), f"m = {m:g}"
+    light, heavy = _mediator_chain(1e-3).criticality(), _mediator_chain(1e+0).criticality()
+    assert abs(light["sigma_min"] / heavy["sigma_min"] - 1) < 0.17          # σ_min barely moves …
+    assert np.linalg.eigvalsh(_mediator_chain(1e-3).J)[-1] / np.linalg.eigvalsh(_mediator_chain(1e+0).J)[-1] > 500
+
+
+def test_t16_energy_share_names_the_mediator_that_the_amplitude_argmax_misses():
+    """The measured mode at m = 1e3: |amplitude| [0.5003 0.5002 0.4999 0.4996 0.0015 0.0010 0.0005],
+    energy_share [0.0001 0.0003 0.0008 0.9967 0.9971 0.0020 0.0020]. The amplitude argmax is node 0,
+    which mediates nothing; the energy read names both mediating contacts (3 and 4) at 0.997. Both reads
+    are returned, and the disagreement is a field of the result rather than something a caller has to
+    notice."""
+    r = _mediator_chain(1e3).criticality()
+    assert np.allclose(np.abs(r["direction"]), [0.5003, 0.5002, 0.4999, 0.4996, 0.0015, 0.0010, 0.0005],
+                       atol=5e-5)
+    assert np.allclose(r["energy_share"], [0.0001, 0.0003, 0.0008, 0.9967, 0.9971, 0.0020, 0.0020], atol=5e-5)
+    assert r["amplitude_argmax"] == 0 and r["energy_argmax"] == 4
+    assert not r["amplitude_finds_the_load"]
+    assert [n for n, _ in r["energy_loading"][:2]] == [4, 3]                # both mediating contacts, first
+    assert all(s > 0.99 for _, s in r["energy_loading"][:2])
+    assert [n for n, _ in r["loading"][:2]] == [0, 1]                       # what amplitude would have said
+    # every EDGE is counted at both of its endpoints, so the shares sum to 2 up to the anchor's own term,
+    # which belongs to one node only
+    assert float(np.sum(r["energy_share"])) == pytest.approx(2.0, rel=1e-3)
+
+
+def test_t16_the_two_reads_agree_where_there_is_nothing_to_mediate():
+    """Where the soft direction is one weakly measured coordinate and nothing mediates it, both reads name
+    that coordinate — the disagreement flag is a finding, not a constant."""
+    r = PrecisionForm(np.diag([0.01, 1.0, 1.0]), np.zeros(3)).criticality()
+    assert r["sigma_min"] == pytest.approx(0.01)
+    assert r["amplitude_finds_the_load"] and r["amplitude_argmax"] == r["energy_argmax"] == 0
+    assert r["energy_share"][0] == pytest.approx(1.0)
