@@ -163,6 +163,7 @@ result not reproducible from this repo.
 | `src/graph_engine/graph_hole_engine/tests.py` | VERIFIED-FRESH |
 | `src/graph_engine/graph_interface.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/identifiability_oed.py` | VERIFIED-FRESH |
+| `src/graph_engine/instruments.py` | VERIFIED-FRESH |
 | `src/graph_engine/inverse_design/persona_design_gi_service.py` | VERIFIED-FRESH |
 | `src/graph_engine/leg_admission.py` | VERIFIED-FRESH |
 | `src/graph_engine/leg_decorrelation_lineage_gate.py` | VERIFIED-FRESH |

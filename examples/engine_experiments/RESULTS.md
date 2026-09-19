@@ -598,6 +598,30 @@ is one normal form.
 Vector state (test): the scalar pull-in traced as a 1-vector gives the same numbers; a two-state shallow truss (vertical drop + an
 asymmetric mode coupled through a spring) reads its snap-through fold at the known load with order 2.00 and γ = 0.50.
 
+**Cells as instruments, and which sweep the price buys (e39, `instruments`).** The step from a physical measurement to the engine's
+claim form was written nowhere: `next_actions.Instrument` is a price tag, and every channel consumed a sign and a reliability it
+could not obtain. `Instrument` is that step as a contract — cost, reliability = P(correct SIGN), ONE declared lineage root, and
+`probe(pair, x) -> (sign, p, cost)`, enforced on every reading (a sign outside ±1, a p outside [0, 1], a non-positive cost, or a
+sign that contradicts its own p are refused at the boundary). `ContactSolverSweep` is the first instance, on recorded
+contact-solver measurements: the claim is "method A converges faster than method B on regime R", the sign is sign(mean ln(b/a))
+over the scenes in the window and the probability is Φ(mean/se) from their MEASURED SPREAD, so a window where the two methods sit
+inside each other's spread lands at p ≈ ½ and is worth nothing. Reliability is computed from the family, not passed in. K answers
+enter as one root at weight 1/K (K answers at one x give exactly the posterior of one answer, to 1e−12), and the purchase is priced
+through `sweep_bundle` at the CELL's cost, not K probe costs.
+Three families, three pairs, one bits-per-cost list: a 21-scene router benchmark over log₁₀ n_c (r 0.786, 126.0 s), 14 ρ ladders ×
+10 points over log₁₀(ρ/ρ_B) (r 0.804, 2190.6 s), 448 scenes × 5 solver channels over log₁₀(mass ratio) (r 0.841, 298.9 s). The
+reduction reads the router's own hard case correctly: at n_c = 4, where all four of the benchmark's misroutes sit, the sign is +1
+(plain PGS 4.84× cheaper) at p = 0.878 — the second-least separated of the family's 9 windows, against p = 1.000 on six of the
+others (6736× at n_c = 32). **The PRICE does not follow the reduction.** That window ranks 4 of 9 by bits per cost and 7 of 9 by
+bits, and stays 4–6 of 7–10 across 8/10/12/16 windows and seed reliabilities 0.60/0.75/0.90; forcing a uniform instrument
+reliability moves it by at most one rank, so the miss is structural, not the instrument's own sharpness. On the channel family the
+price does land: the four windows whose density of lost scenes exceeds the family's own 39/448 rate rank 1, 2, 3, 4 of 8 by both
+keys (precision@1 = 1.00, @3 = 1.00; the losses concentrate at low mass ratio, 24 of 92 in the first decade = 3.00× the family
+rate). Pooled over 12 purchases in one cross-family list the hit rate is 1/12 = 0.083 against a 0.207 uniform-window base rate —
+the same as a random pick among the identical candidates, for 51.7 s of measurement against random's 1634.4 s (31.6× cheaper) and
+cost-blind's 548.9 s at 2/12. The cross-family list is dominated by whichever campaign's measurements were cheapest: the loop
+spends its first three rounds on 1–217 ms ρ-ladder points. 24 answers entered from 12 roots, one per purchase.
+
 ## Limits
 
 - The label in e3/e8 is what a field did next, not what was worth doing.
@@ -608,3 +632,4 @@ asymmetric mode coupled through a spring) reads its snap-through fold at the kno
 - e12: the judge is simulated. No real judge has been run through `typed_extraction`. e14 uses the real 0.5B model's answers and a real rule, on templated sentences.
 - `polarity_rules`: English lexicon; one sentence; no coreference beyond "it"; abstains otherwise. Independent accuracy 0.86 (e15), not 1.0.
 - `plan_value`: goals summed with a node under two goals counted twice; the order is the chain-segment rule, heuristic beyond chains.
+- e39: the instrument is calibrated on the same recorded campaign it then reports from, so its reliability is in-sample; the hit rate is scored against known answers from those campaigns, so it measures whether the price points at places already known to be hard, not whether it would find a new one. The ρ family's rows are single ladder points and the other two families' rows are whole scenes, so "one purchase" is not the same size of thing across the three. Every purchase enters under one root; the shared-error state (the same solver binary behind several windows) is not exercised.
