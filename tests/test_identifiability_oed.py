@@ -34,7 +34,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from graph_engine.identifiability_oed import (  # noqa: E402
-    _spectrum, greedy_oed, identifiability, value_bits,
+    _spectrum, greedy_oed, identifiability, select_with_rank_tiebreak, value_bits,
 )
 
 # measured, per interface c = 0..7: Cramer-Rao bound on mu_c from the selected set, and probe impulse (N s)
@@ -149,3 +149,57 @@ def test_greedy_oed_rejects_a_cost_vector_that_is_not_a_price():
         greedy_oed(pool, 4, costs=[0.0] * len(pool))
     with pytest.raises(ValueError):
         greedy_oed(pool, 4, tie_break="whatever")
+
+
+# -- the common rank-tiebreak, one pick at a time -------------------------------------------
+
+def test_select_with_rank_tiebreak_prefers_rank_then_value_then_cost():
+    """Rank increase first, then value, cost last; full ties rotate from `start`."""
+    assert select_with_rank_tiebreak([0.1, 0.9, 0.9], [0, 1, 1], [1.0, 5.0, 1.0]) == 2
+    assert select_with_rank_tiebreak([0.1, 0.9, 0.9], [1, 0, 0], [1.0, 1.0, 1.0]) == 0
+    assert select_with_rank_tiebreak([0.5, 0.5], [0, 0], [2.0, 1.0]) == 1
+    assert select_with_rank_tiebreak([0.5, 0.5], [0, 0], [1.0, 1.0]) == 0
+    assert select_with_rank_tiebreak([0.5, 0.5], [0, 0], [1.0, 1.0], start=1) == 1
+    assert select_with_rank_tiebreak([0.5, 0.5, 0.5], [0, 0, 0], [1.0, 1.0, 1.0],
+                                     exclude={0, 1}) == 2
+    assert select_with_rank_tiebreak([0.5], [0], [1.0], exclude={0}) is None
+
+
+def test_select_with_rank_tiebreak_fails_closed():
+    """A degenerate candidate must not win by default: non-finite entries, non-positive
+    costs and length mismatches raise."""
+    with pytest.raises(ValueError):
+        select_with_rank_tiebreak([0.5, float("nan")], [0, 0], [1.0, 1.0])
+    with pytest.raises(ValueError):
+        select_with_rank_tiebreak([0.5, 0.5], [0, 0], [1.0, 0.0])
+    with pytest.raises(ValueError):
+        select_with_rank_tiebreak([0.5], [0, 0], [1.0, 1.0])
+
+
+def test_select_with_rank_tiebreak_reproduces_the_stack_0_to_6_point_3e5():
+    """The helper on greedy's priced keys, round by round over the measured probe pool above
+    (gains and values priced by cost, exact compare): the reported selection order
+    7, 6, 5, 4, 3, 2, 0, 1 and sigma_min 0 -> 6.327508e5 at k = 8."""
+    pool, costs, contact = probe_pool()
+    K = pool[0].shape[0]
+    scale = float(np.mean([float(np.trace(F)) for F in pool])) / K
+    P = 1e-9 * max(scale, 1e-300) * np.eye(K)   # greedy_oed's scale-free ridge
+    acc = np.zeros((K, K))
+    s_acc, r_acc, _ = _spectrum(acc)
+    chosen = []
+    for _ in range(8):
+        gain, val, ok = [], [], []
+        for i in range(len(pool)):
+            if i in chosen:
+                continue
+            s, r, _sp = _spectrum(acc + pool[i])
+            gain.append((r - r_acc) / costs[i])
+            val.append(value_bits(acc, pool[i], P) / costs[i])
+            ok.append(i)
+        sub = select_with_rank_tiebreak(val, gain, [costs[i] for i in ok], rel_tol=0.0)
+        chosen.append(ok[sub])
+        acc = acc + pool[chosen[-1]]
+        s_acc, r_acc, _ = _spectrum(acc)
+    assert [contact[i] for i in chosen] == ASCENDING_COST
+    assert sum(costs[i] for i in chosen) == pytest.approx(0.64906, rel=1e-4)
+    assert _spectrum(acc)[0] == pytest.approx(SIGMIN_TRACE[0], rel=0.01)

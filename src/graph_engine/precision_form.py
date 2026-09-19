@@ -109,10 +109,18 @@ from itertools import combinations
 
 import numpy as np
 
+try:                                              # package import (tests, examples, callers)
+    from graph_engine.identifiability_oed import select_with_rank_tiebreak
+except ModuleNotFoundError:                       # run as a script: src dir relative to THIS file
+    import os
+    import sys
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from graph_engine.identifiability_oed import select_with_rank_tiebreak
+
 __all__ = ["PrecisionForm", "Candidate", "set_value_bits", "joint_criticality", "mp_floor", "eigen_readout",
            "exact_bernoulli_set_value", "exact_bernoulli_one_belief", "exact_bernoulli_chain",
            "sphere_set_value", "theta_of_p", "p_of_theta", "bernoulli_outcome_table",
-           "bernoulli_reliability_of_probe", "sphere_error_grid"]
+           "bernoulli_reliability_of_probe", "sphere_error_grid", "sequential_rank_tiebreak"]
 
 _LOG2 = np.log(2.0)
 
@@ -458,11 +466,22 @@ class PrecisionForm:
                        in AMPLITUDE;
           energy_share per-node share of the mode's energy vᵀJv = Σ_{i<j} w_ij (v_i−v_j)² + Σ_i r_i v_i²
                        (w_ij = −J_ij, r_i = J_ii − Σ_j w_ij): the share of that energy carried by the
-                       edges INCIDENT on each node, so each value is in [0,1] and they sum to 2 (every
-                       edge is counted at both of its endpoints), not to 1. This is the LOAD-BEARING
-                       read: a mediating variable sits near the neutral point of the mode (amplitude
-                       ≈ 0) while carrying nearly all of its energy, so amplitude loading alone will
-                       not find it (see `joint_criticality`).
+                       edges INCIDENT on each node. Each edge is counted at both of its endpoints, so
+                       on a PURE Laplacian (r = 0) the shares are in [0,1] and sum to exactly 2 — and
+                       ONLY there: with diagonal mass (measurement/Bernoulli blocks) the correct sum
+                       is 2 − (Σ_i r_i v_i²)/(vᵀJv) — identity, not a bound: on contact-solver
+                       measurements it gave −2.115112 on the contact-space operator and 53.004463 on
+                       a Fisher form, both against the same formula to 9e-16. With signed
+                       conductances (w_ij < 0) shares go negative and are not shares at all (10 of
+                       36 off-diagonal pairs were negative on that operator). `energy_share_sum`
+                       carries that sum,
+                       `energy_fraction` = share/sum is the unit-sum SHARE (the state definition),
+                       `negative_conductances` counts w_ij < 0, and `load_bearing_valid` is True only
+                       when the sum is 2 within 1e-6 relative AND every conductance is non-negative —
+                       otherwise the load-bearing reading is refused by flag, not by silence. This is
+                       the LOAD-BEARING read: a mediating variable sits near the neutral point of the
+                       mode (amplitude ≈ 0) while carrying nearly all of its energy, so amplitude
+                       loading alone will not find it (see `joint_criticality`).
           energy_loading  [(node, share)] for the `top` coordinates by energy share — the same list as
                        `loading`, read in the currency that finds the mediator, REPORTED BESIDE IT so a
                        caller cannot take the amplitude ranking for the answer;
@@ -495,6 +514,10 @@ class PrecisionForm:
         per_node = (W_off * D).sum(1) + r * v ** 2                # each edge counted at both endpoints
         tot = float(v @ self.J @ v)
         share = per_node / max(tot, 1e-300)
+        share_sum = float(share.sum())
+        neg_w = int((W_off[np.triu_indices(self.d, 1)] < 0).sum())
+        load_ok = bool(abs(share_sum - 2.0) <= 1e-6 * max(1.0, abs(share_sum)) and neg_w == 0)
+        fraction = share / share_sum if abs(share_sum) > 1e-300 else np.zeros_like(share)
         e_order = np.argsort(-share)[:top]
         amp_arg, e_arg = int(np.argmax(np.abs(v))), int(np.argmax(share))
         nb, _ = self._blocks()
@@ -503,6 +526,10 @@ class PrecisionForm:
             "direction": v,
             "loading": [(int(i), float(v[i])) for i in order],
             "energy_share": share,
+            "energy_share_sum": share_sum,
+            "energy_fraction": fraction,
+            "negative_conductances": neg_w,
+            "load_bearing_valid": load_ok,
             "energy_loading": [(int(i), float(share[i])) for i in e_order],
             "amplitude_argmax": amp_arg,
             "energy_argmax": e_arg,
@@ -514,7 +541,7 @@ class PrecisionForm:
 
 
 def joint_criticality(form_a: "PrecisionForm", form_b: "PrecisionForm", shared_index_map,
-                      top: int = 8) -> dict:
+                      top: int = 8, mode: str = "split") -> dict:
     """COUPLED CRITICALITY of two forms glued through shared concepts (the graph_interface federation:
     J = J_A ⊕ J_B with the rows of S identified — Kron/Schur gluing, no interior exchanged).
 
@@ -522,12 +549,34 @@ def joint_criticality(form_a: "PrecisionForm", form_b: "PrecisionForm", shared_i
     are A's coordinates 0..d_a−1 followed by B's NON-shared coordinates; a shared B coordinate is
     scattered onto its A partner, which is exactly the row identification of graph_interface.
 
-    Why a per-part health check is blind here, stated exactly: the joint form restricted to A's
-    coordinates is J_A + (B's contribution at the shared rows) ⪰ J_A, so EVERY direction supported
-    inside one part has Rayleigh quotient ≥ that part's own σ_min. A joint σ_min below both parts'
-    therefore MUST come from a direction with mass in both interiors — a cross-part mode, which no
-    part can even represent. The shared variables are its only channel, and they are where its energy
-    goes even though its amplitude there is near zero (`shared` below reports both).
+    `mode` is provenance, and it matters: the shared block exists in BOTH side forms, and what
+    the joint should carry there depends on where the sides came from.
+      "split" (default): the sides are principal submatrices of ONE true matrix — both sides read the
+        same coupled operator, which is how contact-solver measurements arrive (part A = one body's
+        contacts + the seam, part B = the seam + the other body's). The shared block is assembled
+        ONCE — from A — while B contributes its interior block and the cross terms to the shared rows.
+        The overlap is VERIFIED: J_A[SS] and J_B[SS] (and b) must agree within 1e-9 relative, else
+        ValueError (fail closed: silently halving or doubling a seam is how the 1.53× defect hid).
+        Where the two interiors touch only through the shared rows — the premise this function states
+        — the result IS the true matrix: measured on a contact-solver Delassus (9 contacts, 4 shared)
+        the reconstructed joint matched the coupled matrix to 0.0 absolute and σ_min to the digit,
+        5.546751e-01, while assembling the seam twice gave 8.496287e-01, a 1.5318× UPPER BOUND.
+        A direct interior-A/interior-B block cannot be recovered: neither side holds it (it was
+        exactly 0 in that measurement).
+      "federate": the sides are INDEPENDENTLY built parts whose couplings to the shared variable both
+        exist physically (each side's own edges to the seam). Both copies are kept — the old behavior,
+        under which the two-healthy-parts collapse and its contrast repair were measured. This is the
+        right mode for information that ADDS: two Fisher forms from independent observation channels
+        glued at a common parameter have J_A[SS] ≠ J_B[SS] by construction (5.256006e+05 vs
+        5.482346e+03 on the same measurements) and "split" refuses them by design.
+
+    Why a per-part health check is blind here, stated exactly: in "split" mode the joint form
+    restricted to A's coordinates IS J_A, in "federate" mode it is J_A plus B's seam terms ⪰ J_A —
+    either way EVERY direction supported inside one part has Rayleigh quotient ≥ that part's own
+    σ_min. A joint σ_min below both parts' therefore MUST come from a direction with mass in both
+    interiors — a cross-part mode, which no part can even represent. The shared variables are its
+    only channel, and they are where its energy goes even though its amplitude there is near zero
+    (`shared` below reports both).
 
     Returns {sigma_min_joint, sigma_min_a, sigma_min_b, ratio, joint, shared, a_map, b_map}:
       ratio   σ_min(joint) / min(σ_min(A), σ_min(B)) — ≪ 1 is the coupling-induced criticality;
@@ -551,9 +600,39 @@ def joint_criticality(form_a: "PrecisionForm", form_b: "PrecisionForm", shared_i
         else:
             b_map[j] = nxt; nxt += 1
     dj = nxt
+    if mode not in ("split", "federate"):
+        raise ValueError(f'mode must be "split" or "federate", got {mode!r}')
     J = np.zeros((dj, dj)); bvec = np.zeros(dj)
     J[np.ix_(a_map, a_map)] += form_a.J; bvec[a_map] += form_a.b
-    J[np.ix_(b_map, b_map)] += form_b.J; bvec[b_map] += form_b.b
+    # B is assembled ONCE: its interior block and the cross terms to the shared
+    # rows. What happens to B's own copy of the shared block is what `mode` decides.
+    inB = [j for j in range(db) if j not in b_to_a]
+    shB = [b for _, b in pairs]
+    shA = [a for a, _ in pairs]
+    j_in = np.array([b_map[j] for j in inB], np.int64)
+    j_sh = np.array([b_map[j] for j in shB], np.int64)
+    if len(inB):
+        JB = form_b.J
+        J[np.ix_(j_in, j_in)] += JB[np.ix_(inB, inB)]
+        J[np.ix_(j_sh, j_in)] += JB[np.ix_(shB, inB)]
+        J[np.ix_(j_in, j_sh)] += JB[np.ix_(inB, shB)]
+        bvec[j_in] += form_b.b[inB]
+    if mode == "split":
+        SA, SB = form_a.J[np.ix_(shA, shA)], form_b.J[np.ix_(shB, shB)]
+        agree = float(np.abs(SA - SB).max())
+        scale = max(float(np.abs(SA).max()), 1e-300)
+        b_agree = float(np.abs(form_a.b[shA] - form_b.b[shB]).max())
+        b_scale = max(float(np.abs(form_a.b[shA]).max()), 1e-300)
+        if agree > 1e-9 * scale or b_agree > 1e-9 * b_scale:
+            raise ValueError(
+                "joint_criticality split mode: the shared blocks disagree "
+                f"(J: max {agree:.3e} at scale {scale:.3e}; b: max {b_agree:.3e} "
+                f"at scale {b_scale:.3e}) -- the sides are not principal "
+                "submatrices of one matrix; use mode='federate' for "
+                "independently built parts")
+    else:
+        J[np.ix_(j_sh, j_sh)] += form_b.J[np.ix_(shB, shB)]
+        bvec[j_sh] += form_b.b[shB]
     joint = PrecisionForm(J, bvec, min(form_a.tol, form_b.tol))
     rj, ra, rb = joint.criticality(top), form_a.criticality(top), form_b.criticality(top)
     share, v = rj["energy_share"], rj["direction"]
@@ -565,6 +644,7 @@ def joint_criticality(form_a: "PrecisionForm", form_b: "PrecisionForm", shared_i
     return {
         "sigma_min_joint": rj["sigma_min"], "sigma_min_a": ra["sigma_min"], "sigma_min_b": rb["sigma_min"],
         "ratio": float(rj["sigma_min"] / lo) if lo > 0 else float("inf"),
+        "mode": mode,
         "joint": joint, "report": rj, "shared": shared, "a_map": a_map, "b_map": b_map,
     }
 
@@ -792,6 +872,33 @@ def sphere_error_grid(ps, rels, k: int = 1, moment: str = "var") -> dict:
             "argmax_p": rows[i][0], "argmax_r": rows[i][1],
             "exact_at_argmax_bits": rows[i][2], "sphere_at_argmax_bits": rows[i][3],
             "max_rel_error_at_r_le_0.9": float(max((x[4] for x in rows if x[1] <= 0.9), default=0.0))}
+
+
+def sequential_rank_tiebreak(round_values, round_gains, costs, start=0):
+    """Sequential picks with the common rank-tiebreak, WITHOUT removal: re-probing a candidate
+    is allowed, which is the shape of a repeated-probe experiment (every round may probe any
+    candidate).
+    `round_values[r][i]` / `round_gains[r][i]`: value and rank gain of candidate i in round r
+    (values are typically sphere_set_value ΔV per candidate); `costs[i]`: price. Returns the
+    pick per round. Within one pass over the pool no candidate repeats (round-robin constraint):
+    the measurement this comes from is a four-contact probing study where, once every contact
+    is covered, every ΔV is 2e-6 and every rank gain is 0 — repeating the cheapest candidate
+    there ended at sigma_min 1.060295e6 against 1.831658e6 for cycling (1.73x) at 1.5 % less
+    actuation, so on a plateau the pass constraint is the only thing left that carries
+    information. Use greedy_oed (removal shape) where re-probing is not allowed."""
+    c = np.asarray(costs, float).ravel()
+    n = len(c)
+    picks = []
+    s = int(start)
+    used = set()
+    for v, g in zip(round_values, round_gains):
+        if len(used) >= n:
+            used = set()
+        i = select_with_rank_tiebreak(v, g, c, exclude=used, start=s)
+        picks.append(i)
+        used.add(i)
+        s = (i + 1) % n
+    return picks
 
 
 def bernoulli_reliability_of_probe(h: float, sigma: float | None = None) -> float:

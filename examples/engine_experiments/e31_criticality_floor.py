@@ -64,7 +64,9 @@ nA = nB = 20
 rows = {}
 for c in (1.0, 0.3, 0.1, 0.03):
     A, B = part(nA, 5.0, c), part(nB, 5.0, c)
-    r = joint_criticality(A, B, {nA: nB})
+    # independently built parts: each side owns its own edges to the shared concept, so
+    # both seam couplings exist physically -- mode="federate" (see joint_criticality)
+    r = joint_criticality(A, B, {nA: nB}, mode="federate")
     j, s = r["joint"], r["shared"][0]
     lvl = {}
     for sigma in (1.0, 0.05):
@@ -89,7 +91,7 @@ out["planted_shared_weakness"] = rows
 # asymmetric leans and two shared concepts: which one carries the weak mode?
 A = part(nA, 5.0, 0.0, n_shared=2, lean=[1.0, 3.0])
 B = part(nB, 5.0, 0.0, n_shared=2, lean=[0.1, 3.0])
-r = joint_criticality(A, B, {nA: nB, nA + 1: nB + 1})
+r = joint_criticality(A, B, {nA: nB, nA + 1: nB + 1}, mode="federate")
 out["two_shared_concepts"] = {
     "leans_a": [1.0, 3.0], "leans_b": [0.1, 3.0],
     "sigma_min_a": round(r["sigma_min_a"], 6), "sigma_min_b": round(r["sigma_min_b"], 6),
@@ -140,7 +142,7 @@ out["dpp_kernel_sketch_noise"] = {"n_nodes": n, "n_edges": len(edges), "per_k": 
 
 # -- (3) reading the criticality itself through a sketch ---------------------------------------------
 A, B = part(nA, 5.0, 1.0), part(nB, 5.0, 1.0)
-r = joint_criticality(A, B, {nA: nB})
+r = joint_criticality(A, B, {nA: nB}, mode="federate")
 J = r["joint"].J
 dj = len(J)
 off = -J.copy(); np.fill_diagonal(off, 0.0)

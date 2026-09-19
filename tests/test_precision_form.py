@@ -524,6 +524,7 @@ def test_t11b_sparsify_actually_drops_edges_at_the_same_error_as_the_sketch():
 # every small-eigenvalue read-out taken from a k-dimensional sketch.
 # ---------------------------------------------------------------------------------------------------
 from graph_engine.precision_form import eigen_readout, joint_criticality, mp_floor  # noqa: E402
+from graph_engine.precision_form import sequential_rank_tiebreak  # noqa: E402
 
 
 def _glue_part(n_interior, w_in, c_shared, seed):
@@ -569,10 +570,12 @@ def test_t13_joint_criticality_of_two_healthy_parts_glued_through_one_shared_var
     """Two parts, each σ_min ≈ 1.05, glued through one shared concept neither of them measures: the
     JOINT σ_min is 0.05 — 21× below either part. The weak direction's AMPLITUDE on the shared variable
     is ~0 (it sits at the neutral point of the mode); its ENERGY share is 1.0 against ≤ 0.025 for every
-    other node, which is the read that actually finds the mediator."""
+    other node, which is the read that actually finds the mediator.
+    The parts are INDEPENDENTLY built (each owns its edges to the seam), so this is
+    mode="federate": both seam couplings exist physically."""
     nA = nB = 20
     A, B = _glue_part(nA, 5.0, 1.0, 0), _glue_part(nB, 5.0, 1.0, 1)
-    r = joint_criticality(A, B, {nA: nB})
+    r = joint_criticality(A, B, {nA: nB}, mode="federate")
     assert r["sigma_min_a"] > 1.0 and r["sigma_min_b"] > 1.0          # each part healthy
     assert abs(r["sigma_min_joint"] - 0.05) < 1e-6
     assert r["ratio"] < 0.05                                          # 21× collapse on gluing
@@ -604,10 +607,10 @@ def test_t13b_the_repair_is_a_contrast_not_a_level_and_sherman_morrison_is_exact
     creates a new soft direction 1/(σ²d). The observation that does work is the CONTRAST h = e_a − e_b
     across the seam (one cross link): σ_min 0.050 → 0.148. That h lies in range(J) of a connected
     Laplacian, so `observe` takes the Sherman–Morrison branch and it is exact to 1e-12 against the
-    recomputed pseudo-inverse."""
+    recomputed pseudo-inverse. Independently built parts: mode="federate"."""
     nA = nB = 20
     A, B = _glue_part(nA, 5.0, 1.0, 0), _glue_part(nB, 5.0, 1.0, 1)
-    r = joint_criticality(A, B, {nA: nB})
+    r = joint_criticality(A, B, {nA: nB}, mode="federate")
     J0, s = r["joint"], r["shared"][0]["joint"]
     base = r["sigma_min_joint"]
 
@@ -945,3 +948,160 @@ def test_t16_the_two_reads_agree_where_there_is_nothing_to_mediate():
     assert r["sigma_min"] == pytest.approx(0.01)
     assert r["amplitude_finds_the_load"] and r["amplitude_argmax"] == r["energy_argmax"] == 0
     assert r["energy_share"][0] == pytest.approx(1.0)
+
+
+# -- T17: the share sum is a measurement, and the share is a share -------------------------
+
+def test_t17_share_sum_is_two_on_a_pure_laplacian_and_a_fraction_there():
+    """On a pure Laplacian (r = 0) the edge-counted shares sum to exactly 2, the unit-sum
+    fraction sums to 1, no conductance is negative, and the load-bearing read is valid."""
+    rng = np.random.default_rng(7)
+    n = 12
+    edges = [(i, int(rng.integers(0, n))) for i in range(n) for _ in range(2)]
+    edges = [(a, b) for a, b in edges if a != b]
+    f = PrecisionForm.zeros(n).add_laplacian(edges, [1.0] * len(edges))
+    r = f.criticality()
+    assert r["energy_share_sum"] == pytest.approx(2.0, rel=1e-9)
+    assert float(r["energy_fraction"].sum()) == pytest.approx(1.0, rel=1e-9)
+    assert r["negative_conductances"] == 0
+    assert r["load_bearing_valid"] is True
+
+
+def test_t17b_share_sum_follows_the_identity_with_diagonal_mass():
+    """Laplacian + diagonal mass m (measurement blocks): the correct sum is
+    2 − (Σ r_i v_i²)/(vᵀJv) to the digit, the fraction still sums to 1, and the
+    load-bearing flag is off. Same check as on the contact-solver measurements, where the
+    sum was −2.115112 on the contact-space operator and 53.004463 on a Fisher form, both
+    against this identity to 9e-16."""
+    rng = np.random.default_rng(11)
+    n = 10
+    edges = [(i, (i + 1) % n) for i in range(n)] + [(i, (i + 3) % n) for i in range(n)]
+    f = PrecisionForm.zeros(n).add_laplacian(edges, [1.0] * len(edges))
+    m = np.linspace(0.5, 2.0, n)
+    f.J = f.J + np.diag(m)
+    f._dirty()
+    r = f.criticality()
+    v = r["direction"]
+    W = -f.J.copy(); np.fill_diagonal(W, 0.0)
+    rr = np.diag(f.J) - W.sum(1)
+    expect = 2.0 - float(rr @ (v ** 2)) / float(v @ f.J @ v)
+    assert r["energy_share_sum"] == pytest.approx(expect, rel=1e-9)
+    assert abs(expect - 2.0) > 0.1                       # off the Laplacian, measurably
+    assert float(r["energy_fraction"].sum()) == pytest.approx(1.0, rel=1e-9)
+    assert r["load_bearing_valid"] is False
+
+
+def test_t17c_signed_conductances_are_counted_and_refuse_the_read():
+    """One negative off-diagonal conductance: counted, fraction still unit-sum, flag off."""
+    J = np.array([[2.0, -1.0, -0.5], [-1.0, 2.0, 0.3], [-0.5, 0.3, 1.2]])
+    J = 0.5 * (J + J.T) + np.eye(3) * 0.5
+    r = PrecisionForm(J, np.zeros(3)).criticality()
+    assert r["negative_conductances"] >= 1
+    assert r["load_bearing_valid"] is False
+    assert float(r["energy_fraction"].sum()) == pytest.approx(1.0, rel=1e-9)
+
+
+# -- T18: shared rows assembled once --------------------------------------------------------
+
+def _split_true_form():
+    """A known 5x5 coupled form of the shape this function states: two parts that touch ONLY
+    through the shared coordinate 2 (no direct interior-A/interior-B block, exactly what was
+    measured on the contact-solver operator, where that block was 0.0), split into the two
+    principal submatrices [0,1,2] and [2,3,4]."""
+    rng = np.random.default_rng(3)
+    PA = rng.standard_normal((3, 3)); PA = PA @ PA.T + np.eye(3)
+    PB = rng.standard_normal((3, 3)); PB = PB @ PB.T + np.eye(3)
+    A_set, B_set = [0, 1, 2], [2, 3, 4]
+    J = np.zeros((5, 5))
+    J[np.ix_(A_set, A_set)] += PA
+    J[np.ix_(B_set, B_set)] += PB
+    fa = PrecisionForm(J[np.ix_(A_set, A_set)].copy(), np.zeros(3))
+    fb = PrecisionForm(J[np.ix_(B_set, B_set)].copy(), np.zeros(3))
+    return J, fa, fb
+
+
+def test_t18_split_mode_recovers_the_true_coupled_form():
+    """Sides that are principal submatrices of ONE matrix: split mode assembles the shared
+    block once and returns the true coupled matrix, entry for entry. On contact-solver
+    measurements (9 contacts, 4 shared) that reconstruction matched the coupled operator to
+    0.0 absolute and its sigma_min to 5.546751e-01, against the seam-doubled 8.496287e-01 —
+    the 1.5318x upper bound this fixes."""
+    J, fa, fb = _split_true_form()
+    r = joint_criticality(fa, fb, {2: 0}, mode="split")
+    assert r["mode"] == "split"
+    assert np.abs(r["joint"].J - J).max() == 0.0
+    assert r["sigma_min_joint"] == pytest.approx(float(np.linalg.eigvalsh(J)[0]), rel=1e-9)
+
+
+def test_t18b_federate_mode_keeps_both_seam_couplings():
+    """Independently built parts keep both copies (the T13 phenomenon lives here, unchanged);
+    on a split pair federate doubles the seam block and lands ABOVE the true sigma_min —
+    an upper bound, which is exactly the old default behavior."""
+    J, fa, fb = _split_true_form()
+    r = joint_criticality(fa, fb, {2: 0}, mode="federate")
+    true = float(np.linalg.eigvalsh(J)[0])
+    assert r["sigma_min_joint"] > true
+    assert r["joint"].J[2, 2] == pytest.approx(2.0 * J[2, 2])
+
+
+def test_t18c_split_mode_fails_closed_on_disagreeing_seams():
+    """Split mode with sides that are NOT submatrices of one matrix raises instead of
+    halving or doubling a seam."""
+    _, fa, fb = _split_true_form()
+    fb2 = PrecisionForm(fb.J.copy(), fb.b.copy(), fb.tol)
+    fb2.J[0, 0] += 1.0
+    with pytest.raises(ValueError):
+        joint_criticality(fa, fb2, {2: 0}, mode="split")
+    fb3 = PrecisionForm(fb.J.copy(), fb.b.copy(), fb.tol)
+    fb3.b[0] += 1.0                                   # the seam's b must agree too
+    with pytest.raises(ValueError):
+        joint_criticality(fa, fb3, {2: 0}, mode="split")
+    with pytest.raises(ValueError):
+        joint_criticality(fa, fb, {2: 0}, mode="bogus")
+    # the two Fisher forms of independent observation channels: information ADDS at the
+    # seam, so their shared blocks differ by construction and split must refuse them
+    ga = PrecisionForm(np.diag([1.0, 1.0, 5.256006e5]), np.zeros(3))
+    gb = PrecisionForm(np.diag([5.482346e3, 1.0, 1.0]), np.zeros(3))
+    with pytest.raises(ValueError):
+        joint_criticality(ga, gb, {2: 0}, mode="split")
+    assert joint_criticality(ga, gb, {2: 0}, mode="federate")["joint"].J[2, 2] == \
+        pytest.approx(5.256006e5 + 5.482346e3)
+
+
+# -- T19: the plateau cycles instead of sticking ---------------------------------------------
+
+def test_t19_plateau_cycles_round_robin_and_covers_first():
+    """Four contacts, set values tied at 2e-6 — the measured post-coverage plateau, where every
+    belief has saturated at 1.0 and the value is blind — with the four measured per-contact
+    torques as the price. Every pass over the pool takes all four contacts, cheapest first
+    (3, 2, 1, 0 for these torques), instead of sticking to one: the measured stuck rule spent
+    probes 6, 7, 8 on one contact. The pass constraint is the whole repair; nothing else on
+    the plateau carries a gradient."""
+    costs = [5.2135, 5.1670, 4.4467, 4.4070]     # |tau|_2 (N m) at probes k = 1..4
+    vals = [[2e-6] * 4 for _ in range(8)]
+    gains = [[1] * 4 for _ in range(8)]
+    picks = sequential_rank_tiebreak(vals, gains, costs)
+    assert picks == [3, 2, 1, 0, 3, 2, 1, 0]
+    assert set(picks[:4]) == {0, 1, 2, 3} and set(picks[4:]) == {0, 1, 2, 3}
+    stuck = [min(range(4), key=lambda i: costs[i])] * 8      # value-blind argmin, no pass rule
+    assert len(set(stuck)) == 1 and len(set(picks)) == 4
+
+
+def test_t19b_coverage_gain_beats_cost_before_the_plateau():
+    """While a candidate is still uncovered (gain 1 vs 0) the gain decides, whatever the
+    price: the expensive uncovered candidate is picked before the cheap covered ones."""
+    picks = sequential_rank_tiebreak(
+        [[2e-6] * 4], [[0, 0, 0, 1]], [1.0, 1.0, 1.0, 100.0])
+    assert picks == [3]
+
+
+def test_t19c_round_robin_beats_the_stuck_rule_on_the_measured_numbers():
+    """The recorded outcome of the four-contact probing study: cycling 0,1,2,3,0,1,2,3
+    reached sigma_min 1.831658e6 (max CRB 7.389e-4), the value-blind rule that stuck,
+    0,1,2,3,1,0,0,0, reached 1.060295e6 (max CRB 9.712e-4) — 1.73x at 1.5 % less actuation.
+    sigma_min = 1/maxCRB^2 holds on both recorded final CRBs, so the inequality is
+    arithmetic on the measured rows, not a re-simulation."""
+    rr, circ = 1.831658e6, 1.060295e6
+    assert 1.0 / 7.389e-4 ** 2 == pytest.approx(rr, rel=1e-3)
+    assert 1.0 / 9.712e-4 ** 2 == pytest.approx(circ, rel=1e-3)
+    assert rr / circ == pytest.approx(1.727, rel=1e-2)

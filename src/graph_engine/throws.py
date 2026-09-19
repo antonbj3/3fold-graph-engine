@@ -28,6 +28,14 @@ from __future__ import annotations
 
 import numpy as np
 
+try:                                              # package import (tests, examples, callers)
+    from graph_engine.identifiability_oed import select_with_rank_tiebreak
+except ModuleNotFoundError:                       # run as a script: src dir relative to THIS file
+    import os
+    import sys
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from graph_engine.identifiability_oed import select_with_rank_tiebreak
+
 __all__ = ["throw_scores", "draw", "draw_pairs", "inclusion_probabilities", "draw_set_dpp", "dpp_inclusion_probabilities", "throw_from_continuum", "densify_sequential", "throw_at_point_dpp", "chain_throw", "would_be_leverage", "bridge_throws"]
 
 
@@ -197,7 +205,14 @@ def throw_at_point_dpp(Z: np.ndarray, x_star: np.ndarray, scale: float | None = 
     S, pi = draw_set_dpp(Z[near], quality=q[near], seed=seed)
     S, pi = near[S], pi
     if k is not None and len(S) > k:
-        top = np.argsort(-pi)[:k]; S, pi = S[top], pi[top]
+        # the trim is a selection: highest inclusion probability first, exact ties by index
+        # (the common rank-tiebreak, with no rank information and uniform cost). Identical
+        # to the old argsort top-k wherever probabilities differ, deterministic where tied.
+        exc: set = set()
+        for _ in range(k):
+            exc.add(select_with_rank_tiebreak(pi, np.zeros_like(pi), np.ones_like(pi),
+                                              exclude=exc))
+        top = np.array(sorted(exc, key=lambda i: (-pi[i], i)), int); S, pi = S[top], pi[top]
     return S, pi
 
 
