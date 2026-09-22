@@ -44,15 +44,22 @@ The derived flat-family state uses `H=sum(kernel_A)` and predicts the same
 initial-orientation priors. At a full native anchor, the owner records
 `epsilon=P(k=1)+P(k=2)` by **summing** both posterior family masses. After
 common positive-likelihood probes, it accumulates
-`sum(weight*abs(logit(reliability)))`. The ordinary-float odds envelope
-`sigmoid(logit(epsilon)+contrast)` bounds the mathematical tail mass under the
-declared finite family, fixed prior/claim semantics and common evidence. If it
+`sum(weight*abs(logit(reliability)))`. It also maintains two Q-cell arrays of
+natural-coordinate changes since the anchor, costing 16Q additional numeric
+bytes. Their local maxima give a conditional-evidence tail envelope:
+`U=exp(sum_q max(0, abs(delta_A[q])+delta_B[q]))` and
+`Z_flat=p*exp(sum(delta_A+delta_B))+(1-p)*exp(sum(-delta_A+delta_B))`,
+where `p=sigmoid(2H_anchor)`. The method uses the smaller of the ordinary-float
+odds estimates `sigmoid(logit(epsilon)+contrast)` and
+`sigmoid(logit(epsilon)+log(U/Z_flat))`. Its response reports both estimates and
+`bound_choice`. This bounds mathematical tail mass under the declared finite
+family, fixed prior/claim semantics and common evidence. If the chosen estimate
 exceeds the caller tolerance, or its inputs are unresolved/nonfinite, the
 method falls back to full native decoding and refreshes the anchor. A rounded
 zero tail with positive prior support is unresolved. No original hypothesis,
 natural coordinate or evidence record is deleted.
 
-This estimate is **not** an outward-rounded numerical certificate or a
+These estimates are **not** outward-rounded numerical certificates or a
 guarantee for changed sensors, priors, claims, calibrations, state-dependent
 action policies or future rounded computations. `add_claim` and
 `set_claim_reliabilities` invalidate the anchor; a successful actual probe

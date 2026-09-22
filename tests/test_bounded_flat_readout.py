@@ -87,7 +87,9 @@ def test_multiple_probes_and_revealing_fallback(backend):
             saw_native=True
             assert err<1e-11
         assert answer["owner_revision"]==i+1
-    assert saw_flat and saw_native
+    # The conditional guard can safely stay flat for all eight mixed reports;
+    # the separate rare-branch revival test requires and checks native fallback.
+    assert saw_flat
 
 
 def test_tiny_supported_transition_revives_under_contrary_spatial_evidence(backend):
@@ -183,6 +185,59 @@ def test_actual_default_prior_after_flat_favoring_history(backend):
     assert answer["mode"]=="flat"
     error=float(np.max(np.abs(answer["p_plus"]-independent_full(c,backend))))
     assert error<=answer["error_bound_estimate"]+1e-8<=.01+1e-8
+
+
+def test_conditional_guard_uses_coherent_evidence_and_charges_delta_arrays(backend):
+    c=CompiledRegime(0,1,n_grid=16,backend=backend)
+    assert c._flat_anchor is None
+    for i in range(64):
+        j=i//4
+        c.add_probe((j+.5)/16,1,.99,evidence_id=f"history:{i}")
+    anchor=c.approximate_p_plus_cells(.01)
+    assert anchor["mode"]=="native"
+    assert anchor["approx_anchor_numeric_bytes"]==16*16
+    chosen=[]
+    for i in range(8):
+        c.add_probe((i+.5)/16,1,.55,evidence_id=f"coherent:{i}")
+        answer=c.approximate_p_plus_cells(.01)
+        chosen.append(answer["bound_choice"])
+        assert answer["mode"]=="flat"
+        assert answer["approx_anchor_numeric_bytes"]==16*16
+        assert answer["conditional_bound_estimate"]<=answer["generic_bound_estimate"]+1e-14
+        assert np.max(np.abs(answer["p_plus"]-independent_full(c,backend)))<=answer["error_bound_estimate"]+1e-8
+    assert "conditional" in chosen
+    c.add_claim(0,.5,1,n_eff=1,reliability=.8)
+    assert c._flat_anchor is None
+    assert c.approximate_p_plus_cells(.01)["mode"]=="native"
+
+
+def test_opposed_same_cell_cancels_da_and_tighter_request_refreshes(backend):
+    c=tiny_tail(backend,tail=1e-4)
+    c.approximate_p_plus_cells(.9)
+    c.add_probe(.03,1,.85,evidence_id="plus")
+    c.add_probe(.03,-1,.85,evidence_id="minus")
+    answer=c.approximate_p_plus_cells(.9)
+    assert answer["mode"]=="flat" and answer["bound_choice"]=="conditional"
+    assert answer["conditional_bound_estimate"]<answer["generic_bound_estimate"]
+    assert abs(c._flat_anchor["delta_a"][0])<1e-14
+    assert np.max(np.abs(answer["p_plus"]-independent_full(c,backend)))<=answer["error_bound_estimate"]+1e-8
+    answer["p_plus"][:]=0
+    assert np.all(c.approximate_p_plus_cells(.9)["p_plus"]>0)
+    tighter=c.approximate_p_plus_cells(answer["error_bound_estimate"]*.5)
+    assert tighter["mode"]=="native" and tighter["bound_choice"]=="native"
+    assert tighter["approx_anchor_numeric_bytes"]==16*16
+
+
+def test_nonfinite_conditional_intermediates_force_native_fallback(backend):
+    c=tiny_tail(backend)
+    c.approximate_p_plus_cells(.9)
+    c._flat_anchor["anchor_h"]=1e308  # adversarial derived-cache corruption
+    c.add_probe(.03,1,.55,evidence_id="overflow-2h")
+    assert c.approximate_p_plus_cells(.9)["mode"]=="native"
+    c._flat_anchor["sum_da"]=1e308
+    c._flat_anchor["sum_db"]=1e308
+    c.add_probe(.07,1,.55,evidence_id="overflow-log-z")
+    assert c.approximate_p_plus_cells(.9)["mode"]=="native"
 
 
 def test_invalid_tolerances_rounded_zero_and_nonfinite_guard(backend):

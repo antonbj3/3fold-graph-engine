@@ -312,8 +312,23 @@ class CompiledRegime:
         self._approx_cache = None
         if self._flat_anchor is not None:
             da = wt * 0.5 * sign * lratio
+            db = wt * 0.5 * math.log(4.0 * r * (1.0 - r))
             self._flat_anchor["h"] += da
             self._flat_anchor["log_likelihood_contrast"] += wt * abs(lratio)
+            anchor = self._flat_anchor
+            if anchor["delta_a"] is not None:
+                old = max(0.0, abs(anchor["delta_a"][c]) + anchor["delta_b"][c])
+                anchor["delta_a"][c] += da
+                anchor["delta_b"][c] += db
+                new = max(0.0, abs(anchor["delta_a"][c]) + anchor["delta_b"][c])
+                anchor["sum_da"] += da
+                anchor["sum_db"] += db
+                anchor["log_upper"] += new - old
+                anchor["numeric_valid"] = (anchor["numeric_valid"] and
+                    all(math.isfinite(float(v)) for v in (
+                        anchor["h"], anchor["log_likelihood_contrast"],
+                        anchor["delta_a"][c], anchor["delta_b"][c],
+                        anchor["sum_da"], anchor["sum_db"], anchor["log_upper"])))
 
     # ------------------------------------------------------------------ native decode
     def _effective_mass(self):
@@ -407,6 +422,48 @@ class CompiledRegime:
         log_odds = math.log(epsilon) - math.log1p(-epsilon) + contrast
         return self._flat_sigmoid(log_odds) if math.isfinite(log_odds) else None
 
+    @staticmethod
+    def _logaddexp(a, b):
+        high = max(a, b)
+        return high + math.log1p(math.exp(-abs(a - b)))
+
+    def _conditional_flat_budget(self):
+        """Ordinary-float tail envelope using conditional flat evidence."""
+        anchor = self._flat_anchor
+        if (anchor is None or not anchor["tail_resolved"] or not anchor["numeric_valid"]
+                or anchor["delta_a"] is None):
+            return None
+        h = anchor["anchor_h"]
+        two_h = 2.0 * h
+        if not all(math.isfinite(float(x)) for x in (
+                h, two_h, anchor["sum_da"], anchor["sum_db"], anchor["log_upper"])):
+            return None
+        # These are log P(initial + | flat, anchor) and its opposite.
+        log_plus = -self._logaddexp(0.0, -two_h)
+        log_minus = -self._logaddexp(0.0, two_h)
+        plus = log_plus + anchor["sum_da"]
+        minus = log_minus - anchor["sum_da"]
+        if not all(math.isfinite(x) for x in (log_plus, log_minus, plus, minus)):
+            return None
+        log_z = anchor["sum_db"] + self._logaddexp(plus, minus)
+        ratio = anchor["log_upper"] - log_z
+        if not all(math.isfinite(x) for x in (log_z, ratio)):
+            return None
+        epsilon = anchor["tail_mass_at_anchor"]
+        log_odds = math.log(epsilon) - math.log1p(-epsilon) + max(0.0, ratio)
+        return self._flat_sigmoid(log_odds) if math.isfinite(log_odds) else None
+
+    def _selected_flat_budget(self):
+        generic = self._flat_budget()
+        conditional = self._conditional_flat_budget()
+        if generic is None or conditional is None:
+            return None
+        if conditional < generic:
+            return {"budget": conditional, "choice": "conditional",
+                    "generic": generic, "conditional": conditional}
+        return {"budget": generic, "choice": "generic",
+                "generic": generic, "conditional": conditional}
+
     def _native_approx_result(self):
         """Refresh from the current owner's full posterior, never a hypothetical."""
         posterior = self._posterior()
@@ -417,7 +474,12 @@ class CompiledRegime:
         # A computed zero cannot erase positive prior support. Nor can a
         # rounded one prove the covered family absent.
         h = float(np.sum(self._A + 0.5 * self._coeff))
+        delta_a = np.zeros(self._Q) if resolved else None
+        delta_b = np.zeros(self._Q) if resolved else None
         self._flat_anchor = {"revision": self._owner_revision, "h": h,
+                             "anchor_h": h, "delta_a": delta_a, "delta_b": delta_b,
+                             "sum_da": 0.0, "sum_db": 0.0, "log_upper": 0.0,
+                             "numeric_valid": math.isfinite(h),
                              "tail_mass_at_anchor": tail,
                              "prior_tail_mass": prior_tail,
                              "tail_resolved": resolved,
@@ -429,7 +491,12 @@ class CompiledRegime:
                   "tail_mass_at_anchor": tail,
                   "prior_tail_mass": prior_tail,
                   "tail_resolved": resolved,
-                  "log_likelihood_contrast": 0.0}
+                  "log_likelihood_contrast": 0.0,
+                  "generic_bound_estimate": 0.0,
+                  "conditional_bound_estimate": 0.0,
+                  "bound_choice": "native",
+                  "approx_anchor_numeric_bytes":
+                      0 if delta_a is None else delta_a.nbytes + delta_b.nbytes}
         self._approx_cache = result
         return result
 
@@ -459,9 +526,10 @@ class CompiledRegime:
             if cached["mode"] != "native" and cached["error_bound_estimate"] > tolerance:
                 cached = self._native_approx_result()
         else:
-            budget = self._flat_budget()
+            selected = self._selected_flat_budget()
             h = self._flat_anchor["h"]
-            if budget is None or budget > tolerance or not math.isfinite(2.0 * h):
+            if (selected is None or selected["budget"] > tolerance
+                    or not math.isfinite(2.0 * h)):
                 cached = self._native_approx_result()
             else:
                 value = self._flat_sigmoid(2.0 * h)
@@ -469,14 +537,20 @@ class CompiledRegime:
                     cached = self._native_approx_result()
                 else:
                     cached = {"p_plus": np.full(self._Q, value), "mode": "flat",
-                              "error_bound_estimate": budget,
+                              "error_bound_estimate": selected["budget"],
                               "numerical_certificate": False,
                               "owner_revision": self._owner_revision,
                               "anchor_revision": self._flat_anchor["revision"],
                               "tail_mass_at_anchor": self._flat_anchor["tail_mass_at_anchor"],
                               "prior_tail_mass": self._flat_anchor["prior_tail_mass"],
                               "tail_resolved": True,
-                              "log_likelihood_contrast": self._flat_anchor["log_likelihood_contrast"]}
+                              "log_likelihood_contrast": self._flat_anchor["log_likelihood_contrast"],
+                              "generic_bound_estimate": selected["generic"],
+                              "conditional_bound_estimate": selected["conditional"],
+                              "bound_choice": selected["choice"],
+                              "approx_anchor_numeric_bytes":
+                                  self._flat_anchor["delta_a"].nbytes +
+                                  self._flat_anchor["delta_b"].nbytes}
                     self._approx_cache = cached
         result = dict(cached)
         result["p_plus"] = cached["p_plus"].copy()
