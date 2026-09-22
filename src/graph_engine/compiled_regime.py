@@ -164,6 +164,11 @@ class CompiledRegime:
         self._probes = []
         self._evidence_ids = set()
         self._cache = None
+        # Derived, producer-owned approximation state. The full A/B state,
+        # evidence history, prior and exact native API remain authoritative.
+        self._owner_revision = 0
+        self._flat_anchor = None
+        self._approx_cache = None
         self._query_weights = self._validate_query_weights(query_weights)
 
         for c in claim_list:
@@ -248,6 +253,7 @@ class CompiledRegime:
         self._claim_const += 0.5 * n * math.log(r * (1.0 - r))
         self._claims.append((float(a), float(b), sign, n, r))
         self._cache = None
+        self._invalidate_flat_anchor()
 
     def set_claim_reliabilities(self, rs) -> None:
         """Re-estimate every claim reliability in order. Geometry is unchanged."""
@@ -267,6 +273,13 @@ class CompiledRegime:
         self._claim_const = const
         self._claims = new_claims
         self._cache = None
+        self._invalidate_flat_anchor()
+
+    def _invalidate_flat_anchor(self):
+        """Claims change the likelihood semantics at every covered cell."""
+        self._owner_revision += 1
+        self._flat_anchor = None
+        self._approx_cache = None
 
     def add_probe(self, x, sign, reliability=0.95, weight=1.0, *, evidence_id) -> None:
         """Consume conditionally independent evidence; O(log Q) cell lookup.
@@ -295,6 +308,12 @@ class CompiledRegime:
         self._probes.append((float(x), sign, r, wt, evidence_id))
         self._evidence_ids.add(evidence_id)
         self._cache = None
+        self._owner_revision += 1
+        self._approx_cache = None
+        if self._flat_anchor is not None:
+            da = wt * 0.5 * sign * lratio
+            self._flat_anchor["h"] += da
+            self._flat_anchor["log_likelihood_contrast"] += wt * abs(lratio)
 
     # ------------------------------------------------------------------ native decode
     def _effective_mass(self):
@@ -367,6 +386,102 @@ class CompiledRegime:
 
     def p_plus_cells(self):
         return self._posterior()["p_plus"].copy()
+
+    @staticmethod
+    def _flat_sigmoid(log_odds):
+        if log_odds >= 0.0:
+            return 1.0 / (1.0 + math.exp(-log_odds))
+        value = math.exp(log_odds)
+        return value / (1.0 + value)
+
+    def _flat_budget(self):
+        anchor = self._flat_anchor
+        if anchor is None or not anchor["tail_resolved"]:
+            return None
+        epsilon = anchor["tail_mass_at_anchor"]
+        contrast = anchor["log_likelihood_contrast"]
+        if not (math.isfinite(epsilon) and 0.0 < epsilon < 1.0
+                and math.isfinite(contrast) and contrast >= 0.0
+                and math.isfinite(anchor["h"])):
+            return None
+        log_odds = math.log(epsilon) - math.log1p(-epsilon) + contrast
+        return self._flat_sigmoid(log_odds) if math.isfinite(log_odds) else None
+
+    def _native_approx_result(self):
+        """Refresh from the current owner's full posterior, never a hypothetical."""
+        posterior = self._posterior()
+        prior = self._effective_mass()[0]
+        tail = math.fsum(float(x) for x in posterior["family_mass"][1:])
+        prior_tail = math.fsum(float(x) for x in prior[1:])
+        resolved = (math.isfinite(tail) and 0.0 < tail < 1.0)
+        # A computed zero cannot erase positive prior support. Nor can a
+        # rounded one prove the covered family absent.
+        h = float(np.sum(self._A + 0.5 * self._coeff))
+        self._flat_anchor = {"revision": self._owner_revision, "h": h,
+                             "tail_mass_at_anchor": tail,
+                             "prior_tail_mass": prior_tail,
+                             "tail_resolved": resolved,
+                             "log_likelihood_contrast": 0.0}
+        result = {"p_plus": posterior["p_plus"].copy(), "mode": "native",
+                  "error_bound_estimate": 0.0, "numerical_certificate": False,
+                  "owner_revision": self._owner_revision,
+                  "anchor_revision": self._owner_revision,
+                  "tail_mass_at_anchor": tail,
+                  "prior_tail_mass": prior_tail,
+                  "tail_resolved": resolved,
+                  "log_likelihood_contrast": 0.0}
+        self._approx_cache = result
+        return result
+
+    def approximate_p_plus_cells(self, max_error):
+        """Optional bounded-tail estimate with full native fallback.
+
+        A positive max_error permits the flat-family conditional readout only
+        after a prior full native anchor. The mathematical tail envelope is
+        evaluated in ordinary floats, so it is NOT an outward numerical
+        certificate. The original state and exact p_plus methods are intact.
+        A nonunit probe weight is a power likelihood, not a newly normalized
+        physical observation channel.
+        """
+        if isinstance(max_error, bool):
+            raise ValueError("max_error must be finite with 0 <= max_error < 1")
+        tolerance = _as_finite_float(max_error, "max_error")
+        if not 0.0 <= tolerance < 1.0:
+            raise ValueError("max_error must satisfy 0 <= max_error < 1")
+        cached = self._approx_cache
+        # An exact answer already available from another API is preferred and
+        # becomes the latest anchor. Likewise tolerance zero always asks for it.
+        if self._cache is not None or tolerance == 0.0 or self._flat_anchor is None:
+            if (cached is None or cached["mode"] != "native"
+                    or cached["owner_revision"] != self._owner_revision):
+                cached = self._native_approx_result()
+        elif cached is not None and cached["owner_revision"] == self._owner_revision:
+            if cached["mode"] != "native" and cached["error_bound_estimate"] > tolerance:
+                cached = self._native_approx_result()
+        else:
+            budget = self._flat_budget()
+            h = self._flat_anchor["h"]
+            if budget is None or budget > tolerance or not math.isfinite(2.0 * h):
+                cached = self._native_approx_result()
+            else:
+                value = self._flat_sigmoid(2.0 * h)
+                if not math.isfinite(value):
+                    cached = self._native_approx_result()
+                else:
+                    cached = {"p_plus": np.full(self._Q, value), "mode": "flat",
+                              "error_bound_estimate": budget,
+                              "numerical_certificate": False,
+                              "owner_revision": self._owner_revision,
+                              "anchor_revision": self._flat_anchor["revision"],
+                              "tail_mass_at_anchor": self._flat_anchor["tail_mass_at_anchor"],
+                              "prior_tail_mass": self._flat_anchor["prior_tail_mass"],
+                              "tail_resolved": True,
+                              "log_likelihood_contrast": self._flat_anchor["log_likelihood_contrast"]}
+                    self._approx_cache = cached
+        result = dict(cached)
+        result["p_plus"] = cached["p_plus"].copy()
+        result["max_error_requested"] = tolerance
+        return result
 
     def p_plus(self, x) -> float:
         return float(self._posterior()["p_plus"][self._cell_index(x)])

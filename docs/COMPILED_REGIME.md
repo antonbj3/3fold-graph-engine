@@ -27,6 +27,41 @@ x, gain = comp.best_probe(0.95)  # exact hypothetical OED
 comp.add_probe(x, +1, 0.95, evidence_id="instrument/run1/reading1")
 ```
 
+## Optional bounded-tail predictive readout
+
+`approximate_p_plus_cells(max_error)` is an opt-in readout on the **same**
+`CompiledRegime` owner. It returns a dictionary with a detached `p_plus` vector,
+`mode` (`"native"` or `"flat"`), `error_bound_estimate`,
+`numerical_certificate=False`, `owner_revision`, and anchor tail/likelihood-
+contrast metadata. `max_error` must be finite with `0 <= max_error < 1`; zero
+always requests the ordinary full native answer. The first call, or a call when
+a current full native posterior is already cached, returns that full answer and
+anchors the optional representation. `p_plus_cells`, `p_plus`, risk and exact
+acquisition retain their existing native behavior.
+
+The derived flat-family state uses `H=sum(kernel_A)` and predicts the same
+`sigmoid(2H)` at every cell, conditional on zero transitions and the two equal
+initial-orientation priors. At a full native anchor, the owner records
+`epsilon=P(k=1)+P(k=2)` by **summing** both posterior family masses. After
+common positive-likelihood probes, it accumulates
+`sum(weight*abs(logit(reliability)))`. The ordinary-float odds envelope
+`sigmoid(logit(epsilon)+contrast)` bounds the mathematical tail mass under the
+declared finite family, fixed prior/claim semantics and common evidence. If it
+exceeds the caller tolerance, or its inputs are unresolved/nonfinite, the
+method falls back to full native decoding and refreshes the anchor. A rounded
+zero tail with positive prior support is unresolved. No original hypothesis,
+natural coordinate or evidence record is deleted.
+
+This estimate is **not** an outward-rounded numerical certificate or a
+guarantee for changed sensors, priors, claims, calibrations, state-dependent
+action policies or future rounded computations. `add_claim` and
+`set_claim_reliabilities` invalidate the anchor; a successful actual probe
+advances its owner revision and contrast. Repeated same-revision answers return
+copies, and a tighter tolerance cannot reuse a flat answer that fails it.
+Nonunit probe weight is a positive power likelihood, not a newly normalized
+physical observation channel. Hypothetical acquisition branches never become
+actual anchors. The full native path remains the fallback and exact API.
+
 ## Supported subset and declared differences
 
 * **Preserved**: partition (claim edges + `n_grid` cells), all-±/one-transition/two-transition
