@@ -26,7 +26,7 @@ from typing import Any
 
 from .unlock_value import expected_cost_of_order, p_of, rank
 
-__all__ = ["settle_cost", "plan", "expected_cost_sum_over_goals", "cheap_instrument_value"]
+__all__ = ["settle_cost", "plan", "expected_cost_sum_over_goals", "cheap_instrument_value", "budgeted_plan"]
 
 
 def _update(p: float, r: float, yes: bool) -> float:
@@ -101,3 +101,14 @@ def expected_cost_sum_over_goals(graph: dict[str, Any], p_holds: dict[str, float
         members = [i for i in order if i in below[g] and i in S]
         tot += float(w) * expected_cost_of_order(members, {i: p_of(nodes[i], p_holds) for i in members}, S)
     return tot
+
+
+def budgeted_plan(initial_state, actions_fn, terminal_loss, budget, price=1.0):
+    """Plan typed observe/compute/train transitions with a hard per-branch budget.
+
+    This finite-budget extension uses caller-supplied task losses and transition
+    laws. Training may change a reusable model state; it is not implicitly an
+    observation. See budget_plan.Action and docs/BUDGET_PLAN.md for the contract.
+    """
+    from .budget_plan import plan as _budget_plan
+    return _budget_plan(initial_state, actions_fn, terminal_loss, budget, price)

@@ -40,7 +40,7 @@ budget strictly decrease, so the recursion terminates; the hard budget applies t
 success/failure probabilities are **caller-supplied uncertainty** in a constructed model — never a
 measured neural training result and never a likelihood the planner derives. Zero-probability outcomes
 are pruned, so impossible successor states are never evaluated. Deterministic tie behaviour: when the
-best action is not strictly better than stopping (within 1e-12) the planner stops; among actions the
+best action is not strictly better than stopping (on an exact value tie) the planner stops; among actions the
 winner minimizes `(value, cost, name)`.
 
 ## Ancestry in this engine
@@ -69,3 +69,14 @@ the accounting identity and price units, budget monotonicity and per-branch hard
 branches / correlation, the three constructed cases, and two independent checks: an exhaustively
 enumerated **policy-tree** oracle on 120 random finite cases (max abs error 2.2e-16) and the
 `settle_cost` special case. The existing `tests/test_plan_value.py` is untouched and still passes.
+
+## Root integration review
+
+Call `plan_value.budgeted_plan` from the existing planning API, with transition
+types from `budget_plan`. Root review replaced recursive path accounting with
+bottom-up values and expected moments: merged branches are evaluated once per
+(state,budget), including a tested1100-step case. Stop wins exact value ties;
+small real improvements are reflected in both the selected policy and reported
+objective. Accepted probability roundoff is normalized, and action names are
+unique within a state; `stop` is reserved. A supplied finite stopping penalty is
+not identical to the legacy requirement to eventually settle a node.

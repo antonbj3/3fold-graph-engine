@@ -21,6 +21,34 @@ from graph_engine.predictive_state import (  # noqa: E402
 )
 
 
+def test_tiny_improvement_uses_same_policy_as_reported_objective():
+    from graph_engine.plan_value import budgeted_plan
+    actions = lambda s: [Action("improve", "compute", 1, [(1., "done")])] if s == "start" else []
+    loss = lambda s: 5e-13 if s == "start" else 0.
+    result = budgeted_plan("start", actions, loss, 1, price=0.)
+    assert result.chosen == "improve"
+    assert result.objective == result.expected_terminal_loss == 0.
+
+
+def test_deep_merged_branches_are_evaluated_once_per_state():
+    # Recursive policy walking would visit 2**1100 paths; recursive value
+    # evaluation would also hit Python's stack limit despite positive costs.
+    actions = lambda s: [Action("step", "compute", 1, [(.5, s+1), (.5, s+1)])]
+    result = plan(0, actions, lambda s: max(1100-s, 0), 1100, price=0.)
+    assert result.expected_terminal_loss == 0.
+    assert result.expected_resource_cost == 1100.
+    assert result.n_decisions == 1101
+
+
+def test_roundoff_probability_mass_is_normalized_and_names_unambiguous():
+    action = Action("a", "compute", 1, [(0.5-1e-10, "t"), (.5, "t")])
+    assert math.fsum(p for p, _ in action.outcomes) == 1.
+    with pytest.raises(ValueError, match="reserved"):
+        Action("stop", "compute", 1, [(1., "t")])
+    with pytest.raises(ValueError, match="unique"):
+        plan("s", lambda s: [action, action], lambda s: 2., 1)
+
+
 # ---------------------------------------------------------------- independent enumerator
 def _brute_force_policy_tree(initial, actions_fn, terminal_loss, budget, price):
     """INDEPENDENT of the module's recursion: discover the (state,budget) domain under ANY action,
