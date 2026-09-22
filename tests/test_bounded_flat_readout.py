@@ -90,6 +90,30 @@ def test_multiple_probes_and_revealing_fallback(backend):
     assert saw_flat and saw_native
 
 
+def test_tiny_supported_transition_revives_under_contrary_spatial_evidence(backend):
+    c=tiny_tail(backend,tail=1e-6)
+    initial_prior=c.transition_prior()["mass"].copy()
+    assert initial_prior[1]+initial_prior[2]>0
+    assert c.approximate_p_plus_cells(.01)["mode"]=="native"
+    c.add_probe(.03,1,.55,evidence_id="prefix")
+    assert c.approximate_p_plus_cells(.01)["mode"]=="flat"
+    # A transition near the middle explains the two opposed regions while
+    # either flat orientation must explain one entire region incorrectly.
+    for repeat in range(3):
+        for j in range(16):
+            c.add_probe((j+.5)/16,1 if j<8 else -1,.99,
+                        evidence_id=f"physical:{repeat}:{j}")
+            c.approximate_p_plus_cells(.01)
+    final=c.approximate_p_plus_cells(.01)
+    exact=independent_full(c,backend)
+    assert final["mode"]=="native"
+    np.testing.assert_allclose(final["p_plus"],exact,atol=1e-12)
+    assert c.family_mass()[1:].sum()>.99
+    assert float(np.ptp(exact))>.8
+    assert len(c.evidence_ids)==49 and c.natural_statistics()["n_probes"]==49
+    np.testing.assert_array_equal(c.transition_prior()["mass"],initial_prior)
+
+
 def test_tempered_probe_contrast_is_weighted_and_owner_state_retained(backend):
     c=tiny_tail(backend,tail=1e-6)
     c.approximate_p_plus_cells(.01)
