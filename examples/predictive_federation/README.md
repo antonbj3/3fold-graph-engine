@@ -62,3 +62,24 @@ The injected Kernel objective computes teacher-weighted current/future query
 losses, with costs and limitations documented in Kernel's predictive-inference
 guide. Its implementation is validated; a general model-quality improvement
 has not been established.
+
+## Audit learner states against named Graph beliefs
+
+The snapshot can also compare predicted natural states on its fixed partition
+and prior with explicitly named teacher rows:
+
+```python
+audit = batch.audit_predictions(
+    predicted_natural, example_ids, backend=kernel, kl_budget_nats=0.01
+)
+```
+
+Each row reports a global mathematical KL upper bound in both directions. The
+bound survives the same future likelihood updates in exact arithmetic; it is
+stronger in scope than agreement on the currently selected queries. A row whose
+bound exceeds the budget is `unresolved`, since a loose upper bound does not
+prove a bad prediction. This audit owns a frozen copy of the learner buffer,
+preserves teacher evidence IDs and fingerprints, and changes no live belief.
+It does not establish calibration, identical physical meanings of the learner's
+coordinates, or the numerical accuracy of a cached/readout answer. The supplied
+Kernel needs the `drift_bound` API documented in `GLOBAL_PREDICTIVE_DRIFT.md`.

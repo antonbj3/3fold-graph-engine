@@ -85,3 +85,52 @@ class CompiledTrainingBatch:
             return np.array([lookup[key] for key in example_ids],dtype=np.int64)
         except (KeyError,TypeError) as exc:
             raise ValueError('unknown training example id') from exc
+
+    def audit_predictions(self, predicted_natural, example_ids, *, backend,
+                          kl_budget_nats=None):
+        """Compare learner states with explicitly named Graph teacher rows.
+
+        Predictions are INTERPRETED on this snapshot's partition and prior.
+        This checks their mathematical latent drift, not whether the learner's
+        physical semantics, evidence calibration or output decoder are correct.
+        Repeated/reordered IDs are allowed, just as in ``indices_for``.
+
+        Own a frozen copy before entering the native backend; later mutation of
+        the caller's buffer cannot change another row of the same audit. A KL
+        upper bound above budget or an unavailable enclosure is ``unresolved``,
+        not proof that the prediction is inaccurate. No live Graph state or
+        training objective is modified.
+        """
+        ids=tuple(example_ids) if not isinstance(example_ids,str) else example_ids
+        rows=self.indices_for(ids)
+        predicted=_frozen_array(predicted_natural)
+        if predicted.shape!=(len(rows),2,self.natural.shape[2]) or not len(rows):
+            raise ValueError('predictions must have nonempty shape (len(example_ids),2,Q)')
+        if not np.all(np.isfinite(predicted)):
+            raise ValueError('predicted natural parameters must be finite')
+        if kl_budget_nats is not None:
+            kl_budget_nats=float(kl_budget_nats)
+            if not np.isfinite(kl_budget_nats) or kl_budget_nats<0:
+                raise ValueError('KL budget must be finite and nonnegative, in nats')
+        descriptor=json.dumps({'schema':1,'teacher':self.fingerprint,'ids':ids,
+                               'shape':predicted.shape},sort_keys=True,
+                              separators=(',',':')).encode()
+        digest=hashlib.sha256(descriptor+predicted.tobytes()).hexdigest()
+        reports=[]
+        for prediction,key,index in zip(predicted,ids,rows):
+            teacher=self.natural[index]
+            result={'example_id':key,'teacher_evidence_ids':self.evidence_ids[index]}
+            try:
+                bound=backend.drift_bound(*prediction,*teacher,self.family_mass)
+                upper=float(bound['kl_upper_nats'])
+                if np.isnan(upper) or upper<0:
+                    raise ArithmeticError('backend returned an invalid KL upper bound')
+                result.update(bound)
+                result['status']=('bounded' if kl_budget_nats is None else
+                    'within_budget' if upper<=kl_budget_nats else 'unresolved')
+            except ArithmeticError as exc:
+                result.update(status='unresolved',reason=str(exc))
+            reports.append(result)
+        return {'teacher_fingerprint':self.fingerprint,'prediction_fingerprint':digest,
+                'kl_budget_nats':kl_budget_nats,'rows':reports,
+                'contract':'fixed-family mathematical posterior drift; numerical readout error excluded'}

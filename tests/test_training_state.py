@@ -86,3 +86,43 @@ def test_graph_snapshots_feed_real_forecast_training(kernel):
     assert torch.isfinite(student.grad).all()
     perturbed=student.detach().clone();perturbed[:,1,1]-=.5
     assert objective(perturbed,rows).future.min().item()>0
+
+
+def test_actual_kernel_audits_named_repeated_learner_rows(kernel):
+    pairs,_=examples(kernel);batch=CompiledTrainingBatch.from_regimes(pairs)
+    ids=['example:2','example:0','example:2'];indices=batch.indices_for(ids)
+    prediction=batch.natural[indices].copy()
+    exact=batch.audit_predictions(prediction,ids,backend=kernel,kl_budget_nats=0)
+    assert [r['status'] for r in exact['rows']]==['within_budget']*3
+    assert all(r['kl_upper_nats']==0 for r in exact['rows'])
+    prediction[0,1,1]+=.5
+    changed=batch.audit_predictions(prediction,ids,backend=kernel,kl_budget_nats=0)
+    assert changed['rows'][0]['status']=='unresolved'
+    assert changed['rows'][0]['kl_upper_nats']>0
+    assert changed['rows'][1]['status']==changed['rows'][2]['status']=='within_budget'
+    assert changed['prediction_fingerprint']!=exact['prediction_fingerprint']
+    assert changed['teacher_fingerprint']==batch.fingerprint
+
+
+def test_audit_owns_input_and_unavailable_bound_means_unresolved(kernel):
+    pairs,_=examples(kernel);batch=CompiledTrainingBatch.from_regimes(pairs)
+    prediction=batch.natural.copy()
+    class InterleavedMutation:
+        def drift_bound(self,*args):
+            prediction[:]+=10  # Simulates a producer changing its shared buffer.
+            return kernel.drift_bound(*args)
+    result=batch.audit_predictions(prediction,batch.example_ids,backend=InterleavedMutation())
+    assert all(r['kl_upper_nats']==0 for r in result['rows'])
+    class Unavailable:
+        def drift_bound(self,*args):raise ArithmeticError('energy overflow')
+    result=batch.audit_predictions(prediction,batch.example_ids,backend=Unavailable(),kl_budget_nats=.1)
+    assert all(r['status']=='unresolved' and 'overflow' in r['reason'] for r in result['rows'])
+
+
+def test_audit_rejects_missing_identity_wrong_shapes_and_bad_budget(kernel):
+    pairs,_=examples(kernel);batch=CompiledTrainingBatch.from_regimes(pairs)
+    for data,ids,budget in [(batch.natural,['missing']*3,0),
+            (batch.natural,batch.example_ids,-1),(batch.natural,batch.example_ids,np.inf),
+            (batch.natural[0],['example:0'],0),(batch.natural,[],0),
+            (np.full_like(batch.natural,np.nan),batch.example_ids,0)]:
+        with pytest.raises(ValueError):batch.audit_predictions(data,ids,backend=kernel,kl_budget_nats=budget)
