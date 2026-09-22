@@ -52,8 +52,9 @@ bytes. Their local maxima give a conditional-evidence tail envelope:
 where `p=sigmoid(2H_anchor)`. The method uses the smaller of the ordinary-float
 odds estimates `sigmoid(logit(epsilon)+contrast)` and
 `sigmoid(logit(epsilon)+log(U/Z_flat))`. Its response reports both estimates and
-`bound_choice`. This bounds mathematical tail mass under the declared finite
-family, fixed prior/claim semantics and common evidence. If the chosen estimate
+`bound_choice`. The real-arithmetic expressions bound tail mass under the
+declared finite family, fixed prior/claim semantics and common evidence;
+their floating evaluation is an estimate of those expressions. If the chosen estimate
 exceeds the caller tolerance, or its inputs are unresolved/nonfinite, the
 method falls back to full native decoding and refreshes the anchor. A rounded
 zero tail with positive prior support is unresolved. No original hypothesis,
