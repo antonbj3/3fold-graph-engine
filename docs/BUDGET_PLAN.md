@@ -34,7 +34,7 @@ by construction.
 ## What it is exact for, and what it is not
 
 Exact only for the **supplied finite transition model**: positive integer costs make the remaining
-budget strictly decrease, so the recursion terminates; the hard budget applies to **every branch**
+budget strictly decrease, so bottom-up evaluation terminates; the hard budget applies to **every branch**
 (an action is considered only when its full cost fits the branch's remainder, never on average).
 `price = 0` prices budget as free. It is **not** global-optimal reality, and a `train` action's
 success/failure probabilities are **caller-supplied uncertainty** in a constructed model — never a
@@ -45,12 +45,13 @@ winner minimizes `(value, cost, name)`.
 
 ## Ancestry in this engine
 
-* **`plan_value.settle_cost` is the unbounded-budget special case.** Its instruments are `observe`
+* **`plan_value.settle_cost` is the existing dynamic-programming ancestor.** Its instruments are `observe`
   actions, its "settled" event is an absorbing state with zero terminal loss, and it minimizes
   expected spend `S(p) = min_i [c_i + Σ_o q_o S(p_o)]`. `budget_plan` generalizes the objective to
   `terminal task loss + price × resource spend` under a hard budget. `tests/test_budget_plan.py`
   maps a two-instrument cascade to `observe` actions and recovers `settle_cost` exactly
-  (abs error 3.3e-11); `plan_value.py` itself is **not modified**.
+  (abs error 3.3e-11). The current public entry point is `plan_value.budgeted_plan`.
+  Optional finite-loss stopping is a different contract from mandatory eventual settlement.
 * **`next_actions.bundle_value_bits` / joint bundles.** A purchase with increasing returns (two
   probes worth ≈ 0 alone, a lot together) is representable here as a two-step sequence of typed
   actions or as one `observe` action whose outcomes are the caller's explicit joint distribution.

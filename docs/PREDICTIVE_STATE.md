@@ -138,3 +138,18 @@ python3 -m pytest tests/test_predictive_state.py tests/test_predictive_geometry.
 No neural-model quality, context-capacity or 10× throughput claim follows from
 these reference tests. Training and budgeted execution experiments must report
 their own data, full costs, calibration protocol and independent evaluation.
+
+### Integrated outcome contract
+
+Root review adds atomic validation of reported cost and executable calibration
+identity before belief replacement. `calibrated_outcome` carries calibration
+version, channel fingerprint, executable instrument and source root; `apply`
+checks these against the planned action. The declared channel cost prices the
+whole planned acquisition, while `planned_instrument_cost` records the executable
+instrument's own price. These costs need not coincide when setup/verification is
+included; the caller must declare the complete acquisition cost.
+
+Predictive action targets are `(task_id, channel_name)` tuples, preventing slash
+collisions. Channel indices are integers, task IDs are unique in EngineState,
+extra metadata cannot replace the planned contract, and risk-drop laws are
+frozen tuples. A changed binding identity or cost currency invalidates the plan.

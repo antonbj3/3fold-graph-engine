@@ -144,10 +144,10 @@ class ObservationChannel:
     @property
     def fingerprint(self) -> str:
         """Content identity of the channel: a change to the likelihood, cost or conditioning is a new channel."""
-        metadata = json.dumps([self.name, self.space_key, self.conditioned_on],
+        metadata = json.dumps([self.name, self.space_key, self.conditioned_on, list(self.likelihood.shape)],
                               ensure_ascii=True, separators=(",", ":")).encode()
         return hashlib.sha256(metadata + b"\0" + self.likelihood.astype("<f8").tobytes()
-                              + b"\0" + np.float64(self.cost).tobytes()).hexdigest()
+                              + b"\0" + np.asarray(self.cost, dtype="<f8").tobytes()).hexdigest()
 
 
 @dataclass(frozen=True, eq=False)

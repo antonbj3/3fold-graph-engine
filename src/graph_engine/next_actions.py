@@ -57,6 +57,7 @@ predicted. Nothing is written to disk.
 from __future__ import annotations
 
 import math
+from numbers import Integral
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -363,20 +364,24 @@ def predictive_action(binding: PredictiveBinding, channel_index: int, instrument
     """
     if not isinstance(binding, PredictiveBinding):
         raise TypeError(f"expected a PredictiveBinding, got {type(binding).__name__}")
+    if isinstance(channel_index, bool) or not isinstance(channel_index, Integral):
+        raise ValueError("channel index must be an integer")
     if not 0 <= int(channel_index) < len(binding.channels):
         raise ValueError(f"channel index {channel_index} outside the binding's {len(binding.channels)} channels")
     channel = binding.channels[int(channel_index)]
     value = value_of_observation(binding.belief, binding.task, channel)
-    law = risk_drop_law(binding.belief, binding.task, channel)
+    law = tuple(risk_drop_law(binding.belief, binding.task, channel))
     unit = BITS if binding.task.loss == "log" else binding.task.loss
     price_tag = instrument if instrument is not None else Instrument(channel.name, float(channel.cost), 1.0)
-    target = f"{binding.task_id}/{channel.name}"
+    target = (binding.task_id, channel.name)
     meta = {"binding": binding, "binding_id": binding.task_id, "channel_index": int(channel_index),
             "channel": channel, "belief_fingerprint": binding.belief.fingerprint,
             "task_fingerprint": binding.task.fingerprint, "channel_fingerprint": channel.fingerprint,
             "cost_unit": binding.cost_unit, "task_loss": binding.task.loss, "risk_law": law,
             "reliability_source": "exact calibrated channel likelihood; the price-tag reliability is unused"}
     if meta_extra:
+        if set(meta_extra).intersection(meta):
+            raise ValueError("extra metadata cannot replace the planned predictive contract")
         meta.update(meta_extra)
     how = (f"observe channel '{channel.name}' of predictive task '{binding.task_id}' "
            f"(loss {binding.task.loss}); expected risk drop {value.gain:g} {unit} for declared cost "
@@ -389,6 +394,9 @@ def predictive_action(binding: PredictiveBinding, channel_index: int, instrument
 
 def _predictive_actions(state: EngineState) -> list[Action]:
     out: list[Action] = []
+    names = [b.task_id for b in state.predictive_bindings]
+    if len(names) != len(set(names)):
+        raise ValueError("predictive binding task_id values must be unique")
     for binding in state.predictive_bindings:
         for index in range(len(binding.channels)):
             out.append(predictive_action(binding, index))
@@ -852,7 +860,11 @@ def apply(state: EngineState, action: Action, outcome: dict) -> dict:
             raise ValueError("an observe action must carry the predictive binding it was planned against")
         if not any(b is binding for b in state.predictive_bindings):
             raise ValueError("the predictive binding of this action is not in this state")
+        if binding.task_id != action.meta.get("binding_id") or binding.cost_unit != action.meta.get("cost_unit"):
+            raise ValueError("predictive binding identity or cost unit changed since planning")
         index = action.meta.get("channel_index")
+        if not isinstance(index, Integral) or not 0 <= index < len(binding.channels):
+            raise ValueError("predictive channel changed since planning")
         channel = binding.channels[index]
         if channel is not action.meta.get("channel"):
             raise ValueError("predictive channel changed since planning")
@@ -874,18 +886,30 @@ def apply(state: EngineState, action: Action, outcome: dict) -> dict:
             raise ValueError("an observation needs a stable nonempty evidence identity")
         if evidence_id in binding.belief.evidence_ids:
             raise ValueError("this physical observation was already consumed")
+        actual_cost = None
+        if outcome.get("cost") is not None:
+            actual_cost = float(outcome["cost"])
+            if not math.isfinite(actual_cost) or actual_cost < 0:
+                raise ValueError("actual cost must be finite and nonnegative")
+        if "calibration_id" in action.meta:
+            expected = {"calibration_id": action.meta["calibration_id"],
+                        "calibration_channel_fingerprint": action.meta["channel_fingerprint"],
+                        "executable_instrument": action.meta["executable_instrument"],
+                        "source": action.meta["instrument_lineage_root"]}
+            if any(outcome.get(key) != value for key, value in expected.items()):
+                raise ValueError("reading calibration or executable instrument differs from the planned action")
         risk_before = binding.task.risk(binding.belief)
         updated = binding.belief.observe(channel, oc, evidence_id)     # atomic: raises before any mutation
-        binding.belief = updated                                       # immutable state replaced, not mutated
         risk_after = binding.task.risk(updated)
         realized = risk_before - risk_after
         extra.update(evidence_id=evidence_id, task_id=binding.task_id, channel=channel.name,
                      risk_before=float(risk_before), risk_after=float(risk_after),
                      planned_cost=float(action.cost), cost_unit=action.cost_unit)
-        if outcome.get("cost") is not None:
-            extra["actual_cost"] = float(outcome["cost"])
+        if actual_cost is not None:
+            extra["actual_cost"] = actual_cost
         if outcome.get("source") is not None:
             extra["source_root"] = str(outcome["source"])
+        binding.belief = updated                                       # commit after outcome validation
 
     elif action.kind == "bundle":
         _require(outcome, ("outcomes",), action.kind)

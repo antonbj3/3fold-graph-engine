@@ -70,7 +70,7 @@ def test_apply_routes_an_observation_and_returns_the_ledger_plus_risk_and_costs(
     before = binding.task.risk(binding.belief)
     row = apply(st, act, {"evidence_id": "physics:run17/reading1", "outcome": 1, "cost": 1.7, "source": "run:17"})
     after = binding.task.risk(st.predictive_bindings[0].belief)
-    assert row["action"] == "observe:bit/read" and row["outcome"] == "observe" and row["supersedes"] == []
+    assert row["action"] == "observe:('bit', 'read')" and row["outcome"] == "observe" and row["supersedes"] == []
     assert row["value_predicted"] == pytest.approx(act.value_bits)
     assert row["value_realized"] == pytest.approx(before - after)
     assert row["risk_before"] == pytest.approx(before) and row["risk_after"] == pytest.approx(after)
@@ -271,3 +271,54 @@ def test_the_reading_probability_is_not_turned_into_reliability_and_the_calibrat
     with pytest.raises(ValueError, match="exactly one predictive binding"):
         calibrated_action(st, "absent", instrument, calibration)
     assert binding_of(st, "cal") is b
+
+
+@pytest.mark.parametrize("bad_cost", [float('nan'), float('inf'), -1., 'not-a-cost'])
+def test_invalid_actual_cost_does_not_partially_assimilate(bad_cost):
+    binding = _binding()
+    state = _state(binding)
+    before = binding.belief
+    with pytest.raises(ValueError):
+        apply(state, predictive_action(binding, 0),
+              {"evidence_id": "new-reading", "outcome": 1, "cost": bad_cost})
+    assert binding.belief is before
+
+
+def test_changed_calibration_or_instrument_cannot_relabel_a_reading():
+    channel = ObservationChannel("calibrated", KEY, [[.85, .15], [.2, .8]], cost=2.5)
+    binding = _binding(channel=channel, task_id="cal")
+    state = _state(binding)
+    instrument = _SignInstrument([Reading(+1, .9, 2.5)])
+    calibration = Calibration("v1", channel, lambda reading: 0)
+    action = calibrated_action(state, "cal", instrument, calibration)
+    wrong = Calibration("v2", channel, lambda reading: 1)
+    outcome = calibrated_outcome(instrument, wrong, ("a", "b"), .4, "new-reading")
+    before = binding.belief
+    with pytest.raises(ValueError, match="calibration"):
+        apply(state, action, outcome)
+    assert binding.belief is before
+
+
+def test_names_indices_and_metadata_cannot_change_the_planned_contract():
+    first = _binding(task_id="a/b", channel=ObservationChannel("c", KEY, [[.9, .1], [.1, .9]]))
+    second = _binding(task_id="a", channel=ObservationChannel("b/c", KEY, [[.9, .1], [.1, .9]]))
+    assert predictive_action(first, 0).id != predictive_action(second, 0).id
+    with pytest.raises(ValueError, match="integer"):
+        predictive_action(first, .5)
+    with pytest.raises(ValueError, match="extra metadata"):
+        predictive_action(first, 0, meta_extra={"risk_law": [(1., 100.)]})
+    action = predictive_action(first, 0)
+    first.cost_unit = "joules"
+    with pytest.raises(ValueError, match="cost unit"):
+        apply(_state(first), action, {"evidence_id": "fresh", "outcome": 0})
+    with pytest.raises(ValueError, match="unique"):
+        next_actions(_state(_binding(), _binding()))
+
+
+def test_zero_probability_outcome_is_rejected_atomically():
+    channel = ObservationChannel("impossible-positive", KEY, [[1., 0.], [1., 0.]])
+    binding = _binding(channel=channel)
+    before = binding.belief
+    with pytest.raises(ValueError):
+        apply(_state(binding), predictive_action(binding, 0), {"evidence_id": "bad", "outcome": 1})
+    assert binding.belief is before

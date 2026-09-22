@@ -259,6 +259,7 @@ def calibrated_action(state: EngineState, binding_id: str, instrument: Instrumen
                              meta_extra={"calibration_id": calibration.identity,
                                          "instrument_lineage_root": instrument.lineage_root,
                                          "instrument_sources": instrument.sources(),
+                                         "planned_instrument_cost": float(instrument.cost),
                                          "executable_instrument": instrument.name})
 
 
@@ -272,9 +273,14 @@ def calibrated_outcome(instrument: Instrument, calibration: Calibration, pair, x
     """
     if not isinstance(evidence_id, str) or not evidence_id:
         raise ValueError("a calibrated reading needs a stable nonempty evidence identity")
+    if actual_cost is not None and (not math.isfinite(float(actual_cost)) or float(actual_cost) < 0):
+        raise ValueError("actual cost must be finite and nonnegative")
     reading = instrument.probe(pair, float(x))
     index = calibration.outcome_index(reading)
     out = {"outcome": index, "evidence_id": evidence_id, "source": instrument.lineage_root,
+           "calibration_id": calibration.identity,
+           "calibration_channel_fingerprint": calibration.channel.fingerprint,
+           "executable_instrument": instrument.name,
            "reading": {"sign": int(reading.sign), "p": float(reading.p)}}
     out["cost"] = float(reading.cost if actual_cost is None else actual_cost)
     return out
