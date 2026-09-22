@@ -28,7 +28,9 @@ DECLARED DIFFERENCES from ``RegimePosterior`` (strict validation replaces silent
 4. ``sign`` must be exactly ``-1`` or ``+1``; ``reliability`` finite with ``0.5 <= r < 1``
    (``r = 1`` would be a hard constraint and is refused); ``weight`` finite and ``> 0``;
    ``n_eff`` finite and ``>= 0``.
-5. The partition is FROZEN. ``add_claim`` is accepted only when its bounds are already
+5. The partition is FROZEN (native mode). ``n_grid=None`` instead returns a
+   ``ContinuumRegime`` (the n_grid -> infinity limit) that accepts any claim bounds.
+   Otherwise: ``add_claim`` is accepted only when its bounds are already
    partition edges; a new edge raises :class:`FrozenPartitionError` (freeze-and-refuse),
    rather than silently rebuilding the hypothesis space.
 6. Evidence identity is caller-declared and unique per ``add_probe``; a repeated id raises.
@@ -106,6 +108,14 @@ class CompiledRegime:
 
     _fixed_configuration = frozenset({"lo", "hi", "reliability", "p_flip", "p_two",
                                       "potential", "n_grid", "claim_model"})
+
+    def __new__(cls, *args, **kwargs):
+        # ``n_grid=None`` selects the resolution-free backend (optional; see
+        # ``continuum_regime.py``). It has the same read API and no frozen partition.
+        if cls is CompiledRegime and "n_grid" in kwargs and kwargs["n_grid"] is None:
+            from .continuum_regime import ContinuumRegime
+            return ContinuumRegime(*args, **kwargs)
+        return super().__new__(cls)
 
     def __setattr__(self, name, value):
         if name in self._fixed_configuration and name in self.__dict__:
