@@ -60,10 +60,19 @@ import math
 from dataclasses import dataclass, field
 from typing import Any
 
+from .predictive_state import (BeliefState, ObservationChannel, PredictiveTask,
+                               risk_drop_law, value_of_observation)
+
 __all__ = ["Instrument", "Action", "EngineState", "Actions", "next_actions", "apply",
-           "bundle_action", "bundle_value_bits", "probe_pair_bundle", "sweep_bundle", "chain_throw_bundle"]
+           "bundle_action", "bundle_value_bits", "probe_pair_bundle", "sweep_bundle", "chain_throw_bundle",
+           "PredictiveBinding", "predictive_action", "binding_of", "update_alarm",
+           "predictive_expected_drop", "COST_UNIT"]
 
 BITS = "bits"
+
+# The graph's own declared common currency. A predictive binding whose costs are declared in another
+# currency is never combined into this bits-per-cost ranking by division (see `next_actions`).
+COST_UNIT = "graph"
 
 
 def _h(p: float) -> float:
@@ -94,15 +103,64 @@ class Action:
     source_channel: str
     how: str                               # one line, domain-free, in the contract's terms
     box: dict | None = None                # validity where applicable
-    value_unit: str = BITS                 # bits | priority | chi2_drop | evpi
+    value_unit: str = BITS                 # bits | priority | chi2_drop | evpi | brier | error
     meta: dict = field(default_factory=dict)
+    cost_unit: str = COST_UNIT             # caller-declared currency; different currencies are never divided together
 
     @property
     def id(self) -> str:
         return f"{self.kind}:{self.target}"
 
 
-KINDS = ("probe", "measure", "throw", "declare_variable", "model_check", "work_node", "bundle")
+KINDS = ("probe", "measure", "throw", "declare_variable", "model_check", "work_node", "bundle", "observe")
+
+
+@dataclass
+class PredictiveBinding:
+    """One optional typed predictive task: a belief, a task bank and its explicit observation channels.
+
+    It is a binding, not a controller: it supplies exactly what `predictive_state.value_of_observation`
+    already consumes. `channels` address the actions, so their names must be unique. `cost_unit` is a
+    caller-declared currency: costs are positive and explicit, and two currencies are never divided
+    together in the ranking. The belief is replaced, never mutated, when an observation is applied.
+    """
+
+    task_id: str
+    belief: BeliefState
+    task: PredictiveTask
+    channels: tuple
+    cost_unit: str = COST_UNIT
+
+    def __post_init__(self):
+        if not isinstance(self.task_id, str) or not self.task_id:
+            raise ValueError("a predictive binding needs a nonempty task_id")
+        if not isinstance(self.belief, BeliefState):
+            raise TypeError(f"binding belief must be a BeliefState, got {type(self.belief).__name__}")
+        if not isinstance(self.task, PredictiveTask):
+            raise TypeError(f"binding task must be a PredictiveTask, got {type(self.task).__name__}")
+        if self.belief.space_key != self.task.space_key:
+            raise ValueError("binding belief and task use different hypothesis spaces")
+        object.__setattr__(self, "channels", tuple(self.channels))
+        if not self.channels:
+            raise ValueError("a predictive binding needs at least one observation channel")
+        names = []
+        for channel in self.channels:
+            if not isinstance(channel, ObservationChannel):
+                raise TypeError(f"a binding channel must be an ObservationChannel, got {type(channel).__name__}")
+            channel.check(self.belief)                       # space and any conditioned_on fingerprint
+            names.append(channel.name)
+        if len(set(names)) != len(names):
+            raise ValueError("channel names address the actions and must be unique within a binding")
+        if not isinstance(self.cost_unit, str) or not self.cost_unit:
+            raise ValueError("a binding must declare a nonempty cost unit")
+
+
+def binding_of(state: EngineState, binding_id: str) -> PredictiveBinding:
+    """The one binding with this task_id; ambiguous or absent bindings are refused."""
+    matches = [b for b in state.predictive_bindings if isinstance(b, PredictiveBinding) and b.task_id == binding_id]
+    if len(matches) != 1:
+        raise ValueError(f"expected exactly one predictive binding '{binding_id}', found {len(matches)}")
+    return matches[0]
 
 
 @dataclass
@@ -123,6 +181,7 @@ class EngineState:
     bundles: list = field(default_factory=list)              # [Action(kind="bundle")] built by the helpers below
     pair_bundles: bool = True                                # offer the exactly priced probe PAIR on every pair (e21f)
     bundle_lam: float = 1.0                                  # λ on the family entropy in a regime bundle's price
+    predictive_bindings: list = field(default_factory=list)  # [PredictiveBinding]: typed predictive tasks
 
     def variable(self, pair) -> str:
         return self.regime_variables.get(pair, "x")
@@ -289,6 +348,70 @@ def _federation_actions(state: EngineState) -> list[Action]:
             + (f" with instrument {ins}" if ins else "") + "; return {sign: ±1}",
             box={v: [x, x] for v, x in pr.point.items()}, value_unit="evpi", meta={"probe": pr, "kind": pr.kind}))
     return out
+
+
+# -- predictive tasks: the typed inference/measurement return path -----------------------------------
+def predictive_action(binding: PredictiveBinding, channel_index: int, instrument: Instrument | None = None,
+                      meta_extra: dict | None = None) -> Action:
+    """One `observe` Action for a binding channel, priced by the EXACT one-action Bayes-risk drop.
+
+    The action freezes the pre-observation belief/task/channel fingerprints and the exact law of the
+    realized risk drop. `value_unit` is the task's own unit: log loss is bits and may join the bits
+    ranking; brier and error are their own currencies and stay out of it. `instrument` is a PRICE TAG
+    only — the value comes from the calibrated channel likelihood, never from an instrument's own
+    confidence.
+    """
+    if not isinstance(binding, PredictiveBinding):
+        raise TypeError(f"expected a PredictiveBinding, got {type(binding).__name__}")
+    if not 0 <= int(channel_index) < len(binding.channels):
+        raise ValueError(f"channel index {channel_index} outside the binding's {len(binding.channels)} channels")
+    channel = binding.channels[int(channel_index)]
+    value = value_of_observation(binding.belief, binding.task, channel)
+    law = risk_drop_law(binding.belief, binding.task, channel)
+    unit = BITS if binding.task.loss == "log" else binding.task.loss
+    price_tag = instrument if instrument is not None else Instrument(channel.name, float(channel.cost), 1.0)
+    target = f"{binding.task_id}/{channel.name}"
+    meta = {"binding": binding, "binding_id": binding.task_id, "channel_index": int(channel_index),
+            "channel": channel, "belief_fingerprint": binding.belief.fingerprint,
+            "task_fingerprint": binding.task.fingerprint, "channel_fingerprint": channel.fingerprint,
+            "cost_unit": binding.cost_unit, "task_loss": binding.task.loss, "risk_law": law,
+            "reliability_source": "exact calibrated channel likelihood; the price-tag reliability is unused"}
+    if meta_extra:
+        meta.update(meta_extra)
+    how = (f"observe channel '{channel.name}' of predictive task '{binding.task_id}' "
+           f"(loss {binding.task.loss}); expected risk drop {value.gain:g} {unit} for declared cost "
+           f"{float(channel.cost):g} {binding.cost_unit}; return {{outcome: <index in [0, "
+           f"{channel.likelihood.shape[1]}), evidence_id: <stable physical id>[, cost]}}")
+    return Action("observe", target, price_tag, float(value.gain), float(channel.cost),
+                  float(value.gain_per_cost), "predictive_state", " ".join(how.split()),
+                  box=None, value_unit=unit, meta=meta, cost_unit=binding.cost_unit)
+
+
+def _predictive_actions(state: EngineState) -> list[Action]:
+    out: list[Action] = []
+    for binding in state.predictive_bindings:
+        for index in range(len(binding.channels)):
+            out.append(predictive_action(binding, index))
+    return out
+
+
+def predictive_expected_drop(law) -> float:
+    """The price the frozen law implies: Σ P(outcome)·drop. Equals `value_of_observation(...).gain`."""
+    return float(sum(float(q) * float(d) for q, d in law))
+
+
+def update_alarm(alarm, law, realized: float) -> tuple[float, bool]:
+    """Narrow adapter: feed one predictive observation to the EXISTING `Alarm.update(predicted, realized, outcomes=...)`.
+
+    `law` must be the frozen pre-observation law (`action.meta["risk_law"]`), not a post-hoc one. The
+    exact-alpha martingale is only valid for the model's own conditional outcome law; a caller that
+    cannot supply it has no guarantee of the stated kind, so an empty law is refused rather than
+    silently downgraded. No new alarm is constructed.
+    """
+    if not law:
+        raise ValueError("update_alarm needs the frozen pre-observation risk-drop law; an empty law carries no "
+                         "predictive distribution and the exact-alpha guarantee does not hold")
+    return alarm.update(predictive_expected_drop(law), float(realized), outcomes=list(law))
 
 
 # -- bundles: a purchase priced at its own depth -----------------------------------------------------
@@ -614,9 +737,12 @@ def next_actions(state: EngineState, profile: Any = None, k: int = 10, guard_sha
 
     collected = (_regime_actions(state) + _margin_actions(state) + _form_actions(state)
                  + _hidden_variable_actions(state) + _unlock_actions(state) + _federation_actions(state)
-                 + _bundle_actions(state))
-    in_bits = sorted((a for a in collected if a.value_unit == BITS), key=lambda a: -a.value_per_cost)
-    other = [a for a in collected if a.value_unit != BITS]
+                 + _bundle_actions(state) + _predictive_actions(state))
+    # A bits action joins the one bits-per-cost list only if its cost is in the graph's declared common
+    # currency; brier/error tasks and costs declared in another currency are never divided into it.
+    in_bits = sorted((a for a in collected if a.value_unit == BITS and a.cost_unit == COST_UNIT),
+                     key=lambda a: -a.value_per_cost)
+    other = [a for a in collected if not (a.value_unit == BITS and a.cost_unit == COST_UNIT)]
     if decisions:
         from .decision_cert import flip_actions
         other = other + flip_actions(state, decisions)
@@ -717,6 +843,49 @@ def apply(state: EngineState, action: Action, outcome: dict) -> dict:
                 raise ValueError(f"each confirmed link must be (i, j, w), got {l!r}")
             i, j, w = l
             realized += float(state.form.observe_link(int(i), int(j), float(w)))
+
+    elif action.kind == "observe":
+        import numpy as np
+        _require(outcome, ("evidence_id", "outcome"), action.kind)
+        binding = action.meta.get("binding")
+        if not isinstance(binding, PredictiveBinding):
+            raise ValueError("an observe action must carry the predictive binding it was planned against")
+        if not any(b is binding for b in state.predictive_bindings):
+            raise ValueError("the predictive binding of this action is not in this state")
+        index = action.meta.get("channel_index")
+        channel = binding.channels[index]
+        if channel is not action.meta.get("channel"):
+            raise ValueError("predictive channel changed since planning")
+        if binding.belief.fingerprint != action.meta.get("belief_fingerprint"):
+            raise ValueError("stale predictive action: the belief changed since planning")
+        if binding.task.fingerprint != action.meta.get("task_fingerprint"):
+            raise ValueError("predictive task changed since planning")
+        if channel.fingerprint != action.meta.get("channel_fingerprint"):
+            raise ValueError("predictive channel changed since planning")
+        oc = outcome["outcome"]
+        if isinstance(oc, (bool, np.bool_)) or not isinstance(oc, (int, np.integer)):
+            raise ValueError("an observation outcome must be an integer index")
+        oc = int(oc)
+        if not 0 <= oc < channel.likelihood.shape[1]:
+            raise ValueError(f"outcome index {oc} is impossible for a channel with "
+                             f"{channel.likelihood.shape[1]} outcomes")
+        evidence_id = outcome["evidence_id"]
+        if not isinstance(evidence_id, str) or not evidence_id:
+            raise ValueError("an observation needs a stable nonempty evidence identity")
+        if evidence_id in binding.belief.evidence_ids:
+            raise ValueError("this physical observation was already consumed")
+        risk_before = binding.task.risk(binding.belief)
+        updated = binding.belief.observe(channel, oc, evidence_id)     # atomic: raises before any mutation
+        binding.belief = updated                                       # immutable state replaced, not mutated
+        risk_after = binding.task.risk(updated)
+        realized = risk_before - risk_after
+        extra.update(evidence_id=evidence_id, task_id=binding.task_id, channel=channel.name,
+                     risk_before=float(risk_before), risk_after=float(risk_after),
+                     planned_cost=float(action.cost), cost_unit=action.cost_unit)
+        if outcome.get("cost") is not None:
+            extra["actual_cost"] = float(outcome["cost"])
+        if outcome.get("source") is not None:
+            extra["source_root"] = str(outcome["source"])
 
     elif action.kind == "bundle":
         _require(outcome, ("outcomes",), action.kind)

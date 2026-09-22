@@ -141,6 +141,14 @@ class ObservationChannel:
         if self.conditioned_on is not None and self.conditioned_on != state.fingerprint:
             raise ValueError("conditional channel belongs to another evidence state")
 
+    @property
+    def fingerprint(self) -> str:
+        """Content identity of the channel: a change to the likelihood, cost or conditioning is a new channel."""
+        metadata = json.dumps([self.name, self.space_key, self.conditioned_on],
+                              ensure_ascii=True, separators=(",", ":")).encode()
+        return hashlib.sha256(metadata + b"\0" + self.likelihood.astype("<f8").tobytes()
+                              + b"\0" + np.float64(self.cost).tobytes()).hexdigest()
+
 
 @dataclass(frozen=True, eq=False)
 class PredictiveTask:
@@ -184,6 +192,14 @@ class PredictiveTask:
             risks = 1 - p.max(axis=1)
         return float(self.weights @ risks)
 
+    @property
+    def fingerprint(self) -> str:
+        """Content identity of the task: space, loss, readout and query weights all change the ranking."""
+        metadata = json.dumps([self.space_key, self.loss, list(self.readout.shape), list(self.weights.shape)],
+                              ensure_ascii=True, separators=(",", ":")).encode()
+        return hashlib.sha256(metadata + b"\0" + self.readout.astype("<f8").tobytes()
+                              + b"\0" + self.weights.astype("<f8").tobytes()).hexdigest()
+
 
 @dataclass(frozen=True)
 class ActionValue:
@@ -196,6 +212,31 @@ class ActionValue:
     @property
     def gain_per_cost(self) -> float:
         return self.gain / self.cost
+
+
+def risk_drop_law(state: BeliefState, task: PredictiveTask,
+                  channel: ObservationChannel) -> list[tuple[float, float]]:
+    """[(P(outcome), realized task-risk drop)] under the PRE-observation belief — freeze it before observing.
+
+    The drop on an individual outcome can be NEGATIVE even though the probability-weighted mean is
+    nonnegative: Bayes risk is concave in the belief, so an outcome that makes the belief less certain
+    about the deployed task can raise the realized risk. A martingale guarantee for the residual
+    ``realized − predicted`` needs this exact conditional law of the outcome, not merely the mean.
+    """
+    channel.check(state)
+    outcomes = state.predict(channel)
+    before = task.risk(state)
+    law: list[tuple[float, float]] = []
+    for outcome, probability in enumerate(outcomes):
+        if probability <= 0:
+            continue
+        likelihood = channel.likelihood[:, outcome]
+        loglike = np.full_like(likelihood, -np.inf)
+        np.log(likelihood, out=loglike, where=likelihood > 0)
+        hypothetical = BeliefState.from_log_mass(state.space_key, state._log_mass + loglike,
+                                                 state.evidence_ids)
+        law.append((float(probability), float(before - task.risk(hypothetical))))
+    return law
 
 
 def value_of_observation(state: BeliefState, task: PredictiveTask,

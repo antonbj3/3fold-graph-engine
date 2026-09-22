@@ -83,10 +83,53 @@ can have null directions and does not certify global identifiability. A finite
 query bank can miss distinguishing interventions. Smaller pair distortion is a
 training signal to evaluate against held-out task loss, not proof of improvement.
 
+## The return path through the existing action layer
+
+`predictive_state` is wired into the existing `next_actions` / `apply` / `alarm`
+loop rather than a parallel controller. A caller attaches one or more
+`next_actions.PredictiveBinding(task_id, belief, task, channels, cost_unit)` to
+`EngineState.predictive_bindings`. Collection prices each explicit channel with
+the exact `value_of_observation`:
+
+* `task.loss == "log"` is bits and joins the one bits-per-cost list, but only when
+  the binding's declared `cost_unit` is the graph's common currency. `brier` and
+  `error` are separate currencies, and a cost declared in any other unit is never
+  divided into the bits ranking: it is returned in `Actions.other`.
+* `Action.kind == "observe"` carries the belief/task/channel fingerprints taken at
+  planning time plus the frozen pre-observation `risk_law`. `apply` refuses a stale
+  belief, a changed task or channel, a duplicate physical `evidence_id`, or an
+  impossible outcome index BEFORE it replaces the immutable belief. Two genuinely
+  new readings from one source root are allowed; a copied reading reuses its id and
+  is refused.
+* The ledger row adds `evidence_id`, `risk_before`, `risk_after`, `planned_cost`
+  and `actual_cost` (when the caller supplies it), alongside the existing
+  `value_predicted` / `value_realized` pair.
+
+`risk_drop_law(belief, task, channel)` is the model's own conditional law of the
+realized task-risk drop. An individual outcome's drop can be NEGATIVE even when
+the expected drop is nonnegative (Bayes risk is concave in the belief). The narrow
+adapter `next_actions.update_alarm(alarm, law, realized)` feeds that frozen law to
+the EXISTING `Alarm.update(predicted, realized, outcomes=...)`; no new alarm is
+constructed, and an empty law is refused rather than silently downgraded to the
+bounded path.
+
+An executable `instruments.Instrument` is connected through
+`instruments.Calibration(identity, channel, reading_to_outcome)`: the caller
+supplies `P(reading outcome | hypothesis)` and the map from the actual `Reading`
+to the finite outcome index. `Reading.p` is the instrument's posterior confidence
+and is never converted into the channel likelihood or a reliability. A correlated
+multi-reading sweep needs a caller-defined JOINT likelihood; the legacy
+per-reading weight `1/K` of `Instrument.enter` is one lineage root, not a joint
+law, and is unchanged.
+
 The current tests exercise XOR observation synergy, mirrored global branches,
 duplicate evidence, conditional copies, relevant versus nuisance information,
 long log-tail recovery, Regime parity, geometry's label-swap ambiguity, product
-versus ambient metrics, Fisher null directions and the GAN/JS scale identity.
+versus ambient metrics, Fisher null directions and the GAN/JS scale identity. The
+return-path tests (`tests/test_predictive_actions.py`) add units, the ledger,
+stale/changed refusals, evidence identity, impossible-outcome atomicity, the exact
+binary risk law with a negative individual drop, the finite-law Alarm martingale,
+correlated joint observations, and a calibrated executable instrument path.
 
 ```bash
 python3 -m pytest tests/test_predictive_state.py tests/test_predictive_geometry.py -q

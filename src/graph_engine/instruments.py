@@ -46,17 +46,24 @@ from __future__ import annotations
 import abc
 import math
 from dataclasses import dataclass
-from typing import Any, NamedTuple, Sequence
+from typing import Any, Callable, NamedTuple, Sequence
 
 try:                                               # package import (tests, examples, callers)
-    from graph_engine.next_actions import Action, EngineState, Instrument as PricedInstrument, sweep_bundle
+    from graph_engine.next_actions import (Action, EngineState, PredictiveBinding,
+                                           Instrument as PricedInstrument, binding_of,
+                                           predictive_action, sweep_bundle)
+    from graph_engine.predictive_state import ObservationChannel
 except ImportError:                                # run as a script from anywhere in the repo
     import os
     import sys
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from graph_engine.next_actions import Action, EngineState, Instrument as PricedInstrument, sweep_bundle
+    from graph_engine.next_actions import (Action, EngineState, PredictiveBinding,
+                                           Instrument as PricedInstrument, binding_of,
+                                           predictive_action, sweep_bundle)
+    from graph_engine.predictive_state import ObservationChannel
 
-__all__ = ["Reading", "Instrument", "ContactSolverSweep", "SweepFamily", "load_family"]
+__all__ = ["Reading", "Instrument", "ContactSolverSweep", "SweepFamily", "load_family",
+           "Calibration", "calibrated_action", "calibrated_outcome"]
 
 _EPS = 1e-9
 
@@ -192,6 +199,85 @@ class Instrument(abc.ABC):
 
     def __str__(self) -> str:
         return f"{type(self).__name__} {self.name!r} (r {self.reliability:g}, cost {self.cost:g}, root {self.lineage_root})"
+
+
+# -- the calibrated predictive adapter ---------------------------------------------------------------
+@dataclass(frozen=True)
+class Calibration:
+    """The caller's measured law of a reading: `P(reading outcome | hypothesis)` plus its identity.
+
+    `channel.likelihood` is the calibrated law over FINITE outcome indices, supplied by the caller. The
+    mapping takes the ACTUAL `Reading` this instrument produces and returns the index of the outcome it
+    landed in. Nothing here reads `Reading.p`: that field is the instrument's posterior confidence, not
+    its reliability, and it is not silently converted into a likelihood. A caller who wants to use the
+    calibration for a sweep must define the JOINT law over the combined outcome indices; the legacy
+    per-reading weight `1/K` of `Instrument.enter` is one lineage root, not a correlated joint law.
+
+    `identity` is the calibration's own versioned name. It is carried on the planned action so a
+    different calibration cannot be substituted after the fact.
+    """
+
+    identity: str
+    channel: ObservationChannel
+    reading_to_outcome: Callable[[Reading], int]
+
+    def __post_init__(self):
+        if not isinstance(self.identity, str) or not self.identity:
+            raise ValueError("a calibration needs a stable nonempty identity")
+        if not isinstance(self.channel, ObservationChannel):
+            raise TypeError("calibration.channel must be an ObservationChannel P(outcome | hypothesis)")
+        if not callable(self.reading_to_outcome):
+            raise TypeError("a calibration needs a Reading -> finite outcome index mapping")
+
+    def outcome_index(self, reading: Reading) -> int:
+        index = self.reading_to_outcome(reading)
+        if isinstance(index, bool) or not isinstance(index, int):
+            raise ValueError(f"the reading mapping must return an integer outcome index, got {index!r}")
+        if not 0 <= index < self.channel.likelihood.shape[1]:
+            raise ValueError(f"the reading mapping returned {index}, outside the channel's "
+                             f"{self.channel.likelihood.shape[1]} outcomes")
+        return index
+
+
+def calibrated_action(state: EngineState, binding_id: str, instrument: Instrument,
+                      calibration: Calibration) -> Action:
+    """Plan the calibrated channel of `binding_id` with `instrument`'s price tag and lineage.
+
+    The channel must be one of the binding's declared channels; the value is the exact Bayes-risk drop
+    from that calibrated likelihood. The executable instrument's name, cost and ONE lineage root are
+    attached; its `reliability` is NOT used (and `Reading.p` is never read here).
+    """
+    binding = binding_of(state, binding_id)
+    calibration.channel.check(binding.belief)
+    channels = list(binding.channels)
+    if not any(calibration.channel is c for c in channels):
+        raise ValueError("the calibration channel is not one of the binding's declared channels; declare it on "
+                         "the binding so the action's channel identity is checked at apply time")
+    index = next(i for i, c in enumerate(channels) if c is calibration.channel)
+    price_tag = PricedInstrument(instrument.name, instrument.cost, instrument.reliability)
+    return predictive_action(binding, index, instrument=price_tag,
+                             meta_extra={"calibration_id": calibration.identity,
+                                         "instrument_lineage_root": instrument.lineage_root,
+                                         "instrument_sources": instrument.sources(),
+                                         "executable_instrument": instrument.name})
+
+
+def calibrated_outcome(instrument: Instrument, calibration: Calibration, pair, x: float,
+                       evidence_id: str, actual_cost: float | None = None) -> dict:
+    """Run one reading and reduce it to the apply() outcome, with the physical evidence identity.
+
+    `Reading.p` is recorded as DATA in the ledger, never as the channel likelihood. `evidence_id` is the
+    physical observation's identity: two genuinely new readings from the same lineage root may carry two
+    ids; a copied reading must reuse its id and will then be refused by `apply`.
+    """
+    if not isinstance(evidence_id, str) or not evidence_id:
+        raise ValueError("a calibrated reading needs a stable nonempty evidence identity")
+    reading = instrument.probe(pair, float(x))
+    index = calibration.outcome_index(reading)
+    out = {"outcome": index, "evidence_id": evidence_id, "source": instrument.lineage_root,
+           "reading": {"sign": int(reading.sign), "p": float(reading.p)}}
+    out["cost"] = float(reading.cost if actual_cost is None else actual_cost)
+    return out
 
 
 # -- the first instance: a contact-solver sweep ------------------------------------------------------
