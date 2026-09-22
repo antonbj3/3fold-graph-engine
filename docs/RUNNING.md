@@ -3,10 +3,16 @@
 ```bash
 python3 -m venv .venv && . .venv/bin/activate     # any Python 3.10+
 pip install -r requirements.txt                   # numpy, scipy, pyyaml, pytest, networkx, scikit-learn, pillow
-pytest                                            # 66 tests: every module's own selftest (1 network test skipped)
+pytest                                            # module and integration tests; optional backend tests need the variables below
 python3 src/graph_engine/tools/tool_find.py --selftest          # search gate, synthetic corpus
 python3 src/graph_engine/tools/preflight.py --graph examples/mini_graph/ANCHOR_GRAPH.json --ledger examples/mini_graph/FOLD_LEDGER.jsonl
 ```
+
+The experimental native predictive bridge runs when `KERNEL_ENGINE_SRC` points
+at the Kernel checkout's `src` directory and `BRIDGE_BUILD_DIR` names a writable
+explicit build directory. Without them those optional tests skip. A constructed
+planner → instrument → ledger → native inference example is available at
+[`examples/predictive_federation`](../examples/predictive_federation/README.md).
 
 Every Layer A module is also runnable on its own (`python3 src/graph_engine/cert_decorrelation.py`)
 and prints its assertions. The optical worked example under `examples/optical_constants/` runs in
