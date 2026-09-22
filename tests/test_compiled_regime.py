@@ -107,6 +107,41 @@ def test_outputs_and_input_weights_cannot_mutate_cached_state(backend):
         c.p_two=0.9
 
 
+def test_evidence_ledger_resolves_default_and_tracks_recalibration(backend):
+    claims = [(0.25, 0.75, 1, 2.0, None)]
+    low = CompiledRegime(0, 1, backend=backend, n_grid=4,
+                         reliability=0.6, claims=claims)
+    high = CompiledRegime(0, 1, backend=backend, n_grid=4,
+                          reliability=0.9, claims=claims)
+    before = low.evidence_ledger()
+    assert before != high.evidence_ledger()
+    assert before["claims"][0][-1] == 0.6
+    low.set_claim_reliabilities([0.9])
+    assert low.evidence_ledger() == high.evidence_ledger()
+    assert before["claims"][0][-1] == 0.6
+    np.testing.assert_array_equal(low.p_plus_cells(), high.p_plus_cells())
+
+
+def test_evidence_ledger_public_replay_preserves_posterior_and_evidence(backend):
+    c = CompiledRegime(0, 1, backend=backend, n_grid=4, p_two=0.1,
+                       claims=[(0.25, 0.75, -1, 1.5, None)])
+    c.add_probe(0.25, 1, 0.8, weight=1.5, evidence_id="observed-a")
+    c.add_probe(0.8, -1, 0.9, evidence_id="observed-b")
+    c.set_claim_reliabilities([0.7])
+    ledger = c.evidence_ledger()
+    replay = CompiledRegime(0, 1, backend=backend, n_grid=4, p_two=0.1,
+                            claims=ledger["claims"])
+    for x, sign, reliability, weight, evidence_id in ledger["probes"]:
+        replay.add_probe(x, sign, reliability, weight, evidence_id=evidence_id)
+    assert replay.evidence_ids == c.evidence_ids
+    np.testing.assert_array_equal(replay.p_plus_cells(), c.p_plus_cells())
+    assert replay.log_evidence() == c.log_evidence()
+    ledger["claims"] = ()
+    ledger["probes"] = ()
+    assert len(c.evidence_ledger()["claims"]) == 1
+    assert len(c.evidence_ledger()["probes"]) == 2
+
+
 def test_near_partition_edge_is_still_a_new_edge(backend):
     c=CompiledRegime(0,1,backend=backend,n_grid=4)
     with pytest.raises(FrozenPartitionError):

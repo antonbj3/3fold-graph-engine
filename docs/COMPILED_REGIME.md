@@ -100,6 +100,17 @@ in the native transfer method; the same backend's `method="enumerate"` is the st
 baseline. `natural_statistics()` exposes A, B, the folded claim coefficients and the kernel
 parameters; `d logZ/dA_q = E[S_q]`, `d logZ/dB_q = E[S_q²]`.
 
+`evidence_ledger()` exposes a detached snapshot of the actual claims and identified
+probes. Claim reliabilities are resolved: a claim created with `reliability=None`
+exports the numeric value used by the owner, including later recalibration.
+Hashing the original constructor arguments would miss that distinction. The
+snapshot preserves the order within each collection, and contains current
+likelihood inputs rather than a chronological record of every mutation. Claim
+records have no evidence IDs in the existing API. A consumer must separately
+bind the prior, partition and task semantics and retain a consumed-probe registry;
+a digest alone cannot detect a replay. Natural parameters alone also omit the
+additive constants required by `log_evidence()`.
+
 See `examples/regime_bridge/run_bridge.py` for an env-path example. Tests compare the bridge
 against the existing solver and reject use of its dense internal path. Research benchmark
 artifacts are kept separately from this public source tree; there is no general-language

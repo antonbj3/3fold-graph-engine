@@ -391,6 +391,22 @@ class CompiledRegime:
     def evidence_ids(self):
         return frozenset(self._evidence_ids)
 
+    def evidence_ledger(self) -> dict:
+        """Snapshot the actual likelihood inputs, with resolved reliabilities.
+
+        Claims are (lo, hi, sign, n_eff, reliability); probes are
+        (x, sign, reliability, weight, evidence_id). Order is preserved within
+        each collection. Claim recalibration is reflected in a new snapshot.
+        A constructor argument of ``None`` is never exported as a reliability.
+
+        This is the current evidence ledger, not a chronological mutation log.
+        Claims have no observation IDs in this API. Prior, partition and task
+        semantics must be bound separately when sharing a predictive state.
+        Returned tuples do not expose the owner's mutable lists.
+        """
+        return {"schema": "compiled-regime-evidence-v1",
+                "claims": tuple(self._claims), "probes": tuple(self._probes)}
+
     @property
     def n_cells(self):
         return self._Q
