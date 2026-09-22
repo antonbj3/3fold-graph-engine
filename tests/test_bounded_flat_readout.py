@@ -205,6 +205,9 @@ def test_conditional_guard_uses_coherent_evidence_and_charges_delta_arrays(backe
         assert answer["approx_anchor_numeric_bytes"]==16*16
         assert answer["conditional_bound_estimate"]<=answer["generic_bound_estimate"]+1e-14
         assert np.max(np.abs(answer["p_plus"]-independent_full(c,backend)))<=answer["error_bound_estimate"]+1e-8
+        state=c.natural_statistics()
+        full=backend.real.evaluate(state["kernel_a"],state["kernel_b"],c.transition_prior()["mass"])
+        assert float(np.sum(full["family_mass"][1:]))<=answer["error_bound_estimate"]+1e-8
     assert "conditional" in chosen
     c.add_claim(0,.5,1,n_eff=1,reliability=.8)
     assert c._flat_anchor is None
@@ -221,6 +224,9 @@ def test_opposed_same_cell_cancels_da_and_tighter_request_refreshes(backend):
     assert answer["conditional_bound_estimate"]<answer["generic_bound_estimate"]
     assert abs(c._flat_anchor["delta_a"][0])<1e-14
     assert np.max(np.abs(answer["p_plus"]-independent_full(c,backend)))<=answer["error_bound_estimate"]+1e-8
+    state=c.natural_statistics()
+    full=backend.real.evaluate(state["kernel_a"],state["kernel_b"],c.transition_prior()["mass"])
+    assert float(np.sum(full["family_mass"][1:]))<=answer["error_bound_estimate"]+1e-8
     answer["p_plus"][:]=0
     assert np.all(c.approximate_p_plus_cells(.9)["p_plus"]>0)
     tighter=c.approximate_p_plus_cells(answer["error_bound_estimate"]*.5)
