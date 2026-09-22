@@ -27,3 +27,38 @@ locations. Its acquisition costs count readings; planning wall time is reported
 separately. It is not a neural training run, a claim of general optimality, or a
 speed comparison against an LLM. Training transitions and their finite-demand
 example are documented in [BUDGET_PLAN](../../docs/BUDGET_PLAN.md).
+
+## Export existing beliefs into a training objective
+
+`training_state.CompiledTrainingBatch` snapshots named `CompiledRegime` instances
+with one common partition and transition prior. It folds existing claim
+likelihoods into the natural parameters and retains probe evidence identities.
+The exported family mass is the prior; feeding the updated posterior mass back
+as a prior would apply evidence twice. Rows with different geometry or priors
+are refused, even when their numeric array dimensions happen to agree.
+
+```python
+from graph_engine.training_state import CompiledTrainingBatch
+from kernel_engine.inference.forecast_training import ProbeDistillation
+
+batch = CompiledTrainingBatch.from_regimes([
+    ("history-a", compiled_a), ("history-b", compiled_b),
+])
+objective = ProbeDistillation(kernel, batch.natural, cells=[1, 3],
+                             family_mass=batch.family_mass, reliability=0.85)
+rows = batch.indices_for(["history-b", "history-a"])
+# Keep feature rows paired with the same IDs; head output has shape (B,2,Q).
+loss = objective(head(features_for_these_rows), rows).combined.mean()
+loss.backward()
+```
+
+This is a frozen numeric snapshot; adding evidence to a live regime does not
+change saved training targets. Create a new snapshot and objective after such
+an update. The snapshot fingerprint covers row IDs, numeric state, geometry,
+prior and retained probe IDs. It does not establish independence across
+training examples or replace the raw evidence needed for recalibration.
+Graph imports no PyTorch or cross-repository model framework at module load.
+The injected Kernel objective computes teacher-weighted current/future query
+losses, with costs and limitations documented in Kernel's predictive-inference
+guide. Its implementation is validated; a general model-quality improvement
+has not been established.
