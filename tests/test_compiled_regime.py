@@ -84,6 +84,52 @@ def test_parity_random_weighted(backend):
         _assert_matches(_rand_regime(seed), backend)
 
 
+def test_certain_prediction_has_zero_task_risk(backend):
+    c=CompiledRegime(0,1,backend=backend,n_grid=1,p_flip=0,p_two=0)
+    c.add_probe(0.5,1,0.99,weight=20,evidence_id="e")
+    assert c.p_plus(0.5)==1.0
+    assert c.task_risk(loss="log")==0.0
+    assert c.task_risk(loss="brier")==0.0
+
+
+def test_outputs_and_input_weights_cannot_mutate_cached_state(backend):
+    weights=np.array([1.0,0,0,0])
+    c=CompiledRegime(0,1,backend=backend,n_grid=4,query_weights=weights)
+    c.add_probe(0.1,1,0.9,evidence_id="e")
+    expected=c.p_plus(0.1); risk=c.task_risk()
+    for output in [c.p_plus_cells(),c.mean_s_cells(),c.mean_s2_cells(),
+                   c.family_mass(),c.transitions_posterior(),c.cells,c.widths]:
+        output[...] = 0
+    weights[:]=[0,0,0,1]
+    assert c.p_plus(0.1)==expected
+    assert c.task_risk()==risk
+    with pytest.raises(AttributeError):
+        c.p_two=0.9
+
+
+def test_near_partition_edge_is_still_a_new_edge(backend):
+    c=CompiledRegime(0,1,backend=backend,n_grid=4)
+    with pytest.raises(FrozenPartitionError):
+        c.add_claim(0.25+1e-13,0.75,1)
+
+
+def test_expected_gain_requires_a_normalized_physical_channel(backend):
+    c=CompiledRegime(0,1,backend=backend,n_grid=1,p_flip=0,p_two=0)
+    c.add_probe(0.5,1,0.99,evidence_id="first")
+    # Tempering a Bernoulli posterior tenfold while retaining the original
+    # outcome probabilities used to yield a spurious negative information gain.
+    with pytest.raises(ValueError,match="unit-weight"):
+        c.expected_gain(0.5,0.6,weight=10)
+    assert c.expected_gain(0.5,0.6)["gain"]>=-1e-12
+
+
+def test_normalized_prior_evidence_is_zero_before_observations(backend):
+    c=CompiledRegime(0,1,backend=backend,n_grid=4,p_flip=0,p_two=0)
+    assert c.log_evidence(normalized_prior=True)==pytest.approx(0,abs=1e-14)
+    assert c.log_evidence()-c.log_evidence(normalized_prior=True)==pytest.approx(
+        math.log(c.transition_prior()["normalizer"]),abs=1e-15)
+
+
 def test_parity_two_transitions_and_no_collapse(backend):
     a = _rand_regime(3, Q=20, p_two=0.20)
     b = _rand_regime(3, Q=20, p_two=0.0)

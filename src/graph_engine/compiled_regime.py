@@ -1,7 +1,6 @@
 """compiled_regime.py — Graph-to-Kernel native inference bridge for the finite regime family.
 
-This is an ORIGINAL integration, not a copy of ``regime_posterior.py`` and not a copy of
-the DeepSeek ``predictive_compiler`` prototype. It re-expresses the SAME finite
+This integration re-expresses the same finite
 RegimePosterior family as a natural-statistic exponential family that is decoded by an
 INJECTED native kernel (``kernel_engine.inference.finite_regime.FiniteRegimeKernel`` or any
 object exposing the same ``evaluate(a, b, family_mass, *, method=...)`` contract).
@@ -105,6 +104,14 @@ class CompiledRegime:
     no cross-repo code and never compiles anything at import time.
     """
 
+    _fixed_configuration = frozenset({"lo", "hi", "reliability", "p_flip", "p_two",
+                                      "potential", "n_grid", "claim_model"})
+
+    def __setattr__(self, name, value):
+        if name in self._fixed_configuration and name in self.__dict__:
+            raise AttributeError(f"{name} is fixed; construct a new regime to change its model")
+        super().__setattr__(name, value)
+
     def __init__(self, lo: float, hi: float, *, backend,
                  reliability: float = 0.75, p_flip: float = 0.3, p_two: float = 0.05,
                  potential: str = "entropy", n_grid: int = 48,
@@ -196,8 +203,9 @@ class CompiledRegime:
         self._Q = len(cells)
 
     def _bounds_are_edges(self, a, b) -> bool:
-        return bool(np.any(np.isclose(self._edges, a, rtol=0, atol=1e-12))
-                    and np.any(np.isclose(self._edges, b, rtol=0, atol=1e-12)))
+        # A near edge is still a different partition. Splitting a tiny cell
+        # changes the uniform-over-transition-cells prior by a finite amount.
+        return bool(np.any(self._edges == a) and np.any(self._edges == b))
 
     def _cell_index(self, x) -> int:
         x = _as_finite_float(x, "probe x")
@@ -261,7 +269,10 @@ class CompiledRegime:
         self._cache = None
 
     def add_probe(self, x, sign, reliability=0.95, weight=1.0, *, evidence_id) -> None:
-        """Consume one conditionally independent observation. O(1) state update.
+        """Consume conditionally independent evidence; O(log Q) cell lookup.
+
+        Updating the two numeric entries is O(1). A nonunit weight is a
+        tempered likelihood, not necessarily a normalized observation channel.
 
         ``evidence_id`` must be a nonempty string, unique among consumed observations.
         Copying an answer without a new id is refused; copying it WITH a new id cannot be
@@ -310,12 +321,21 @@ class CompiledRegime:
         ms = np.asarray(res["mean_s"], dtype=float)
         m2 = np.asarray(res["mean_s2"], dtype=float)
         fam = np.asarray(res["family_mass"], dtype=float)
-        if pp.shape != (self._Q,) or ms.shape != (self._Q,) or m2.shape != (self._Q,):
+        if (pp.shape != (self._Q,) or ms.shape != (self._Q,) or m2.shape != (self._Q,)
+                or fam.shape != (3,)):
             raise CompiledRegimeError(
                 f"backend returned arrays of the wrong shape for Q={self._Q}")
         if not (np.all(np.isfinite(pp)) and np.all(np.isfinite(ms))
-                and np.all(np.isfinite(m2)) and np.all(np.isfinite(fam))):
+                and np.all(np.isfinite(m2)) and np.all(np.isfinite(fam))
+                and math.isfinite(float(res["log_partition"]))):
             raise CompiledRegimeError("backend returned non-finite posterior fields")
+        tolerance = 1e-8
+        if (pp.min() < -tolerance or pp.max() > 1+tolerance
+                or m2.min() < -tolerance or m2.max() > 1+tolerance
+                or fam.min() < -tolerance or abs(fam.sum()-1) > tolerance
+                or np.max(np.abs(pp-(1+ms)*0.5)) > tolerance
+                or np.max(np.abs(ms)-m2) > tolerance):
+            raise CompiledRegimeError("backend returned inconsistent probability moments")
         return {"p_plus": pp, "mean_s": ms, "mean_s2": m2, "family_mass": fam,
                 "log_partition": float(res["log_partition"])}
 
@@ -327,11 +347,11 @@ class CompiledRegime:
     # ------------------------------------------------------------------ reads
     @property
     def cells(self):
-        return self._cells
+        return self._cells.copy()
 
     @property
     def widths(self):
-        return self._widths
+        return self._widths.copy()
 
     @property
     def evidence_ids(self):
@@ -346,16 +366,16 @@ class CompiledRegime:
         return {"mass": mass, "normalizer": total, "two_family_enabled": two > 0.0}
 
     def p_plus_cells(self):
-        return self._posterior()["p_plus"]
+        return self._posterior()["p_plus"].copy()
 
     def p_plus(self, x) -> float:
         return float(self._posterior()["p_plus"][self._cell_index(x)])
 
     def mean_s_cells(self):
-        return self._posterior()["mean_s"]
+        return self._posterior()["mean_s"].copy()
 
     def mean_s2_cells(self):
-        return self._posterior()["mean_s2"]
+        return self._posterior()["mean_s2"].copy()
 
     def equal_f2_cells(self):
         """E[F_q^2] from E[S], E[S^2]: (1 + 2*E[S] + E[S^2]) / 4. NOT E[F] at F=1/2."""
@@ -363,16 +383,22 @@ class CompiledRegime:
         return (1.0 + 2.0 * p["mean_s"] + p["mean_s2"]) / 4.0
 
     def family_mass(self):
-        return self._posterior()["family_mass"]
+        return self._posterior()["family_mass"].copy()
 
     def transitions_posterior(self):
-        return self._posterior()["family_mass"]
+        return self.family_mass()
 
-    def log_evidence(self) -> float:
-        """Log marginal likelihood under the effective (floored, then normalized) family prior."""
+    def log_evidence(self, *, normalized_prior: bool = False) -> float:
+        """Log evidence including observation constants.
+
+        Default preserves RegimePosterior's unnormalized prior floors. Set
+        normalized_prior=True for a normalized prior. With tempered probe or
+        pointwise box likelihoods this is a generalized evidence score, not
+        automatically the probability of a normalized observation channel.
+        """
         p = self._posterior()
         _, total, _ = self._effective_mass()
-        return float(p["log_partition"] + math.log(total)
+        return float(p["log_partition"] + (0.0 if normalized_prior else math.log(total))
                      + self._probe_weight * _LN_HALF + self._claim_const)
 
     def _u(self, pp):
@@ -396,25 +422,28 @@ class CompiledRegime:
         if query_weights is None:
             w = np.array(self._widths, dtype=float)
         else:
-            w = np.asarray(query_weights, dtype=float)
+            w = np.array(query_weights, dtype=float, copy=True)
             if w.shape != (self._Q,):
                 raise ValueError(f"query_weights must have one weight per cell ({self._Q})")
-            if not np.all(np.isfinite(w)) or np.any(w < 0) or w.sum() <= 0:
+            if not np.all(np.isfinite(w)) or np.any(w < 0) or w.max() <= 0:
                 raise ValueError("query_weights must be finite, nonnegative and not all zero")
-        return w
+        w = w / w.max()
+        return w / w.sum()
 
     def task_risk(self, query_weights=None, loss: str = "log") -> float:
         """Normalized deployment risk on the SAME cell/query semantics as ``p_plus``.
 
         This is the NORMALIZED-risk view; ``potential_value``/``expected_error`` above are the
-        domain-length INTEGRAL view. They coincide only when query_weights are the widths.
+        domain-length INTEGRAL view. With width weights it equals the integral
+        divided by domain length (subject to the legacy potential's endpoint clipping).
         """
         w = self._query_weights if query_weights is None else self._validate_query_weights(query_weights)
         w = w / w.sum()
         pp = self._posterior()["p_plus"]
         if loss == "log":
-            q = np.clip(pp, 1e-300, 1.0)
-            r = -(q * np.log2(q) + (1.0 - q) * np.log2(1.0 - q))
+            q = np.clip(pp, 0.0, 1.0)
+            r = -(q * np.log2(np.maximum(q, 1e-300))
+                  + (1.0-q) * np.log2(np.maximum(1.0-q, 1e-300)))
         elif loss == "brier":
             r = 1.0 - (pp ** 2 + (1.0 - pp) ** 2)
         elif loss == "error":
@@ -444,11 +473,16 @@ class CompiledRegime:
         return self._run((c, y, r, wt))["p_plus"]
 
     def expected_gain(self, x, reliability: float = 0.95, weight: float = 1.0) -> dict:
-        """Exact expected drop of the potential for ONE candidate probe, both outcomes."""
+        """Expected potential drop for one unit-weight physical probe.
+
+        A tempered posterior with an ordinary Bernoulli outcome probability
+        is not a Bayes experiment. Nonunit weights require a specified joint
+        observation channel and are therefore refused here.
+        """
         r = _check_reliability(reliability, "probe reliability")
         wt = _as_finite_float(weight, "probe weight")
-        if wt <= 0:
-            raise ValueError(f"probe weight must be > 0: {wt}")
+        if wt != 1.0:
+            raise ValueError("expected_gain supports a single unit-weight probe only")
         c = self._cell_index(x)
         pp = self._posterior()["p_plus"]
         now = float(self._u(pp) @ self._widths)
