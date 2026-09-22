@@ -197,6 +197,7 @@ result not reproducible from this repo.
 | `src/graph_engine/paper_graph/scale_index.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/paper_graph/search_cert_abstain.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/paper_graph/unified_graph_engine.py` | SYNTHETIC-ONLY |
+| `src/graph_engine/budget_plan.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/plan_value.py` | SYNTHETIC-ONLY |
 | `src/graph_engine/polarity_rules.py` | VERIFIED-FRESH |
 | `src/graph_engine/pooled_screening.py` | SYNTHETIC-ONLY |
