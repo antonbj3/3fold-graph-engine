@@ -146,6 +146,21 @@ def test_constructor_import_default_prior_and_hypothetical_is_not_anchor(backend
     assert imported.approximate_p_plus_cells(.9)["mode"]=="native"
 
 
+def test_actual_default_prior_after_flat_favoring_history(backend):
+    c=CompiledRegime(0,1,n_grid=16,backend=backend)
+    np.testing.assert_allclose(c.transition_prior()["mass"],(.665,.285,.05),atol=1e-14)
+    for i in range(64):
+        j=min(15,(i*16)//64)
+        c.add_probe((j+.5)/16,1,.99,evidence_id=f"prehistory:{i}")
+    anchor=c.approximate_p_plus_cells(.01)
+    assert anchor["mode"]=="native" and 0<anchor["tail_mass_at_anchor"]<.01
+    c.add_probe(.03,1,.55,evidence_id="physical:0")
+    answer=c.approximate_p_plus_cells(.01)
+    assert answer["mode"]=="flat"
+    error=float(np.max(np.abs(answer["p_plus"]-independent_full(c,backend))))
+    assert error<=answer["error_bound_estimate"]+1e-8<=.01+1e-8
+
+
 def test_invalid_tolerances_rounded_zero_and_nonfinite_guard(backend):
     c=tiny_tail(backend)
     for bad in (True,False,-1,1,math.nan,math.inf,-math.inf):
