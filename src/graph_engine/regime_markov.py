@@ -389,21 +389,127 @@ class RegimeMarkov:
         pp, _, w = self._solve(need_counts=False)
         return float(np.minimum(pp, 1 - pp) @ w)
 
-    def best_probe(self, reliability: float = 0.95) -> tuple[float, float]:
-        """(x, expected drop of the potential) — exact over the two answers, one candidate per cell."""
+    # -- one-step probe choice -------------------------------------------------------------------------
+    #
+    # A hypothetical probe at cell c multiplies the path law by L(s_c) (r on the agreeing sign, 1 − r on the other),
+    # so every hypothetical posterior is a function of ONE matrix, the pairwise joint J[j, c] = P(s_j = +, s_c = + | data):
+    #     P₊'(j) = (L₊·J[j, c] + L₋·(P₊(j) − J[j, c])) / (L₊·P₊(c) + L₋·(1 − P₊(c))).
+    # J comes from the same forward/backward messages as `_solve`: within a claim block it is plusT diag(coef) plusTᵀ,
+    # across units a plus-restricted forward row is carried unit by unit (O(cells²) 2-vectors). The per-candidate loop
+    # instead runs two full solves per cell. method="pairwise" screens with J and then re-decides, with the ORIGINAL
+    # per-candidate code, every cell whose screened gain is within a band of the screened maximum (strict ">" first-maximum
+    # order, as the loop), so the returned (x, gain) is the direct result bit for bit. `last_probe_info` records the path.
+    _SCREEN_BAND = 1e-9
+    last_probe_info = None                   # not a dataclass field
+
+    def _after_probe(self, c, mid, w, pp, reliability):
+        after = 0.0
+        for sg in (1, -1):
+            p = pp[c] if sg > 0 else 1 - pp[c]
+            pout = p * reliability + (1 - p) * (1 - reliability)
+            if pout <= 0:
+                continue
+            qpp, _, _ = self._solve(extra=(float(mid[c]), sg, float(reliability), 1.0), need_counts=False)
+            after += pout * float(self._u(qpp) @ w)
+        return after
+
+    def pairwise_plus(self) -> tuple[np.ndarray, np.ndarray]:
+        """(J, p₊): J[j, c] = P(sign + at cell j AND at cell c | claims, probes), exact on the model, and the cell
+        marginals p₊ (unclipped) from the same messages; diag(J) = p₊."""
+        cells, w, mid, q = self._geometry()
+        units = self._build_units()
+        base = self._base_logs()
+        C = len(cells)
+        T2, Np = [], []                                   # unit transfer (2×2) and per-cell plus-restricted (m×2×2)
+        for ui, u in enumerate(units):
+            if u["kind"] == "cell":
+                el = base[ui]
+                e = np.exp(el - el.max())
+                T2.append(np.diag(e))
+                n = np.zeros((1, 2, 2)); n[0, 0, 0] = e[0]
+                Np.append(n)
+            else:
+                lp = base[ui]
+                wp = np.exp(lp - lp.max())
+                g4 = u["s0"] * 2 + u["s1"]
+                tk = np.bincount(g4, weights=wp, minlength=4).reshape(2, 2)
+                T2.append(tk)
+                oh = np.zeros((len(wp), 4)); oh[np.arange(len(wp)), g4] = wp
+                Np.append((u["plusT"] @ oh).reshape(-1, 2, 2))
+        U = len(units)
+        Tq = [np.array([[1 - q[units[i]["i1"]], q[units[i]["i1"]]], [q[units[i]["i1"]], 1 - q[units[i]["i1"]]]])
+              for i in range(U - 1)]
+        Fm = [np.array([0.5, 0.5])]
+        for i in range(U - 1):
+            Fm.append((Fm[-1] @ T2[i]) @ Tq[i])
+        Bm = [None] * U
+        Bm[U - 1] = np.ones(2)
+        for i in range(U - 2, -1, -1):
+            Bm[i] = Tq[i] @ (T2[i + 1] @ Bm[i + 1])
+        Z = float(Fm[0] @ T2[0] @ Bm[0])
+        J = np.zeros((C, C))
+        pend = np.zeros((0, 2)); pidx: list[int] = []
+        for v, u in enumerate(units):
+            i0, i1 = u["i0"], u["i1"]
+            bj = Np[v] @ Bm[v]                               # (m, 2): plus-restricted at j, then everything after
+            if pidx:
+                J[np.asarray(pidx), i0:i1 + 1] = (pend @ bj.T) / Z
+            if u["kind"] == "cell":
+                J[i0, i0] = float(Fm[v] @ Np[v][0] @ Bm[v]) / Z
+            else:
+                lp = base[v]
+                wp = np.exp(lp - lp.max())
+                coef = wp * Fm[v][u["s0"]] * Bm[v][u["s1"]]
+                PT = u["plusT"]
+                J[i0:i1 + 1, i0:i1 + 1] = (PT @ (coef[:, None] * PT.T)) / Z
+            if v < U - 1:
+                ac = np.einsum("s,msk->mk", Fm[v], Np[v])      # (m, 2): plus-restricted at c, state at the unit's exit
+                pend = np.vstack([pend @ T2[v], ac]) @ Tq[v]
+                pidx.extend(range(i0, i1 + 1))
+        iu = np.triu_indices(C, 1)
+        J[iu[1], iu[0]] = J[iu]                              # rows written only for earlier c: mirror
+        J = 0.5 * (J + J.T)
+        return J, np.diag(J).copy()
+
+    def best_probe(self, reliability: float = 0.95, *, method: str = "direct") -> tuple[float, float]:
+        """(x, expected drop of the potential) — exact over the two answers, one candidate per cell.
+        method="pairwise": the joint-marginal screen above, same result."""
+        if method not in ("direct", "pairwise"):
+            raise ValueError(f"method must be 'direct' or 'pairwise': {method!r}")
         cells, w, mid, _ = self._geometry()
         pp, _, _ = self._solve(need_counts=False)
         now = float(self._u(pp) @ w)
+        r = float(reliability)
+        self.last_probe_info = {"method": method, "path": "direct"}
+        if method == "pairwise" and math.isfinite(r) and 0.0 < r < 1.0:
+            J, pj = self.pairwise_plus()
+            if np.all(np.isfinite(J)) and float(np.max(np.abs(np.clip(pj, 0.0, 1.0) - pp))) <= 1e-9:
+                P = pp[None, :]                              # rows: candidate c; columns: cell j
+                Jc = J.T                                     # Jc[c, j] = J[j, c]
+                pc = pp[:, None]
+                pout_p = pc * r + (1 - pc) * (1 - r)
+                pout_m = (1 - pc) * r + pc * (1 - r)
+                qp = np.clip((r * Jc + (1 - r) * (P - Jc)) / pout_p, 0.0, 1.0)
+                qm = np.clip(((1 - r) * Jc + r * (P - Jc)) / pout_m, 0.0, 1.0)
+                after = pout_p[:, 0] * (self._u(qp) @ w) + pout_m[:, 0] * (self._u(qm) @ w)
+                gains = now - after
+                if np.all(np.isfinite(gains)):
+                    band = self._SCREEN_BAND * (self.hi - self.lo)
+                    top = float(np.max(gains))
+                    best_i, best_g, n = None, -1.0, 0
+                    for c in range(len(cells)):
+                        if gains[c] >= top - band:
+                            n += 1
+                            g = now - self._after_probe(c, mid, w, pp, reliability)
+                            if g > best_g:
+                                best_i, best_g = c, g
+                    if best_i is not None:
+                        self.last_probe_info = {"method": method, "path": "pairwise", "resolved": n}
+                        return (float(mid[best_i]), best_g)
+            self.last_probe_info = {"method": method, "path": "direct", "reason": "screen not usable"}
         best = (float(mid[0]), -1.0)
         for c in range(len(cells)):
-            after = 0.0
-            for sg in (1, -1):
-                p = pp[c] if sg > 0 else 1 - pp[c]
-                pout = p * reliability + (1 - p) * (1 - reliability)
-                if pout <= 0:
-                    continue
-                qpp, _, _ = self._solve(extra=(float(mid[c]), sg, float(reliability), 1.0), need_counts=False)
-                after += pout * float(self._u(qpp) @ w)
+            after = self._after_probe(c, mid, w, pp, reliability)
             if now - after > best[1]:
                 best = (float(mid[c]), now - after)
         return best
