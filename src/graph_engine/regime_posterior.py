@@ -201,83 +201,229 @@ class RegimePosterior:
         pp = post @ F
         return float(np.minimum(pp, 1 - pp) @ w)
 
-    def best_probe(self, reliability: float = 0.95) -> tuple[float, float]:
+    # -- one-step probe choice: the per-candidate exact loop, and an optional moment screen ----------
+    #
+    # Every hypothetical answer multiplies the posterior by like = (1−r) + (2r−1)·f_c (answer +) or r − (2r−1)·f_c
+    # (answer −), f_c = F[:, c]. Its predictive P₊ over all cells is therefore
+    #     q@F = ((1−r)·pp + (2r−1)·S[c]) / pout₊,   S = Fᵀ diag(post) F,   pout₊ = (1−r) + (2r−1)·pp_c
+    # (and the mirror for −), and the family mass q@two uses the vector t = Fᵀ(post·two) the same way. So ONE
+    # second-moment matrix S prices every candidate; the per-candidate loop does 2 H×Q products per candidate.
+    # method="moments" screens with S and then re-decides, with the ORIGINAL per-candidate code, every candidate
+    # whose screened gain is within a band of the screened maximum (strict ">" first-maximum order, as the loop).
+    # The returned (x, gain) is therefore the direct result bit for bit. `last_probe_info` records the path.
+    _SCREEN_BAND = 1e-9
+    _SCREEN_CHUNK = 65536
+    last_probe_info = None                   # set by the probe choosers: which path decided (not a dataclass field)
+
+    def _after_u(self, post, F, w, f, reliability):
+        after = 0.0
+        for sg in (1, -1):
+            like = (f if sg > 0 else 1 - f) * reliability + (1 - (f if sg > 0 else 1 - f)) * (1 - reliability)
+            pout = float(post @ like)
+            if pout <= 0:
+                continue
+            q = post * like / pout
+            qq = q @ F
+            after += pout * float(self._u(qq) @ w)
+        return after
+
+    def _after_tv(self, post, F, w, f, two, h, reliability):
+        after_u = after_f = 0.0
+        for sg in (1, -1):
+            like = (f if sg > 0 else 1 - f) * reliability + (1 - (f if sg > 0 else 1 - f)) * (1 - reliability)
+            pout = float(post @ like)
+            if pout <= 0:
+                continue
+            q = post * like / pout
+            after_u += pout * float(self._u(q @ F) @ w)
+            after_f += pout * (h(float(q @ two)) if len(post) > self._n_one else 0.0)
+        return after_u, after_f
+
+    def _after_mc(self, post, f, two, h, reliability):
+        after = 0.0
+        for sg in (1, -1):
+            like = (f if sg > 0 else 1 - f) * reliability + (1 - (f if sg > 0 else 1 - f)) * (1 - reliability)
+            pout = float(post @ like)
+            if pout <= 0:
+                continue
+            q = post * like / pout
+            after += pout * h(float(q @ two))
+        return after
+
+    @staticmethod
+    def _check_method(method):
+        if method not in ("direct", "moments"):
+            raise ValueError(f"method must be 'direct' or 'moments': {method!r}")
+
+    def _second_moments(self, post, F):
+        """S = Fᵀ diag(post) F, accumulated over row chunks (memory O(chunk·Q) beyond F)."""
+        Q = F.shape[1]
+        S = np.zeros((Q, Q))
+        for a in range(0, F.shape[0], self._SCREEN_CHUNK):
+            Fa = F[a:a + self._SCREEN_CHUNK]
+            S += Fa.T @ (post[a:a + self._SCREEN_CHUNK, None] * Fa)
+        return 0.5 * (S + S.T)
+
+    @staticmethod
+    def _screen_ok(reliability):
+        r = float(reliability)
+        return math.isfinite(r) and 0.0 < r < 1.0
+
+    def _screen_after_u(self, pp, S, w, cs, r):
+        """Screened E[U after] for candidate cells `cs` (both answers), vectorized."""
+        a = 2.0 * r - 1.0
+        pc = pp[cs]
+        pout_p = (1.0 - r) + a * pc
+        pout_m = r - a * pc
+        Sc = S[cs]
+        up = self._u(((1.0 - r) * pp[None, :] + a * Sc) / pout_p[:, None]) @ w
+        um = self._u((r * pp[None, :] - a * Sc) / pout_m[:, None]) @ w
+        return pout_p * up + pout_m * um, pout_p, pout_m
+
+    @staticmethod
+    def _screen_family(P2, tvec, cs, r, pout_p, pout_m, hv):
+        a = 2.0 * r - 1.0
+        tp = ((1.0 - r) * P2 + a * tvec[cs]) / pout_p
+        tm = (r * P2 - a * tvec[cs]) / pout_m
+        return pout_p * hv(tp) + pout_m * hv(tm)
+
+    @staticmethod
+    def _hvec(p):
+        p = np.asarray(p, float)
+        out = np.zeros_like(p)
+        m = (p > 0) & (p < 1)
+        pm = p[m]
+        out[m] = -(pm * np.log2(pm) + (1 - pm) * np.log2(1 - pm))
+        return out
+
+    @staticmethod
+    def _resolve(order, screened, band, exact_gain, init):
+        """Re-decide by the exact per-candidate gain every candidate within `band` of the screened max, in the
+        original candidate order, with the original strict-">" first-maximum rule. Returns (index, gain, n)."""
+        g = np.asarray(screened, float)
+        top = float(np.max(g))
+        cand = [i for i in order if g[i] >= top - band]
+        best_i, best_g = None, init
+        for i in cand:
+            gi = exact_gain(i)
+            if gi > best_g:
+                best_i, best_g = i, gi
+        return best_i, best_g, len(cand)
+
+    def best_probe(self, reliability: float = 0.95, *, method: str = "direct") -> tuple[float, float]:
         """(x, expected drop of expected_error) — exact over both outcomes, one candidate per cell
-        plus the two ends of the domain."""
+        plus the two ends of the domain. method="moments": the second-moment screen above, same result."""
+        self._check_method(method)
         cells, w, F, post = self._with_probes()
         pp = post @ F
         now = float(self._u(pp) @ w)
         xs = list(cells.mean(1)) + [self.lo, self.hi]
         cs = list(range(len(cells))) + [0, len(cells) - 1]
+        if method == "moments" and self._screen_ok(reliability):
+            r = float(reliability)
+            after, _, _ = self._screen_after_u(pp, self._second_moments(post, F), w, np.asarray(cs), r)
+            gains = now - after
+            if np.all(np.isfinite(gains)):
+                band = self._SCREEN_BAND * (self.hi - self.lo)
+                i, g, n = self._resolve(range(len(xs)), gains, band,
+                                        lambda i: now - self._after_u(post, F, w, F[:, cs[i]], reliability), -1.0)
+                if i is not None:
+                    self.last_probe_info = {"method": "moments", "path": "moments", "resolved": n}
+                    return (float(xs[i]), g)
+            self.last_probe_info = {"method": "moments", "path": "direct", "reason": "screen not usable"}
+        elif method == "moments":
+            self.last_probe_info = {"method": "moments", "path": "direct", "reason": "reliability outside (0, 1)"}
+        else:
+            self.last_probe_info = {"method": "direct", "path": "direct"}
         best = (xs[0], -1.0)
         for x, c in zip(xs, cs):
-            f = F[:, c]
-            after = 0.0
-            for sg in (1, -1):
-                like = (f if sg > 0 else 1 - f) * reliability + (1 - (f if sg > 0 else 1 - f)) * (1 - reliability)
-                pout = float(post @ like)
-                if pout <= 0:
-                    continue
-                q = post * like / pout
-                qq = q @ F
-                after += pout * float(self._u(qq) @ w)
+            after = self._after_u(post, F, w, F[:, c], reliability)
             if now - after > best[1]:
                 best = (float(x), now - after)
         return best
 
-    def total_value_probe(self, reliability: float = 0.95, lam: float = 1.0) -> tuple[float, float]:
+    def total_value_probe(self, reliability: float = 0.95, lam: float = 1.0, *, method: str = "direct") -> tuple[float, float]:
         """(x, gain) maximizing ΔU(x) + λ·ΔH_family(x): the sign potential's expected drop PLUS the expected drop of the entropy
         of the one-vs-two-transition indicator, both in bits, exact over the two outcomes. e33 proved the value rule prices a
         collision probe ~10× too low when the one-transition family already explains the claims (the hole in e21 is the price,
         not the location); adding the family entropy to the same currency is the correctly priced rule. λ = 1 = same bits."""
+        self._check_method(method)
         cells, w, F, post = self._with_probes()
         pp = post @ F; now_u = float(self._u(pp) @ w)
         two = np.zeros(len(post)); two[self._n_one:] = 1.0
         h = lambda p: 0.0 if p <= 0 or p >= 1 else -(p * math.log2(p) + (1 - p) * math.log2(1 - p))
         now_f = h(float(post @ two)) if len(post) > self._n_one else 0.0
+
+        def exact(c):
+            after_u, after_f = self._after_tv(post, F, w, F[:, c], two, h, reliability)
+            return (now_u - after_u) + lam * (now_f - after_f)
+
+        if method == "moments" and self._screen_ok(reliability) and math.isfinite(float(lam)):
+            r = float(reliability); cs = np.arange(len(cells))
+            after_u, pout_p, pout_m = self._screen_after_u(pp, self._second_moments(post, F), w, cs, r)
+            if len(post) > self._n_one:
+                after_f = self._screen_family(float(post @ two), F.T @ (post * two), cs, r, pout_p, pout_m, self._hvec)
+            else:
+                after_f = np.zeros(len(cs))
+            gains = (now_u - after_u) + lam * (now_f - after_f)
+            if np.all(np.isfinite(gains)):
+                band = self._SCREEN_BAND * ((self.hi - self.lo) + abs(float(lam)))
+                i, g, n = self._resolve(range(len(cells)), gains, band, exact, -1.0)
+                if i is not None:
+                    self.last_probe_info = {"method": "moments", "path": "moments", "resolved": n}
+                    return (float(cells[i].mean()), g)
+            self.last_probe_info = {"method": "moments", "path": "direct", "reason": "screen not usable"}
+        else:
+            self.last_probe_info = {"method": method, "path": "direct"}
         best = (float(cells[0].mean()), -1.0)
         for c in range(len(cells)):
-            f = F[:, c]; after_u = after_f = 0.0
-            for sg in (1, -1):
-                like = (f if sg > 0 else 1 - f) * reliability + (1 - (f if sg > 0 else 1 - f)) * (1 - reliability)
-                pout = float(post @ like)
-                if pout <= 0:
-                    continue
-                q = post * like / pout
-                after_u += pout * float(self._u(q @ F) @ w)
-                after_f += pout * (h(float(q @ two)) if len(post) > self._n_one else 0.0)
-            gain = (now_u - after_u) + lam * (now_f - after_f)
+            gain = exact(c)
             if gain > best[1]:
                 best = (float(cells[c].mean()), gain)
         return best
 
-    def model_check_probe(self, reliability: float = 0.95) -> tuple[float, float]:
+    def model_check_probe(self, reliability: float = 0.95, *, method: str = "direct") -> tuple[float, float]:
         """(x, expected drop of the entropy of the FAMILY indicator one-vs-two transitions). The value rule `best_probe`
         buys probes that lower the sign potential; when the one-transition family already explains the claims it never
         buys the probes that would expose a second transition (e21: 0 of 25 two-transition pairs flagged). This probe is
         bought against the model error instead: the expected drop of H(P(two transitions)) over the two outcomes, exact
         on the fixed partition. Zero when the collision family is off (p_two = 0)."""
+        self._check_method(method)
         cells, w, F, post = self._with_probes()
         if len(post) == self._n_one:
+            self.last_probe_info = {"method": method, "path": "no two-transition family"}
             return (0.5 * (self.lo + self.hi), 0.0)
         two = np.zeros(len(post)); two[self._n_one:] = 1.0
         h = lambda p: 0.0 if p <= 0 or p >= 1 else -(p * math.log2(p) + (1 - p) * math.log2(1 - p))
         now = h(float(post @ two))
+        if method == "moments" and self._screen_ok(reliability):
+            gains = now - self._family_screen(post, F, two, reliability)
+            if np.all(np.isfinite(gains)):
+                i, g, n = self._resolve(range(len(cells)), gains, self._SCREEN_BAND,
+                                        lambda c: now - self._after_mc(post, F[:, c], two, h, reliability), -1.0)
+                if i is not None:
+                    self.last_probe_info = {"method": "moments", "path": "moments", "resolved": n}
+                    return (float(cells[i].mean()), g)
+            self.last_probe_info = {"method": "moments", "path": "direct", "reason": "screen not usable"}
+        else:
+            self.last_probe_info = {"method": method, "path": "direct"}
         best = (float(cells[0].mean()), -1.0)
         for c in range(len(cells)):
-            f = F[:, c]; after = 0.0
-            for sg in (1, -1):
-                like = (f if sg > 0 else 1 - f) * reliability + (1 - (f if sg > 0 else 1 - f)) * (1 - reliability)
-                pout = float(post @ like)
-                if pout <= 0:
-                    continue
-                q = post * like / pout
-                after += pout * h(float(q @ two))
+            after = self._after_mc(post, F[:, c], two, h, reliability)
             if now - after > best[1]:
                 best = (float(cells[c].mean()), now - after)
         return best
 
-    def model_check_pair(self, reliability: float = 0.95) -> tuple[tuple[float, float], float]:
+    def _family_screen(self, post, F, two, reliability):
+        """Screened E[H_family after] for every cell: needs only P2 = post·two and t = Fᵀ(post·two), O(H·Q) once."""
+        r = float(reliability); a = 2.0 * r - 1.0
+        pp = post @ F
+        pout_p = (1.0 - r) + a * pp
+        pout_m = r - a * pp
+        return self._screen_family(float(post @ two), F.T @ (post * two), np.arange(F.shape[1]), r,
+                                   pout_p, pout_m, self._hvec)
+
+    def model_check_pair(self, reliability: float = 0.95, *, method: str = "direct") -> tuple[tuple[float, float], float]:
         """((x1, x2), expected drop of H(P(two transitions)) over the FOUR joint outcomes) — the two probes bought
         together. `model_check_probe` buys one probe at a time, and a second transition is only exposed by probes on
         both sides of both transitions: after one answer the single-transition family usually still explains everything,
@@ -288,6 +434,7 @@ class RegimePosterior:
         cells, w, F, post = self._with_probes()
         mid = 0.5 * (self.lo + self.hi)
         if len(post) == self._n_one:
+            self.last_probe_info = {"method": method, "path": "no two-transition family"}
             return ((mid, mid), 0.0)
         two = np.zeros(len(post)); two[self._n_one:] = 1.0
         h = lambda p: 0.0 if p <= 0 or p >= 1 else -(p * math.log2(p) + (1 - p) * math.log2(1 - p))
@@ -297,8 +444,22 @@ class RegimePosterior:
             ff = f if sg > 0 else 1 - f
             return ff * reliability + (1 - ff) * (1 - reliability)
 
+        self._check_method(method)
+        rows = range(len(cells))
+        if method == "moments" and self._screen_ok(reliability):
+            # the single stage only needs the exact top-12 order: re-decide exactly every cell whose screened
+            # gain is within the band of the 12th screened value or above it; the rest cannot enter the top 12.
+            scr = now - self._family_screen(post, F, two, reliability)
+            if np.all(np.isfinite(scr)):
+                kth = float(np.sort(scr)[::-1][min(12, len(scr)) - 1])
+                rows = [c for c in range(len(cells)) if scr[c] >= kth - self._SCREEN_BAND]
+                self.last_probe_info = {"method": "moments", "path": "moments", "resolved": len(rows)}
+            else:
+                self.last_probe_info = {"method": "moments", "path": "direct", "reason": "screen not usable"}
+        else:
+            self.last_probe_info = {"method": method, "path": "direct"}
         single = []
-        for c in range(len(cells)):
+        for c in rows:
             f = F[:, c]; after = 0.0
             for sg in (1, -1):
                 like = like_of(f, sg)
@@ -309,25 +470,59 @@ class RegimePosterior:
             single.append((now - after, c))
         cand = [c for _, c in sorted(single, reverse=True)[:12]]
         best = ((float(cells[cand[0]].mean()), float(cells[cand[0]].mean())), -1.0)
-        for i, c1 in enumerate(cand):
+
+        def pair_after(c1, c2):
             f1 = F[:, c1]
-            for c2 in cand[i + 1:]:
-                f2 = F[:, c2]; after = 0.0
-                for s1 in (1, -1):
-                    l1 = like_of(f1, s1)
-                    p1 = float(post @ l1)
-                    if p1 <= 0:
+            f2 = F[:, c2]; after = 0.0
+            for s1 in (1, -1):
+                l1 = like_of(f1, s1)
+                p1 = float(post @ l1)
+                if p1 <= 0:
+                    continue
+                q1 = post * l1 / p1
+                for s2 in (1, -1):
+                    l2 = like_of(f2, s2)
+                    p2 = float(q1 @ l2)
+                    if p2 <= 0:
                         continue
-                    q1 = post * l1 / p1
-                    for s2 in (1, -1):
-                        l2 = like_of(f2, s2)
-                        p2 = float(q1 @ l2)
-                        if p2 <= 0:
-                            continue
-                        after += p1 * p2 * h(float((q1 * l2 / p2) @ two))
-                if now - after > best[1]:
+                    after += p1 * p2 * h(float((q1 * l2 / p2) @ two))
+            return after
+
+        pairs = [(c1, c2) for i, c1 in enumerate(cand) for c2 in cand[i + 1:]]
+        if method == "moments" and self._screen_ok(reliability) and pairs:
+            # four joint answers of two probes from the restricted second moments (plain and family-weighted)
+            r = float(reliability); a = 2.0 * r - 1.0
+            cc = np.asarray(cand)
+            Fc = F[:, cc]
+            S = Fc.T @ (post[:, None] * Fc)
+            pt = post * two
+            S2 = Fc.T @ (pt[:, None] * Fc)
+            m = post @ Fc; t = pt @ Fc; P2 = float(pt.sum())
+            pos = {c: k for k, c in enumerate(cand)}
+            i1 = np.array([pos[c1] for c1, _ in pairs]); i2 = np.array([pos[c2] for _, c2 in pairs])
+            scr_after = np.zeros(len(pairs))
+            for s1 in (1, -1):
+                al1, be1 = ((1.0 - r), a) if s1 > 0 else (r, -a)
+                for s2 in (1, -1):
+                    al2, be2 = ((1.0 - r), a) if s2 > 0 else (r, -a)
+                    p12 = al1 * al2 + al1 * be2 * m[i2] + be1 * al2 * m[i1] + be1 * be2 * S[i1, i2]
+                    t12 = al1 * al2 * P2 + al1 * be2 * t[i2] + be1 * al2 * t[i1] + be1 * be2 * S2[i1, i2]
+                    scr_after += np.where(p12 > 0, p12 * self._hvec(np.where(p12 > 0, t12 / np.where(p12 > 0, p12, 1.0), 0.0)), 0.0)
+            gains = now - scr_after
+            if np.all(np.isfinite(gains)):
+                k, g, n = self._resolve(range(len(pairs)), gains, self._SCREEN_BAND,
+                                        lambda k: now - pair_after(*pairs[k]), -1.0)
+                if k is not None:
+                    c1, c2 = pairs[k]
                     x1, x2 = float(cells[c1].mean()), float(cells[c2].mean())
-                    best = ((min(x1, x2), max(x1, x2)), now - after)
+                    self.last_probe_info = dict(self.last_probe_info, pair_path="moments", pair_resolved=n)
+                    return ((min(x1, x2), max(x1, x2)), g)
+            self.last_probe_info = dict(self.last_probe_info, pair_path="direct")
+        for c1, c2 in pairs:
+            after = pair_after(c1, c2)
+            if now - after > best[1]:
+                x1, x2 = float(cells[c1].mean()), float(cells[c2].mean())
+                best = ((min(x1, x2), max(x1, x2)), now - after)
         return best
 
     def bundle_value(self, reliability: float = 0.95, k: int = 2, lam: float = 1.0, top: int = 12) -> dict:
