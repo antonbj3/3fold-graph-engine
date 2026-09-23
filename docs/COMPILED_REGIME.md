@@ -27,6 +27,22 @@ x, gain = comp.best_probe(0.95)  # exact hypothetical OED
 comp.add_probe(x, +1, 0.95, evidence_id="instrument/run1/reading1")
 ```
 
+## Optional screened probe choice
+
+`best_probe(r, method="batch")` evaluates all 2Q hypothetical states in one
+`evaluate_batch` call; `method="covariance"` obtains them from one covariance
+block (a unit-weight probe likelihood is linear in g = (1+S)/2, so
+p'_j(y) = p_j + y(2r-1)Cov(g_j, g_c)/P(y)). The covariance comes from
+`CompiledRegime(..., covariance_backend=lap)` (any object with
+`cov_rows(a, b, rows, family_mass)`, e.g. Kernel's `LaplacianKernel`) or from the
+backend itself if it has `cov_rows`. Candidates, potential and the first-maximum
+rule are unchanged; screened candidates within `1e-9*(hi-lo)` of the maximum that
+lie in different cells are re-decided by the direct path. Missing capabilities fall
+back to batch, then to the direct loop; a covariance kernel whose mean disagrees
+with the posterior (> 1e-9) falls back to the direct loop. `last_probe_path` says
+which path ran; `probe_losses(r, method=...)` returns every candidate's expected
+potential after the probe. The default (`method="direct"`) is unchanged.
+
 ## Optional bounded-tail predictive readout
 
 `approximate_p_plus_cells(max_error)` is an opt-in readout on the **same**

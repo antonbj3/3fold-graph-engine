@@ -126,7 +126,8 @@ class CompiledRegime:
                  reliability: float = 0.75, p_flip: float = 0.3, p_two: float = 0.05,
                  potential: str = "entropy", n_grid: int = 48,
                  claim_model: str = "pointwise", claims=(), probes=(),
-                 probe_ids=None, query_weights=None, method: str = "transfer"):
+                 probe_ids=None, query_weights=None, method: str = "transfer",
+                 covariance_backend=None):
         majority_unsupported(claim_model)
         if claim_model != "pointwise":
             raise ValueError(f"unsupported claim_model {claim_model!r}")
@@ -134,6 +135,10 @@ class CompiledRegime:
             raise TypeError("backend must expose evaluate(a, b, family_mass, *, method=...)")
         self._backend = backend
         self._method = method
+        if covariance_backend is not None and not callable(getattr(covariance_backend, "cov_rows", None)):
+            raise TypeError("covariance_backend must expose cov_rows(a, b, rows, family_mass)")
+        self._covariance_backend = covariance_backend
+        self.last_probe_path = None
         self.lo = _as_finite_float(lo, "lo")
         self.hi = _as_finite_float(hi, "hi")
         if not self.lo < self.hi:
@@ -715,13 +720,147 @@ class CompiledRegime:
         return {"x": float(x), "cell": c, "gain": now - after, "before": now,
                 "outcomes": outcomes, "reliability": r, "weight": wt}
 
-    def best_probe(self, reliability: float = 0.95) -> tuple:
+    _PROBE_METHODS = ("direct", "batch", "covariance")
+    # Screened gains within this fraction of the domain length (the entropy potential's
+    # maximum, in bits) of the screened maximum are re-decided by the direct path.
+    _PROBE_TIE_BAND = 1e-9
+    _PROBE_MEAN_GUARD = 1e-9
+    _COV_ROW_CHUNK = 256
+
+    def _probe_candidates(self):
+        xs = [float(x) for x in self._cells.mean(axis=1)] + [self.lo, self.hi]
+        return xs, np.array([self._cell_index(x) for x in xs], dtype=np.int64)
+
+    def _covariance_provider(self):
+        if self._covariance_backend is not None:
+            return self._covariance_backend
+        if callable(getattr(self._backend, "cov_rows", None)):
+            return self._backend
+        return None
+
+    def _outcome_probabilities(self, pp, r):
+        """P(+) exactly as ``expected_gain`` forms it, per cell."""
+        return (1.0 - r) + (2.0 * r - 1.0) * pp
+
+    def _screen_batch(self, r):
+        """Expected potential after a probe at every cell: 2Q states, one batch call."""
+        pp = self._posterior()["p_plus"]
+        q = self._Q
+        a0 = self._A + 0.5 * self._coeff
+        la = 0.5 * math.log(r / (1.0 - r))
+        lb = 0.5 * math.log(4.0 * r * (1.0 - r))
+        idx = np.arange(q)
+        a = np.repeat(a0[None], 2 * q, axis=0)
+        b = np.repeat(self._B[None], 2 * q, axis=0)
+        a[idx, idx] += la
+        a[q + idx, idx] -= la
+        b[idx, idx] += lb
+        b[q + idx, idx] += lb
+        mass, _, _ = self._effective_mass()
+        res = self._backend.evaluate_batch(a, b, mass)
+        hp = np.asarray(res["p_plus"], dtype=float)
+        if hp.shape != (2 * q, q) or not np.all(np.isfinite(hp)):
+            raise CompiledRegimeError("batch backend returned malformed hypothetical marginals")
+        u = self._u(hp) @ self._widths
+        plus = self._outcome_probabilities(pp, r)
+        return plus * u[:q] + (1.0 - plus) * u[q:]
+
+    def _screen_covariance(self, provider, r):
+        """Same quantity from one covariance: p'_j(y) = p_j + y(2r-1)Cov(g_j,g_c)/P(y)."""
+        pp = self._posterior()["p_plus"]
+        q = self._Q
+        a0 = self._A + 0.5 * self._coeff
+        mass, _, _ = self._effective_mass()
+        beta = 2.0 * r - 1.0
+        plus = self._outcome_probabilities(pp, r)
+        minus = 1.0 - plus
+        after = np.empty(q)
+        w = self._widths
+        for start in range(0, q, self._COV_ROW_CHUNK):
+            rows = np.arange(start, min(q, start + self._COV_ROW_CHUNK), dtype=np.int64)
+            out = provider.cov_rows(a0, self._B, rows, mass)
+            ms = np.asarray(out["mean_s"], dtype=float)
+            blk = np.asarray(out["rows"], dtype=float)
+            if ms.shape != (q,) or blk.shape[0] != len(rows) or blk.shape[1] < q:
+                raise CompiledRegimeError("covariance backend returned arrays of the wrong shape")
+            if (not np.all(np.isfinite(ms)) or not np.all(np.isfinite(blk[:, :q]))
+                    or np.max(np.abs(0.5 * (1.0 + ms) - pp)) > self._PROBE_MEAN_GUARD):
+                raise CompiledRegimeError("covariance backend disagrees with the regime posterior")
+            # Cov is symmetric: row c of the S block, read over j, is Cov(g_j, g_c) for probe c.
+            cov = blk[:, :q] * 0.25                      # (probe c, cell j)
+            pc, mc = plus[rows][:, None], minus[rows][:, None]
+            up = np.clip(pp[None, :] + beta * cov / pc, 0.0, 1.0)
+            dn = np.clip(pp[None, :] - beta * cov / mc, 0.0, 1.0)
+            after[rows] = plus[rows] * (self._u(up) @ w) + minus[rows] * (self._u(dn) @ w)
+        return after
+
+    def probe_losses(self, reliability: float = 0.95, *, method: str = "direct") -> dict:
+        """Expected potential after one unit-weight probe at every ``best_probe`` candidate.
+
+        ``method`` selects how the 2Q hypothetical posteriors are produced: ``"direct"`` (one
+        native evaluation each, as ``expected_gain``), ``"batch"`` (one ``evaluate_batch``) or
+        ``"covariance"`` (one covariance block from a backend exposing ``cov_rows``). The
+        screened methods agree with direct to rounding, not bitwise; ``best_probe`` resolves
+        near-ties with the direct path. Falls back covariance -> batch -> direct when a
+        capability is missing; the path used is in the result.
+        """
+        r = _check_reliability(reliability, "probe reliability")
+        if method not in self._PROBE_METHODS:
+            raise ValueError(f"method must be one of {self._PROBE_METHODS}: {method!r}")
+        xs, cs = self._probe_candidates()
+        pp = self._posterior()["p_plus"]
+        before = float(self._u(pp) @ self._widths)
+        after_cell, path, reason = None, "direct", None
+        if method == "covariance":
+            provider = self._covariance_provider()
+            if provider is None:
+                reason = "no cov_rows capability"
+            else:
+                try:
+                    after_cell, path = self._screen_covariance(provider, r), "covariance"
+                except (CompiledRegimeError, ArithmeticError, ValueError) as exc:
+                    reason = f"covariance: {exc}"
+                    method = "direct"    # a disagreeing kernel is not silently replaced by batch
+        if after_cell is None and method in ("batch", "covariance"):
+            if self._method != "transfer" or not callable(getattr(self._backend, "evaluate_batch", None)):
+                reason = (reason + "; " if reason else "") + "no evaluate_batch for this method"
+            else:
+                try:
+                    after_cell, path = self._screen_batch(r), "batch"
+                except (CompiledRegimeError, ArithmeticError, ValueError) as exc:
+                    reason = (reason + "; " if reason else "") + f"batch: {exc}"
+        if after_cell is None:
+            after = np.array([before - self.expected_gain(x, reliability=r)["gain"] for x in xs])
+        else:
+            after = after_cell[cs]
+        return {"x": np.array(xs), "cell": cs, "after": after, "before": before,
+                "gain": before - after, "path": path, "fallback_reason": reason,
+                "reliability": r}
+
+    def best_probe(self, reliability: float = 0.95, *, method: str = "direct") -> tuple:
         """(x, expected drop) maximizing the potential, one candidate per cell + both ends.
 
         Exact: each candidate is evaluated by a real hypothetical update through the native
         kernel — no pair-moment approximation and no ``E[F^2]=E[F]`` shortcut.
+
+        ``method="direct"`` (default) is the original per-candidate loop. ``"batch"`` and
+        ``"covariance"`` screen all candidates at once (see ``probe_losses``) and then apply
+        the same first-maximum rule; when screened candidates within ``1e-9*(hi-lo)`` of the
+        maximum lie in more than one cell, exactly those are re-decided by the direct path,
+        so the returned value is then the direct value. Missing capabilities fall back to the
+        direct loop. ``last_probe_path`` records what was used.
         """
         r = _check_reliability(reliability, "probe reliability")
+        if method not in self._PROBE_METHODS:
+            raise ValueError(f"method must be one of {self._PROBE_METHODS}: {method!r}")
+        if method != "direct":
+            scr = self.probe_losses(r, method=method)
+            if scr["path"] != "direct":
+                return self._resolve_screened(scr, r)
+            fallback = scr["fallback_reason"]
+        else:
+            fallback = None
+        self.last_probe_path = {"path": "direct", "fallback_reason": fallback, "resolved": 0}
         cells = self._cells
         xs = list(cells.mean(axis=1)) + [self.lo, self.hi]
         cs = list(range(self._Q)) + [0, self._Q - 1]
@@ -732,10 +871,34 @@ class CompiledRegime:
                 best = (float(x), float(gain))
         return best
 
+    def _resolve_screened(self, scr, r):
+        """First-maximum rule on screened gains; multi-cell near-ties re-decided directly."""
+        xs, cs, gains = scr["x"], scr["cell"], scr["gain"]
+        info = {"path": scr["path"], "fallback_reason": scr["fallback_reason"], "resolved": 0}
+        self.last_probe_path = info
+        gmax = float(gains.max())
+        band = self._PROBE_TIE_BAND * (self.hi - self.lo)
+        cand = [i for i in range(len(xs)) if gains[i] >= gmax - band]
+        if len({int(cs[i]) for i in cand}) == 1:
+            i = cand[0]
+            return (float(xs[i]), float(gains[i])) if gains[i] > -1.0 else (float(xs[0]), -1.0)
+        by_cell = {}
+        for i in cand:
+            c = int(cs[i])
+            if c not in by_cell:
+                by_cell[c] = self.expected_gain(xs[i], reliability=r)["gain"]
+        info["resolved"] = len(by_cell)
+        exact = {i: by_cell[int(cs[i])] for i in cand}
+        best = (float(xs[0]), -1.0)
+        for i in cand:
+            if exact[i] > best[1]:
+                best = (float(xs[i]), float(exact[i]))
+        return best
+
     # ------------------------------------------------------------------ bridge
     @classmethod
     def from_regime(cls, regime, backend, *, probe_ids=None, query_weights=None,
-                    method: str = "transfer") -> "CompiledRegime":
+                    method: str = "transfer", covariance_backend=None) -> "CompiledRegime":
         """Build the compiled view from a ``RegimePosterior`` WITHOUT its dense internals.
 
         Reads only the public configuration fields (``lo``, ``hi``, ``reliability``,
@@ -748,4 +911,4 @@ class CompiledRegime:
                    p_flip=regime.p_flip, p_two=regime.p_two, potential=regime.potential,
                    n_grid=regime.n_grid, claim_model=regime.claim_model, claims=claims,
                    probes=probes, probe_ids=probe_ids, query_weights=query_weights,
-                   method=method)
+                   method=method, covariance_backend=covariance_backend)
