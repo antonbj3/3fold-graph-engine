@@ -59,6 +59,14 @@ def federation_context(regime) -> dict:
     part of the posterior, so they are not compared.
     """
     prior = regime.transition_prior()
+    if regime.n_grid is None:
+        # Continuum backend (n_grid=None): no partition; the base measure is fixed by the
+        # domain and the transition prior alone. "resolution" keeps it apart from native.
+        return {"schema": _SCHEMA, "resolution": "continuum", "lo": float(regime.lo),
+                "hi": float(regime.hi), "claim_model": regime.claim_model, "cells": None,
+                "prior_mass": tuple(float(x) for x in prior["mass"]),
+                "prior_normalizer": float(prior["normalizer"]),
+                "two_family_enabled": bool(prior["two_family_enabled"])}
     return {"schema": _SCHEMA, "lo": float(regime.lo), "hi": float(regime.hi),
             "claim_model": regime.claim_model,
             "cells": tuple(map(tuple, np.asarray(regime.cells, dtype=float).tolist())),
@@ -68,7 +76,7 @@ def federation_context(regime) -> dict:
 
 
 def _check_contexts(ca, cb):
-    for key in ("schema", "lo", "hi", "claim_model", "cells", "prior_mass",
+    for key in ("schema", "resolution", "lo", "hi", "claim_model", "cells", "prior_mass",
                 "prior_normalizer", "two_family_enabled"):
         if ca.get(key) != cb.get(key):
             raise IncompatibleFederationError(
@@ -135,20 +143,34 @@ def merge_evidence_ledgers(ledger_a, ledger_b, *, context_a, context_b,
 def federate(regime_a, regime_b, *, backend=None, claim_policy: str = "identical"):
     """Build the joint CompiledRegime of two regimes, each observation counted once.
 
-    ``backend`` defaults to regime_a's injected backend. Task settings (potential, query
-    weights, method) are taken from regime_a. Returns (joint_regime, report).
+    ``backend`` defaults to regime_a's injected backend; the optional covariance backend
+    (fast ``best_probe``) is also taken from regime_a. Task settings (potential, query
+    weights, method) are taken from regime_a. Two continuum regimes (``n_grid=None``)
+    federate by the same ID-union into a ``ContinuumRegime``; mixing a native and a
+    continuum regime is refused. Returns (joint_regime, report).
     """
     from .compiled_regime import CompiledRegime
     ca, cb = federation_context(regime_a), federation_context(regime_b)
     merged, report = merge_evidence_ledgers(regime_a.evidence_ledger(), regime_b.evidence_ledger(),
                                             context_a=ca, context_b=cb, claim_policy=claim_policy)
+    if ca.get("resolution") == "continuum":
+        from .continuum_regime import ContinuumRegime
+        joint = ContinuumRegime(
+            regime_a.lo, regime_a.hi, reliability=regime_a.reliability, p_flip=regime_a.p_flip,
+            p_two=regime_a.p_two, potential=regime_a.potential, claim_model=regime_a.claim_model,
+            claims=merged["claims"], probes=[r[:4] for r in merged["probes"]],
+            probe_ids=[r[4] for r in merged["probes"]])
+        if federation_context(joint) != ca:
+            raise IncompatibleFederationError("joint prior differs from the federated inputs")
+        return joint, report
     joint = CompiledRegime(
         regime_a.lo, regime_a.hi, backend=backend if backend is not None else regime_a._backend,
         reliability=regime_a.reliability, p_flip=regime_a.p_flip, p_two=regime_a.p_two,
         potential=regime_a.potential, n_grid=regime_a.n_grid, claim_model=regime_a.claim_model,
         claims=merged["claims"], probes=[r[:4] for r in merged["probes"]],
         probe_ids=[r[4] for r in merged["probes"]], query_weights=regime_a._query_weights,
-        method=regime_a._method)
+        method=regime_a._method,
+        covariance_backend=getattr(regime_a, "_covariance_backend", None))
     if federation_context(joint) != ca:
         # Claims under 'disjoint' may add edges only if they were not already edges; the
         # contexts were equal, so this would indicate an internal inconsistency.
