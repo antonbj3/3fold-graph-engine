@@ -158,7 +158,7 @@ def select_with_rank_tiebreak(value, rank_gain, cost, *, exclude=frozenset(), st
     return best
 
 
-def greedy_oed(pool, k, base=None, costs=None, tie_break="rank", prior=1e-9):
+def greedy_oed(pool, k, base=None, costs=None, tie_break="rank", prior=1e-9, *, method="direct"):
     """Greedy selection: pick k observables from `pool` (list of (K,K) Fishers) to add to `base`, and return
     (indices, sigmin_trace) -- sigma_min of the accumulated Fisher after each pick.
 
@@ -183,7 +183,15 @@ def greedy_oed(pool, k, base=None, costs=None, tie_break="rank", prior=1e-9):
     reproducible). `costs` is one positive number per pool entry (default 1.0 = count the measurements).
     `prior` is the prior precision for value_bits, relative to the mean eigenvalue scale of the whole pool, so
     the ranking is invariant to the units of the Fishers; pass a (K,K) matrix for a real prior.
-    Diversity-not-count: correlated observables add little rank and few bits."""
+    Diversity-not-count: correlated observables add little rank and few bits.
+
+    method="batch" (optional, rank branch only): the same per-candidate numbers from STACKED LAPACK calls -- one
+    eigvalsh over all acc + F_i, one slogdet over all (acc + P) + F_i, and the shared log det(acc + P) once per step
+    instead of once per candidate. Each matrix goes through the same LAPACK routine as in the loop, so the keys and
+    therefore the picks are the loop's (tested bit for bit); a candidate the loop would drop (non-finite matrix, not
+    positive definite, non-finite key) is dropped here too, and any LAPACK failure falls back to the loop for that step."""
+    if method not in ("direct", "batch"):
+        raise ValueError(f"method must be 'direct' or 'batch': {method!r}")
     pool = [np.asarray(F, float) for F in pool]
     K = pool[0].shape[0]
     if tie_break not in ("rank", "sigma_min"):
@@ -218,8 +226,9 @@ def greedy_oed(pool, k, base=None, costs=None, tie_break="rank", prior=1e-9):
                 if best_key is None or key > best_key:
                     best_key, best_i = key, i
         else:
-            gain, val, ok = [], [], []
-            for i in remaining:
+            keys = _batch_keys(acc, pool, remaining, costs, P, r_acc) if method == "batch" else None
+            gain, val, ok = keys if keys is not None else ([], [], [])
+            for i in (remaining if keys is None else ()):
                 #: same exclusion as the sigma_min branch, and one step further: a candidate whose
                 # PRICED keys come out non-finite is dropped here rather than handed to
                 # select_with_rank_tiebreak, which fails closed on a non-finite entry -- one
@@ -249,6 +258,44 @@ def greedy_oed(pool, k, base=None, costs=None, tie_break="rank", prior=1e-9):
         chosen.append(best_i); trace.append(float(s_acc)); remaining.remove(best_i)
     return chosen, trace
 
+
+
+def _batch_keys(acc, pool, remaining, costs, P, r_acc, tol=1e-10):
+    """greedy_oed's priced keys (rank gain / cost, value_bits / cost) for every remaining candidate from stacked
+    LAPACK calls, dropping exactly the candidates the per-candidate loop drops. None = use the loop."""
+    try:
+        idx = [i for i in remaining if pool[i].shape == acc.shape]
+        if len(idx) != len(remaining):
+            return None
+        Fs = np.stack([pool[i] for i in idx]) if idx else np.zeros((0,) + acc.shape)
+        Ms = acc[None] + Fs
+        fin = np.isfinite(Ms).all(axis=(1, 2)) & np.isfinite(Fs).all(axis=(1, 2))
+        if not (np.all(np.isfinite(acc)) and np.all(np.isfinite(P))):
+            return None
+        A = 0.5 * ((acc + P) + (acc + P).T)
+        sign_a, logdet_a = np.linalg.slogdet(A)
+        keep = np.flatnonzero(fin)
+        if sign_a <= 0 or len(keep) == 0:
+            return [], [], []
+        Mk = Ms[keep]
+        w = np.linalg.eigvalsh(0.5 * (Mk + np.swapaxes(Mk, 1, 2)))
+        top = np.maximum(w[:, -1], 1e-300)
+        rank = (w > tol * top[:, None]).sum(axis=1)
+        B = A[None] + Fs[keep]
+        sign_b, logdet_b = np.linalg.slogdet(0.5 * (B + np.swapaxes(B, 1, 2)))
+    except np.linalg.LinAlgError:
+        return None
+    gain, val, ok = [], [], []
+    for n, j in enumerate(keep):
+        i = idx[j]
+        if sign_b[n] <= 0:
+            continue                                   # value_bits raises here -> the loop drops the candidate
+        g_i = (int(rank[n]) - r_acc) / costs[i]
+        v_i = float((logdet_b[n] - logdet_a) / (2.0 * np.log(2.0))) / costs[i]
+        if not (np.isfinite(g_i) and np.isfinite(v_i)):
+            continue
+        gain.append(g_i); val.append(v_i); ok.append(i)
+    return gain, val, ok
 
 def compose_typed(stages):
     """TWO-ALGEBRA composition (H 05d92f338, validated on real temple): route each cert quantity to its OWN algebra.
