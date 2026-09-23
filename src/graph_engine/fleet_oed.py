@@ -47,15 +47,45 @@ def delta_sigmin(M, cand):
     return float(s1), float(s1 - s0)
 
 
-def next_best_acquisition(M, candidates, cand_names=None):
+def next_best_acquisition(M, candidates, cand_names=None, *, method="direct"):
     """E-optimal agent pool OED: rank candidate acquisitions by Δσ_min(G_fleet). The max-Δσ_min candidate is the pool's next-best-action (the acquisition that most lifts the
-    least-covered direction). `candidates` = list of coverage columns (each nonneg over the modes it would newly cover)."""
+    least-covered direction). `candidates` = list of coverage columns (each nonneg over the modes it would newly cover).
+    method="batch": G and σ_min(G) once instead of once per candidate, and one STACKED eigh over all G + c cᵀ -- the same LAPACK
+    routine per matrix as the loop, so the numbers and the ranking are the loop's (tested bit for bit); anything the stack cannot
+    take (a shape mismatch, a non-finite matrix or result) falls back to the loop, which then fails exactly as before."""
+    if method not in ("direct", "batch"):
+        raise ValueError(f"method must be 'direct' or 'batch': {method!r}")
     names = cand_names or [f"cand{i}" for i in range(len(candidates))]
+    rows = _batch_delta_sigmin(M, candidates[:len(names)]) if method == "batch" else None
     scored = []
-    for nm, c in zip(names, candidates):
-        s1, d = delta_sigmin(M, c); scored.append(dict(name=nm, new_sigmin=round(s1, 5), delta_sigmin=round(d, 5)))
+    for k, (nm, c) in enumerate(zip(names, candidates)):
+        s1, d = rows[k] if rows is not None else delta_sigmin(M, c)
+        scored.append(dict(name=nm, new_sigmin=round(s1, 5), delta_sigmin=round(d, 5)))
     scored.sort(key=lambda x: -x["delta_sigmin"])
     return scored
+
+
+def _batch_delta_sigmin(M, candidates):
+    """[(new_sigmin, delta)] for every candidate from one stacked eigh; None = use the per-candidate loop."""
+    if len(candidates) == 0:
+        return []
+    G = coverage_gramian(M)
+    try:
+        s0, _ = _sigmin_eig(G)
+        C = np.stack([np.asarray(c, float).reshape(-1) for c in candidates])
+        if C.shape[1] != G.shape[0]:
+            return None
+        G1 = G[None] + C[:, :, None] * C[:, None, :]
+        S = (G1 + np.swapaxes(G1, 1, 2)) / 2
+        if not np.isfinite(S).all():
+            return None
+        w, V = np.linalg.eigh(S)
+        if not (np.isfinite(w).all() and np.isfinite(V).all()):
+            return None
+    except (ValueError, np.linalg.LinAlgError):
+        return None
+    w = np.clip(w, 0, None)
+    return [(float(w[k, 0]), float(float(w[k, 0]) - s0)) for k in range(len(candidates))]
 
 
 def vibrate(M, n_dither=200, amp=0.1, seed=0):
