@@ -20,13 +20,17 @@ import numpy as np, json, sys
 
 
 def source_family_admission(reports, inherited_support=0, threshold=2, *,
-                            verification_registry=None, require_registry=False):
+                            verification_registry=None, require_registry=False,
+                            target_id=None, require_target_binding=False):
     """Coupling annotations can diagnose a cascade but never supply evidence.
 
     With this rule the final admitted set is invariant under adding/removing any
     coupling edges, and is bounded by direct verified independent-family support.
     """
-    from .claim_federation import source_family_components
+    try:
+        from .claim_federation import source_family_components
+    except ImportError:
+        from claim_federation import source_family_components
     if (isinstance(threshold, bool) or not isinstance(threshold, int) or threshold < 2
             or isinstance(inherited_support, bool) or not isinstance(inherited_support, int)
             or inherited_support < 0):
@@ -40,6 +44,11 @@ def source_family_admission(reports, inherited_support=0, threshold=2, *,
             if not isinstance(sid, str) or sid not in verification_registry:
                 return dict(admit=False, reason_codes=["PROVENANCE_MISSING"], reason="unregistered source ID")
             entry = verification_registry[sid]
+            if require_target_binding and (not isinstance(target_id, str) or not target_id
+                    or not isinstance(entry, dict) or not isinstance(entry.get("supports"), list)
+                    or target_id not in entry["supports"]):
+                return dict(admit=False, reason_codes=["PROVENANCE_MISSING"],
+                            reason="registered source does not support the bound target")
             if isinstance(entry, dict) and (entry.get("derives_from") or entry.get("parents")):
                 return dict(admit=False, reason_codes=["PROVENANCE_MISSING"],
                             reason="registry must bind resolved source families; unresolved lineage is not evidence")
@@ -85,7 +94,8 @@ def discriminative_to_fisher(pass_rate_pos, pass_rate_neg, direction=None, dim=1
 
 
 def precheck(F_base, channels, tau=0.01, *, source_reports=None,
-             inherited_support=None, require_source_families=False, verification_registry=None):
+             inherited_support=None, require_source_families=False, verification_registry=None,
+             channel_targets=None):
     """channels: {name: Fisher matrix in regime}. Returns per channel {innovation, admit} plus the
     expected lift."""
     F_base = np.asarray(F_base, float)
@@ -97,7 +107,8 @@ def precheck(F_base, channels, tau=0.01, *, source_reports=None,
         for name in channels:
             reports = (source_reports or {}).get(name)
             support[name] = (source_family_admission(reports, (inherited_support or {}).get(name, 0),
-                            verification_registry=verification_registry, require_registry=require_source_families)
+                            verification_registry=verification_registry, require_registry=require_source_families,
+                            target_id=(channel_targets or {}).get(name), require_target_binding=require_source_families)
                              if isinstance(reports, list) else
                              dict(admit=False, reason_codes=["PROVENANCE_MISSING"]))
         out["source_family_support"] = support
@@ -125,7 +136,10 @@ def precheck(F_base, channels, tau=0.01, *, source_reports=None,
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         spec = json.load(open(sys.argv[1]))
-        r = precheck(spec["base"], spec["channels"], spec.get("tau", 0.01))
+        r = precheck(spec["base"], spec["channels"], spec.get("tau", 0.01),
+                     source_reports=spec.get("source_reports"), inherited_support=spec.get("inherited_support"),
+                     require_source_families=spec.get("require_source_families", False),
+                     verification_registry=spec.get("verification_registry"), channel_targets=spec.get("channel_targets"))
         print(json.dumps(r, ensure_ascii=False, indent=1))
     else:
         # selftest: in-regime channel admitted, out-of-regime channel rejected.

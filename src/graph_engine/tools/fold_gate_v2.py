@@ -141,7 +141,8 @@ def fold_gate_v2(submission, atoms_report=None, base_dir=None, execute=False, ti
             obligations["c"] = dict(validated=False, reason_codes=["PROVENANCE_MISSING"])
         else:
             r = source_family_admission(reports, artifact.get("inherited_support", 0),
-                                        verification_registry=verification_registry, require_registry=True)
+                                        verification_registry=verification_registry, require_registry=True,
+                                        target_id=sub.get("node"), require_target_binding=True)
             obligations["c"] = dict(validated=r["admit"], **r)
     from graph_engine.admission_bands import apply_admission_obligations
     return apply_admission_obligations(out, obligations)
@@ -168,7 +169,8 @@ def planted_fold_catalogue(submission, base_dir):
         ("missing_calibration", "CALIBRATION_MISSING"), ("missing_provenance", "PROVENANCE_MISSING"),
         ("hypothesis_laundering", "HYPOTHESIS_NOT_RESULT"), ("infinite_tolerance", "INVALID_TOLERANCE"),
         ("missing_semantic_witness", "VALIDATION_WITNESS_MISSING"),
-        ("unregistered_source", "PROVENANCE_MISSING")]
+        ("unregistered_source", "PROVENANCE_MISSING"),
+        ("unsupported_target", "PROVENANCE_MISSING")]
     probes = []
     for i, (kind, reason) in enumerate(recipes):
         probe = copy.deepcopy(sub); art = copy.deepcopy(original)
@@ -193,6 +195,7 @@ def planted_fold_catalogue(submission, base_dir):
         elif kind == "missing_provenance": art.pop("source_reports", None)
         elif kind == "missing_semantic_witness": art.pop("validation", None)
         elif kind == "unregistered_source": art["source_reports"] = [{"source_id": nonce + "-unknown"}]
+        elif kind == "unsupported_target": probe["node"] = nonce + "-unsupported-target"
         elif kind == "hypothesis_laundering": probe["hypothesis"] = True
         elif kind == "infinite_tolerance":
             probe["rerun"]["checks"][0].update(expected=-987654.0, tol=float("inf"))

@@ -46,7 +46,7 @@ def test_coupling_cannot_supply_a_family():
 def test_round_runs_real_mutations_and_admits_valid_control(tmp_path):
  good=fixture.template(tmp_path);r=fold_gate_v2_round([good],good,str(tmp_path),verification_registry=fixture.registry())
  assert r['fence_passed'] and r['accepted_indices']==[0]
- assert len(r['probes'])==15 and all(p['passed'] for p in r['probes'])
+ assert len(r['probes'])==16 and all(p['passed'] for p in r['probes'])
  assert not list(tmp_path.glob('probe-*.json'))
 
 @pytest.mark.parametrize('guards',[('b',),('a','b'),('b','c')])
@@ -69,7 +69,7 @@ def test_fault_labels_are_not_given_to_evaluator(tmp_path):
   assert 'fault_class' not in s and 'required_reason' not in s
   seen.append(s['cell']);return fold_gate_v2(s,base_dir=str(tmp_path),admission_guards=('a','b','c'),verification_registry=fixture.registry())
  r=fold_gate_v2_round([good],good,str(tmp_path),evaluator=evaluator)
- assert r['fence_passed'] and len(set(seen))==16
+ assert r['fence_passed'] and len(set(seen))==17
 
 def test_existing_fisher_precheck_cannot_add_unsupported_channel():
  from graph_engine.coupling_admission_precheck import precheck
@@ -116,3 +116,27 @@ def test_unresolved_lineage_cycle_cannot_be_independent_sources():
  reg=fixture.registry();reg['source-A']['derives_from']=['source-B'];reg['source-B']['derives_from']=['source-A']
  r=source_family_admission([{'source_id':'source-A'},{'source_id':'source-B'}],verification_registry=reg,require_registry=True)
  assert not r['admit'] and r['reason_codes']==['PROVENANCE_MISSING']
+
+def test_registered_sources_cannot_be_borrowed_for_unrelated_target(tmp_path):
+ good=fixture.template(tmp_path);good['node']='unrelated-target'
+ r=fold_gate_v2(good,base_dir=str(tmp_path),admission_guards=('a','b','c'),verification_registry=fixture.registry())
+ assert r['decision']=='BLOCK' and 'PROVENANCE_MISSING' in r['reason_codes']
+
+def test_producer_supports_cannot_override_registry(tmp_path):
+ good=fixture.template(tmp_path);good['node']='unrelated-target';p=Path(good['rerun']['artifact']);a=json.loads(p.read_text())
+ for src in a['source_reports']:src['supports']=['unrelated-target']
+ p.write_text(json.dumps(a));r=fold_gate_v2(good,base_dir=str(tmp_path),admission_guards=('c',),verification_registry=fixture.registry())
+ assert r['decision']=='BLOCK'
+
+def test_strict_fisher_channel_requires_supported_target():
+ from graph_engine.coupling_admission_precheck import precheck
+ kw={'source_reports':{'leg':[{'source_id':'source-A'},{'source_id':'source-B'}]},'verification_registry':fixture.registry(),'require_source_families':True}
+ assert not precheck([[0.]],{'leg':[[1.]]},**kw)['admitted']
+ assert precheck([[0.]],{'leg':[[1.]]},channel_targets={'leg':'positive-control'},**kw)['admitted']==['leg']
+
+def test_standalone_coupling_cli_routes_strict_source_options(tmp_path):
+ import subprocess,sys
+ p=tmp_path/'coupling.json';p.write_text(json.dumps({'base':[[0.]],'channels':{'leg':[[1.]]},'require_source_families':True,'source_reports':{'leg':[{'source_id':'source-A'},{'source_id':'source-B'}]},'verification_registry':fixture.registry(),'channel_targets':{'leg':'wrong-target'}}))
+ script=Path(__file__).parents[1]/'src/graph_engine/coupling_admission_precheck.py'
+ r=subprocess.run([sys.executable,str(script),str(p)],capture_output=True,text=True,check=True)
+ assert json.loads(r.stdout)['admitted']==[]

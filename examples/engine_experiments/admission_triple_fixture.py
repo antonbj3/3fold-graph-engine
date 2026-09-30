@@ -2,9 +2,10 @@
 import json
 from pathlib import Path
 
-def registry():
- return {'source-A':{'verified':True,'source_family':['family-A']},
-         'source-B':{'verified':True,'source_family':['family-B']}}
+def registry(target_ids=None):
+ targets=list(target_ids) if target_ids is not None else ['positive-control']
+ return {'source-A':{'verified':True,'source_family':['family-A'],'supports':targets},
+         'source-B':{'verified':True,'source_family':['family-B'],'supports':targets}}
 
 def calibration():
  n=128
@@ -25,7 +26,7 @@ def template(root, identity='positive-control', metric=0.375):
  script=root/'replay_fixture.py'
  # This checks the fixture and never claims experimental remeasurement.
  script.write_text("import json\nfrom pathlib import Path\nx=json.loads((Path(__file__).parent/'positive-control.json').read_text())\nassert abs(x['measured']-0.375)<1e-10\n")
- return {'cell':identity,'verdict':'positive','rerun':{'command':f'python {script}', 'artifact':str(art),
+ return {'cell':identity,'node':identity,'verdict':'positive','rerun':{'command':f'python {script}', 'artifact':str(art),
         'checks':[{'key':'measured','expected':metric,'tol':1e-10}]},
         'ATOMS':{'report':'fixture','claims':[{'id':'measured','text':'fixture metric preserved','load_bearing':True}],
                  'atoms':[{'id':'metric','claim':'measured','type':'value-in-artifact','artifact':str(art),

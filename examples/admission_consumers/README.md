@@ -7,8 +7,8 @@ been relocated to G5. Canonical consumers and graphs are unchanged.
 
 The existing `fold_gate_v2_round` runs the strict a/b/c obligations. c requires
 an external `verification_registry` supplied by the consumer, mapping source
-IDs to `{verified: true/false, source_family: [IDs]}`. Producer artifact labels
-are not verification authority. Missing registry or unknown IDs block.
+IDs to `{verified: true/false, source_family: [IDs], supports: [target IDs]}`. Producer artifact labels
+are not verification authority. Missing registry, unknown IDs or unsupported targets block.
 A registry is a trust boundary; correct external family assignments remain an
 assumption. No adjacency or documentary link confers another independent vote.
 
