@@ -19,6 +19,44 @@ ADMIT/REJECT plus the expected sigma_min lift.
 import numpy as np, json, sys
 
 
+def source_family_admission(reports, inherited_support=0, threshold=2, *,
+                            verification_registry=None, require_registry=False):
+    """Coupling annotations can diagnose a cascade but never supply evidence.
+
+    With this rule the final admitted set is invariant under adding/removing any
+    coupling edges, and is bounded by direct verified independent-family support.
+    """
+    from .claim_federation import source_family_components
+    if (isinstance(threshold, bool) or not isinstance(threshold, int) or threshold < 2
+            or isinstance(inherited_support, bool) or not isinstance(inherited_support, int)
+            or inherited_support < 0):
+        return dict(admit=False, reason_codes=["PROVENANCE_MISSING"], reason="invalid support threshold")
+    if require_registry or verification_registry is not None:
+        if not isinstance(verification_registry, dict):
+            return dict(admit=False, reason_codes=["PROVENANCE_MISSING"], reason="external verification registry required")
+        resolved = []
+        for report in reports:
+            sid = report.get("source_id") if isinstance(report, dict) else None
+            if not isinstance(sid, str) or sid not in verification_registry:
+                return dict(admit=False, reason_codes=["PROVENANCE_MISSING"], reason="unregistered source ID")
+            entry = verification_registry[sid]
+            if isinstance(entry, dict) and (entry.get("derives_from") or entry.get("parents")):
+                return dict(admit=False, reason_codes=["PROVENANCE_MISSING"],
+                            reason="registry must bind resolved source families; unresolved lineage is not evidence")
+            resolved.append(entry)
+        reports = resolved
+    support = source_family_components(reports)
+    if not support["valid"]:
+        return dict(admit=False, support=support, reason_codes=support["reason_codes"], reason="family provenance missing")
+    direct = support["count"]
+    code = ("COUPLING_CASCADE" if direct < threshold <= direct + inherited_support else
+            "SOURCE_FAMILY_DUPLICATION" if direct < threshold <= support["verified_reports"] else
+            "INSUFFICIENT_SOURCE_FAMILIES")
+    return dict(admit=direct >= threshold, direct_families=direct, inherited_support=inherited_support,
+                support=support, reason_codes=[] if direct >= threshold else [code],
+                reason="direct family support" if direct >= threshold else code)
+
+
 def schur_innovation(F_base, F_channel):
     """The channel's Fisher information projected onto the base's WEAKEST direction = the marginal
     lift it can give. High => the channel covers what the base misses (admit). ~0 => the channel is
@@ -46,19 +84,29 @@ def discriminative_to_fisher(pass_rate_pos, pass_rate_neg, direction=None, dim=1
     return d * np.outer(v, v)
 
 
-def precheck(F_base, channels, tau=0.01):
+def precheck(F_base, channels, tau=0.01, *, source_reports=None,
+             inherited_support=None, require_source_families=False, verification_registry=None):
     """channels: {name: Fisher matrix in regime}. Returns per channel {innovation, admit} plus the
     expected lift."""
     F_base = np.asarray(F_base, float)
     smin0 = float(np.linalg.eigvalsh(F_base)[0])
     out = {"sigma_min_base": smin0, "tau": tau, "channels": {}, "admitted": []}
     F_acc = F_base.copy()
+    support = {}
+    if require_source_families or source_reports is not None:
+        for name in channels:
+            reports = (source_reports or {}).get(name)
+            support[name] = (source_family_admission(reports, (inherited_support or {}).get(name, 0),
+                            verification_registry=verification_registry, require_registry=require_source_families)
+                             if isinstance(reports, list) else
+                             dict(admit=False, reason_codes=["PROVENANCE_MISSING"]))
+        out["source_family_support"] = support
     # greedy admission: admit channels in innovation order (largest first)
     ranked = sorted(channels.items(), key=lambda kv: -schur_innovation(F_base, np.asarray(kv[1], float)))
     for name, Fc in ranked:
         Fc = np.asarray(Fc, float)
         innov = schur_innovation(F_acc, Fc)
-        admit = innov > tau
+        admit = innov > tau and (not support or support[name]["admit"])
         smin_before = float(np.linalg.eigvalsh(F_acc)[0])
         if admit:
             F_acc = F_acc + Fc
