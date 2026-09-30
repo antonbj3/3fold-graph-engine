@@ -65,7 +65,7 @@ from .predictive_state import (BeliefState, ObservationChannel, PredictiveTask,
                                risk_drop_law, value_of_observation)
 
 __all__ = ["Instrument", "Action", "EngineState", "Actions", "next_actions", "apply",
-           "bundle_action", "bundle_value_bits", "probe_pair_bundle", "sweep_bundle", "chain_throw_bundle",
+           "bundle_action", "bundle_value_bits", "probe_pair_bundle", "sweep_bundle", "chain_throw_bundle", "triple_bundle",
            "PredictiveBinding", "predictive_action", "binding_of", "update_alarm",
            "predictive_expected_drop", "COST_UNIT"]
 
@@ -113,7 +113,7 @@ class Action:
         return f"{self.kind}:{self.target}"
 
 
-KINDS = ("probe", "measure", "throw", "declare_variable", "model_check", "work_node", "bundle", "observe")
+KINDS = ("probe", "measure", "throw", "declare_variable", "model_check", "work_node", "bundle", "triple", "observe")
 
 
 @dataclass
@@ -183,6 +183,11 @@ class EngineState:
     pair_bundles: bool = True                                # offer the exactly priced probe PAIR on every pair (e21f)
     bundle_lam: float = 1.0                                  # λ on the family entropy in a regime bundle's price
     predictive_bindings: list = field(default_factory=list)  # [PredictiveBinding]: typed predictive tasks
+
+    typed_parts: dict = field(default_factory=dict)           # {id: typed_throws.Part}
+    triple_requests: list = field(default_factory=list)       # dicts: members, target, valuation[, Q, cost]
+    triple_given: set = field(default_factory=set)
+    triple_costs: dict = field(default_factory=dict)
 
     def variable(self, pair) -> str:
         return self.regime_variables.get(pair, "x")
@@ -342,9 +347,10 @@ def _federation_actions(state: EngineState) -> list[Action]:
         point = ", ".join(f"{v} = {x:g}" for v, x in sorted(pr.point.items())) or "the claims' common point"
         ins = state.probe_instruments[0] if state.probe_instruments else None
         cost = float(pr.cost)
+        scope = "measure this one edge of the cycle witness" if pr.kind == "CYCLE" else "observe the sign"
         out.append(Action(
             "probe", tuple(pr.pair), ins, float(pr.value * cost), cost, float(pr.value), "claim_federation",
-            f"observe the sign of d({pr.pair[1]})/d({pr.pair[0]}) at {point} "
+            f"{scope}: d({pr.pair[1]})/d({pr.pair[0]}) at {point} "
             f"({pr.kind}, from claims {', '.join(pr.claims)})"
             + (f" with instrument {ins}" if ins else "") + "; return {sign: ±1}",
             box={v: [x, x] for v, x in pr.point.items()}, value_unit="evpi", meta={"probe": pr, "kind": pr.kind}))
@@ -682,11 +688,18 @@ def sweep_bundle(state: EngineState, pair, xs, instrument: Instrument, lam: floa
 
 
 def chain_throw_bundle(state: EngineState, nodes, w: float = 1.0, cost_per_link: float = 1.0,
-                       instrument: Instrument | None = None) -> Action:
+                       instrument: Instrument | None = None, parts=None) -> Action:
     """A CHAIN THROW (`throws.chain_throw`: the decoded path a → · → · → b) as a bundle of its links, valued by
     `precision_form.set_value_bits` of the rows e_i − e_j — the joint log-det value of the path, which is not the sum
     of the links' own values."""
+    if parts is not None:
+        from .typed_throws import evaluate_chain
+        checked = evaluate_chain(list(parts))
+        if not checked.runs:
+            raise ValueError(f"typed chain cannot run: regime_conf={checked.regime_conf}, missing={checked.missing_inputs}")
     nodes = [int(n) for n in nodes]
+    if parts is not None and len(parts) != len(nodes):
+        raise ValueError("typed parts must follow the geometric path one per node")
     if len(nodes) < 2:
         raise ValueError(f"a chain throw needs at least two nodes: {nodes}")
     if state.form is None:
@@ -706,6 +719,68 @@ def chain_throw_bundle(state: EngineState, nodes, w: float = 1.0, cost_per_link:
     return bundle_action(state, members, cost=float(cost_per_link) * len(members), how=how,
                          source_channel="precision_form", label="chain_throw",
                          meta={"nodes": nodes, "w": float(w)})
+
+
+
+def triple_bundle(state: EngineState, members, target, valuation="closure", Q=None, cost=None) -> Action:
+    """A three-member purchase, priced at its declared target.
+
+    closure and port_value_Q use the field prototype's structural model and
+    stay in Actions.other as structural_bits. value_Q uses declared Gaussian
+    observations in state.form and joins the calibrated bits ranking.
+    """
+    import numpy as np
+    from .typed_throws import (StructuralImage, closure_value, set_value_Q_bits,
+                              regime_intersection, box_intersection_many, assumption_conflicts, link)
+    from itertools import combinations
+    ids = tuple(members)
+    if len(ids) != 3 or len(set(ids)) != 3:
+        raise ValueError("a triple must have three distinct members")
+    price = float(cost) if cost is not None else sum(float(state.triple_costs.get(i, 1.0)) for i in ids)
+    if not math.isfinite(price) or price <= 0:
+        raise ValueError("triple cost must be finite and positive")
+    meta = {"members": ids, "bundle": "triple", "valuation": valuation, "target": target}
+    if valuation == "value_Q":
+        bank = {c.id: c for c in state.candidates}
+        if state.form is None or Q is None or any(i not in bank for i in ids):
+            raise ValueError("value_Q requires a precision form, Q and three declared candidates")
+        cs = [bank[i] for i in ids]
+        bits = set_value_Q_bits(state.form, [c.h for c in cs], [c.sigma for c in cs], Q)
+        meta.update(Q=np.atleast_2d(np.asarray(Q, float)).copy(),
+                    rows=np.asarray([c.h for c in cs]).copy(), sigmas=np.asarray([c.sigma for c in cs]),
+                    prior_J=state.form.J.copy())
+        if cost is None:
+            price = sum(float(c.cost) for c in cs)
+            if not math.isfinite(price) or price <= 0:
+                raise ValueError("triple cost must be finite and positive")
+        unit, region = BITS, None
+        how = "observe the three declared rows together; return {values: [y1, y2, y3], evidence: [...]}"
+    elif valuation in ("closure", "port_value_Q"):
+        if any(i not in state.typed_parts for i in ids):
+            raise ValueError("structural triple requires three declared typed parts")
+        parts = [state.typed_parts[i] for i in ids]
+        reg = regime_intersection([p.regime for p in parts])
+        region = box_intersection_many([p.box for p in parts])
+        conflicts = any(assumption_conflicts(a.assumptions, b.assumptions) for a,b in combinations(parts,2))
+        bad_link = any(not l.ok for a in parts for b in parts if a is not b for l in link(a,b))
+        if reg is None or region is None or conflicts or bad_link:
+            raise ValueError("triple parts have incompatible types, assumptions or whole-set regime")
+        given = set(state.triple_given) | {i.q for p in parts for i in p.inputs if i.given}
+        bits = closure_value(state.typed_parts, ids, target, given)
+        if valuation == "port_value_Q":
+            bits = StructuralImage(parts).value_Q(ids, target, given=given)
+        meta.update(reach=[p.reach for p in parts], given=sorted(given), surrogate=True,
+                    caveat="unit elasticities and reach-based noise; uncalibrated structural information")
+        unit = "structural_bits"
+        how = "build and test these three typed operators together; return {combination: {...}, evidence: [...]}"
+    else:
+        raise ValueError("valuation must be closure, port_value_Q or value_Q")
+    return Action("triple", (ids, target), None, float(bits), price, float(bits)/price,
+                  "typed_throws", how, box=region, value_unit=unit, meta=meta)
+
+
+def _triple_actions(state: EngineState) -> list[Action]:
+    return [triple_bundle(state, **request) for request in state.triple_requests]
 
 
 def _link_row(d: int, i: int, j: int):
@@ -745,7 +820,7 @@ def next_actions(state: EngineState, profile: Any = None, k: int = 10, guard_sha
 
     collected = (_regime_actions(state) + _margin_actions(state) + _form_actions(state)
                  + _hidden_variable_actions(state) + _unlock_actions(state) + _federation_actions(state)
-                 + _bundle_actions(state) + _predictive_actions(state))
+                 + _bundle_actions(state) + _triple_actions(state) + _predictive_actions(state))
     # A bits action joins the one bits-per-cost list only if its cost is in the graph's declared common
     # currency; brier/error tasks and costs declared in another currency are never divided into it.
     in_bits = sorted((a for a in collected if a.value_unit == BITS and a.cost_unit == COST_UNIT),
@@ -810,7 +885,26 @@ def apply(state: EngineState, action: Action, outcome: dict) -> dict:
             if fed is None:
                 raise ValueError("no federation in the state to record this probe against")
             src = outcome.get("source") or (action.instrument.name if action.instrument else "agent")
-            extra["claim_id"] = fed.record(action.meta["probe"], sign, src)
+            pr = action.meta["probe"]
+            if pr.kind == "CYCLE":
+                from .typed_throws import regime_intersection
+                claims = [fed.claims[cid] for cid in pr.claims]
+                regime = regime_intersection([c.get("regime", {}) for c in claims])
+                if regime is None:
+                    raise ValueError("stale cycle: its regimes no longer intersect")
+                instances = {c.get("instance") for c in claims if c.get("instance")}
+                if len(instances) > 1 or not any(c["pair"] == pr.pair for c in claims):
+                    raise ValueError("stale cycle: edge or instance changed")
+                gid = f"CYCLE-MEAS:{len(fed.claims)}"
+                fed.add_graph({"graph_id": gid, "sources": [{"id": src}], "claims": [{
+                    "id": "edge", "subject": pr.pair[0], "object": pr.pair[1], "sign": sign,
+                    "validity": {v: [x, x] for v, x in pr.point.items()},
+                    "instance": next(iter(instances), ""),
+                    "regime": {k: sorted(v) for k, v in regime.items()},
+                    "evidence": [src], "cost": pr.cost}]})
+                extra.update(claim_id=f"{gid}:edge", cycle_witness=list(pr.claims))
+            else:
+                extra["claim_id"] = fed.record(pr, sign, src)
         else:
             post = state.regimes.get(action.target)
             if post is None:
@@ -910,6 +1004,26 @@ def apply(state: EngineState, action: Action, outcome: dict) -> dict:
         if outcome.get("source") is not None:
             extra["source_root"] = str(outcome["source"])
         binding.belief = updated                                       # commit after outcome validation
+
+    elif action.kind == "triple":
+        import numpy as np
+        if action.meta["valuation"] == "value_Q":
+            _require(outcome, ("values",), action.kind)
+            ys = np.asarray(outcome["values"], float)
+            if ys.shape != (3,) or not np.all(np.isfinite(ys)):
+                raise ValueError("a triple needs three finite observed values")
+            if state.form is None or not np.array_equal(state.form.J, action.meta["prior_J"]):
+                raise ValueError("stale triple: precision changed since planning")
+            from .typed_throws import set_value_Q_bits
+            realized = set_value_Q_bits(state.form, action.meta["rows"], action.meta["sigmas"], action.meta["Q"])
+            updated = state.form.copy()
+            for h, sigma, y in zip(action.meta["rows"], action.meta["sigmas"], ys):
+                updated.observe(h, sigma, y)
+            state.form.J, state.form.b, state.form._C = updated.J, updated.b, updated._C
+        else:
+            _require(outcome, ("combination", "evidence"), action.kind)
+            extra["surrogate"] = True
+        extra["members"] = list(action.meta["members"])
 
     elif action.kind == "bundle":
         _require(outcome, ("outcomes",), action.kind)

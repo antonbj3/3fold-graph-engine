@@ -314,9 +314,29 @@ class PrecisionForm:
         out = [(c.id, bits(c), bits(c) / c.cost, c.kind) for c in cands]
         return sorted(out, key=lambda t: -t[2])
 
-    def best_set(self, cands: list[Candidate], k: int, per_cost: bool = False) -> list[Candidate]:
+    def best_set(self, cands: list[Candidate], k: int, per_cost: bool = False, Q=None,
+                 max_sets: int = 100000) -> list[Candidate]:
         """Greedy on the set value (marginal gains computed in the posterior after the chosen ones).
-        Within 1 − 1/e of the optimum by monotone submodularity; T5 measures the realized ratio."""
+        The 1 − 1/e cardinality guarantee applies to unrestricted Gaussian
+        log-det with equal costs. Target Q can have increasing returns: use
+        exhaustive search, never greedy, for at most max_sets combinations.
+        With Q and per_cost=True maximize joint bits / total set cost. No
+        approximation guarantee is claimed for cost-weighted greedy.
+        """
+        if Q is not None:
+            from math import comb
+            from .typed_throws import set_value_Q_bits
+            size = min(k, len(cands))
+            if size <= 0:
+                return []
+            if comb(len(cands), size) > max_sets:
+                raise ValueError("target selection exceeds max_sets; restrict the candidate pool")
+            if per_cost and any(not np.isfinite(c.cost) or c.cost <= 0 for c in cands):
+                raise ValueError("costs must be finite and positive")
+            def score(S):
+                v = set_value_Q_bits(self, [c.h for c in S], [c.sigma for c in S], Q)
+                return v / sum(c.cost for c in S) if per_cost else v
+            return list(max(combinations(cands, size), key=score))
         form, chosen, rest = self.copy(), [], list(cands)
         for _ in range(min(k, len(cands))):
             gains = [form.value_bits(c.h, c.sigma) / (c.cost if per_cost else 1.0) for c in rest]

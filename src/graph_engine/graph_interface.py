@@ -28,7 +28,9 @@ in regime_posterior (θ = 2·arcsin√h makes it flat).
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from fractions import Fraction
+from ._rational_interface import nullspace, solve_right, rref
 
 import numpy as np
 import scipy.sparse as sp
@@ -44,14 +46,68 @@ class GraphInterface:
     g: np.ndarray            # n_interior
     interior: np.ndarray     # original indices of the interior nodes
 
+    exact_S: list | None = field(default=None, repr=False)
+    exact_H: list | None = field(default=None, repr=False)
+    exact_g: list | None = field(default=None, repr=False)
+
+    @classmethod
+    def export_edges(cls, n, edges, weights, shared):
+        """Exact binary64 conductances before Schur reduction (NT2 branch B).
+
+        Fractions preserve weak positive couplings. Intended as the reference
+        exporter for modest graphs; rational elimination can be expensive.
+        Every interior component must touch a shared node.
+        """
+        shared = np.asarray(shared, dtype=int)
+        if shared.ndim != 1 or len(set(shared)) != len(shared) or np.any(shared < 0) or np.any(shared >= n):
+            raise ValueError("shared nodes must be distinct valid indices")
+        edges = np.asarray(edges, dtype=int).reshape(-1, 2)
+        weights = np.ones(len(edges)) if weights is None else np.asarray(weights, float)
+        if weights.shape != (len(edges),) or not np.all(np.isfinite(weights)) or np.any(weights <= 0):
+            raise ValueError("strictly positive finite edge conductances required")
+        if np.any(edges < 0) or np.any(edges >= n):
+            raise ValueError("edge endpoint outside graph")
+        L = [[Fraction(0) for _ in range(n)] for _ in range(n)]
+        for (a, b), w in zip(edges, weights):
+            w = Fraction(float(w))
+            L[a][a] += w; L[b][b] += w
+            L[a][b] -= w; L[b][a] -= w
+        interior = np.setdiff1d(np.arange(n), shared)
+        Aii = [[L[i][j] for j in interior] for i in interior]
+        Ais = [[L[i][j] for j in shared] for i in interior]
+        Ass = [[L[i][j] for j in shared] for i in shared]
+        ni, ns = len(interior), len(shared)
+        identity = [[Fraction(int(i == j)) for j in range(ni)] for i in range(ni)]
+        try:
+            inv = solve_right(Aii, identity)
+        except ZeroDivisionError as exc:
+            raise ValueError("every interior component must touch the interface") from exc
+        X = [[sum(inv[i][r] * Ais[r][j] for r in range(ni)) for j in range(ns)] for i in range(ni)]
+        S = [[Ass[i][j] - sum(Ais[r][i] * X[r][j] for r in range(ni)) for j in range(ns)] for i in range(ns)]
+        H, g = [[-v for v in row] for row in X], [inv[i][i] for i in range(ni)]
+        return cls(np.asarray(S, float).reshape(ns, ns), np.asarray(H, float).reshape(ni, ns),
+                   np.asarray(g, float), interior, S, H, g)
+
     @classmethod
     def export(cls, L: sp.spmatrix, shared: np.ndarray, estimate_g_with: int | None = None) -> "GraphInterface":
         """g = diag(A_ii⁻¹) is computed EXACTLY by default (one solve per interior node, in blocks). `estimate_g_with=k`
         replaces it by a k-sample Hutchinson estimate; then R_ab is no longer exact (measured on a 294-node interior:
         median relative error of g 0.155 at k = 128, 0.054 at k = 1 024)."""
         L = sp.csc_matrix(L); n = L.shape[0]
-        shared = np.asarray(shared); interior = np.setdiff1d(np.arange(n), shared)
+        shared = np.asarray(shared)
+        # For small combinatorial Laplacians recover the edge-native inputs
+        # from off-diagonals, before a floating Schur subtraction can lose them.
+        if n <= 16 and estimate_g_with is None:
+            coo = sp.triu(L, k=1).tocoo()
+            weights = -coo.data
+            diagonal = np.asarray(L.diagonal())
+            degree = -np.asarray(L.sum(axis=1)).ravel() + diagonal
+            if np.all(weights > 0) and np.allclose(diagonal, degree, rtol=1e-12, atol=0):
+                return cls.export_edges(n, np.column_stack((coo.row, coo.col)), weights, shared)
+        interior = np.setdiff1d(np.arange(n), shared)
         Aii, Ais, Ass = L[interior][:, interior].tocsc(), L[interior][:, shared].toarray(), L[shared][:, shared].toarray()
+        if not len(interior):
+            return cls(Ass, np.empty((0, len(shared))), np.empty(0), interior)
         lu = spla.splu(Aii)
         X = lu.solve(Ais)                                        # A_ii⁻¹ A_is
         ni = len(interior)
@@ -65,7 +121,15 @@ class GraphInterface:
         return cls(Ass - Ais.T @ X, -X, g, interior)
 
     def nbytes(self) -> int:
-        return self.S.nbytes + self.H.nbytes + self.g.nbytes
+        import sys
+        arrays = self.S.nbytes + self.H.nbytes + self.g.nbytes + self.interior.nbytes
+        def size(value):
+            if isinstance(value, list):
+                return sys.getsizeof(value) + sum(size(x) for x in value)
+            if isinstance(value, Fraction):
+                return sys.getsizeof(value) + sys.getsizeof(value.numerator) + sys.getsizeof(value.denominator)
+            return 0
+        return arrays + sum(size(x) for x in (self.exact_S, self.exact_H, self.exact_g))
 
 
 def _diag_inv_hutchinson(lu, n: int, k: int = 128, seed: int = 0) -> np.ndarray:
@@ -75,6 +139,36 @@ def _diag_inv_hutchinson(lu, n: int, k: int = 128, seed: int = 0) -> np.ndarray:
 
 def cross_resistance(A: GraphInterface, B: GraphInterface, a: np.ndarray, b: np.ndarray) -> np.ndarray:
     """R between interior node a[k] of A and interior node b[k] of B in the glued graph (positions into .interior)."""
-    Sp = np.linalg.pinv(A.S + B.S, hermitian=True)
+    a, b = np.broadcast_arrays(np.atleast_1d(a).astype(int), np.atleast_1d(b).astype(int))
+    if A.S.shape != B.S.shape:
+        raise ValueError("interfaces must share the same ordered boundary")
+    if A.exact_S is not None and B.exact_S is not None:
+        S = [[x+y for x,y in zip(ra,rb)] for ra,rb in zip(A.exact_S,B.exact_S)]
+        N = nullspace(S)  # all modes, not merely the global constant
+        out = []
+        for ai, bi in zip(a.flat, b.flat):
+            d = [x-y for x,y in zip(A.exact_H[ai],B.exact_H[bi])]
+            if any(sum(x*y for x,y in zip(mode,d)) for mode in N):
+                out.append(float("inf")); continue
+            # A particular solution to S x=d suffices: energy is gauge invariant.
+            R, piv = rref([row+[rhs] for row,rhs in zip(S,d)])
+            x = [Fraction(0) for _ in d]
+            for row, pivot in zip(R, piv):
+                x[pivot] = row[-1]
+            out.append(float(A.exact_g[ai]+B.exact_g[bi]+sum(u*v for u,v in zip(d,x))))
+        return np.asarray(out).reshape(a.shape)
+    S = (A.S + B.S + A.S.T + B.S.T) / 2
+    lam, V = np.linalg.eigh(S)
+    tol = np.finfo(float).eps * max(len(S), 1) * max(float(np.max(np.abs(lam), initial=0)), 1e-300) * 8
+    if np.any(lam < -tol):
+        raise ValueError("interface Schur form must be positive semidefinite")
+    active = lam > tol
+    N = V[:, ~active]
+    Sp = (V[:, active] / lam[active]) @ V[:, active].T
     d = A.H[a] - B.H[b]
-    return A.g[a] + B.g[b] + np.einsum("ij,jk,ik->i", d, Sp, d)
+    out = A.g[a] + B.g[b] + np.einsum("...i,ij,...j->...", d, Sp, d)
+    # Floating path has a numerical rank tolerance; use export_edges when
+    # resolving extremely weak positive couplings is part of the contract.
+    residual = np.linalg.norm(d @ N, axis=-1)
+    feasible = residual <= 1e-10 * np.maximum(np.linalg.norm(d, axis=-1), 1.0)
+    return np.where(feasible, out, np.inf)

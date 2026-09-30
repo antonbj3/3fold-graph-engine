@@ -33,7 +33,7 @@ What the federation does, and the rule behind each step:
   CONTRADICTION (README "conf": the node is opened, no winner is picked; the probe point is the centre
   of the intersection). Boxes disjoint → a REGIME BOUNDARY; the probe point is the middle of the gap,
   which is where the transition has to be.
-* INFERRED links. s→x from one graph and x→o from the other, no asserted s→o: sign = product,
+* INFERRED links. s→x from one graph and x→o from the other, retaining asserted s→o conflicts: sign = product,
   validity = intersection of the two boxes. Empty intersection → rejected and kept in `rejected`
   with the reason. An inferred link carries its two claim ids, is never written into the claim set,
   and is flagged when its two legs share a root source.
@@ -164,6 +164,9 @@ class InferredLink:
     p: float
     shared_origin: bool
     status: str = "INFERRED"      # never "ASSERTED"
+    contradicts: tuple[str, ...] = ()
+    instance: str = ""
+    regime: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -202,6 +205,7 @@ class Federation:
                 "sign": 1 if c["sign"] > 0 else -1,
                 "box": {v: (float(lo), float(hi)) for v, (lo, hi) in c.get("validity", {}).items()},
                 "evidence": list(c.get("evidence", [])), "cost": float(c.get("cost", 1.0)),
+                "instance": c.get("instance", ""), "regime": c.get("regime", {}),
             }
 
     @property
@@ -275,6 +279,11 @@ class Federation:
             for a in cl:
                 for b in cl:
                     if a["sign"] > 0 > b["sign"]:
+                        from .typed_throws import Claim, regime_intersection
+                        if a.get("instance") and b.get("instance") and a["instance"] != b["instance"]:
+                            continue
+                        if regime_intersection([a.get("regime", {}), b.get("regime", {})]) is None:
+                            continue
                         inter = box_intersection(a["box"], b["box"])
                         if inter is not None or not self.use_validity:
                             kind, pt = "CONTRADICTION", _centre(inter or a["box"], self._logv)
@@ -290,6 +299,19 @@ class Federation:
                         seen.add(key)
                         out.append(Probe(kind, pair, pt, (a["id"], b["id"]), cost=max(a["cost"], b["cost"]),
                                          region_if=region, decides=decides))
+        from .typed_throws import Claim, frustrated_cycles, box_intersection_many
+        signed = [Claim(c["id"], c["graph"], "sign", subject=c["pair"][0], object=c["pair"][1],
+                        sign=c["sign"], box=c["box"] if self.use_validity else {},
+                        regime=c.get("regime", {}), instance=c.get("instance", ""))
+                  for c in self.claims.values()]
+        for cycle in frustrated_cycles(signed):
+            if cycle.cls != "contradiction" or len(cycle.claims) == 2:
+                continue
+            cl = [self.claims[cid] for cid in cycle.claims]
+            region = box_intersection_many([c["box"] for c in cl]) if self.use_validity else {}
+            out.append(Probe("CYCLE", cl[-1]["pair"], _centre(region or {}, self._logv), cycle.claims,
+                             cost=max(c["cost"] for c in cl), decides=[region or {}],
+                             region_if={1: region or {}, -1: region or {}}))
         return out
 
     # -- inferred links ----------------------------------------------------------------------------
@@ -303,7 +325,14 @@ class Federation:
             s, x = a["pair"]
             for b in by_subject.get(x, []):
                 o = b["pair"][1]
-                if o == s or (s, o) in bp or (cross_graph_only and a["graph"] == b["graph"]):
+                if o == s or (cross_graph_only and a["graph"] == b["graph"]):
+                    continue
+                from .typed_throws import regime_intersection
+                if a.get("instance") and b.get("instance") and a["instance"] != b["instance"]:
+                    continue
+                regime = regime_intersection([a.get("regime", {}), b.get("regime", {})])
+                if regime is None:
+                    rejected.append({"legs": (a["id"], b["id"]), "reason": "categorical regimes do not intersect"})
                     continue
                 inter = box_intersection(a["box"], b["box"])
                 if inter is None and self.use_validity:
@@ -315,8 +344,22 @@ class Federation:
                 pa, pb = (pa if a["sign"] > 0 else 1 - pa), (pb if b["sign"] > 0 else 1 - pb)
                 ra = frozenset().union(*[self.roots(e) for e in a["evidence"]]) if a["evidence"] else frozenset()
                 rb = frozenset().union(*[self.roots(e) for e in b["evidence"]]) if b["evidence"] else frozenset()
+                instance = a.get("instance") or b.get("instance", "")
+                opposite = []
+                for c in bp.get((s, o), []):
+                    if c["sign"] == a["sign"] * b["sign"]:
+                        continue
+                    if instance and c.get("instance") and instance != c["instance"]:
+                        continue
+                    if regime_intersection([regime, c.get("regime", {})]) is None:
+                        continue
+                    if self.use_validity and box_intersection(box, c["box"]) is None:
+                        continue
+                    opposite.append(c["id"])
                 links.append(InferredLink(s, x, o, a["sign"] * b["sign"], box, (a["id"], b["id"]),
-                                          self.transitivity * pa * pb, bool(ra & rb)))
+                                          self.transitivity * pa * pb, bool(ra & rb),
+                                          contradicts=tuple(opposite), instance=instance,
+                                          regime={k: sorted(v) for k,v in regime.items()}))
         return links, rejected
 
     # -- next experiment ---------------------------------------------------------------------------
@@ -347,7 +390,9 @@ class Federation:
             pr.extent = self._extent(pr)
             pr.value = pr.evpi * pr.extent * ((1 + pr.dependents) if weight_dependents else 1) / pr.cost
             key = (pr.pair, tuple(sorted(pr.point.items())))
-            if key not in best or pr.value > best[key].value:
+            priority = (pr.kind == "CYCLE", pr.kind == "CONTRADICTION", pr.value)
+            old = best.get(key)
+            if old is None or priority > (old.kind == "CYCLE", old.kind == "CONTRADICTION", old.value):
                 best[key] = pr
         # open points (no decided sign: a gap, or a balanced contradiction) come first; measured in e2, this
         # order does not depend on the reliability prior, while min(p,1−p) alone loses when the prior is too low.
@@ -379,6 +424,8 @@ class Federation:
         from the same-sign claim up to the probe point (one transition between the two claims ⇒
         everything on that side of the point has that sign), so repeated probing bisects the gap."""
         sign = 1 if sign > 0 else -1
+        if probe.kind == "CYCLE":
+            raise ValueError("a cycle witness needs an explicit edge-specific claim; use add_graph")
         cid = f"MEAS:{len(self.claims)}"
         self._parents.setdefault(source, [])
         box = probe.region_if.get(sign) or {v: (x, x) for v, x in probe.point.items()}
