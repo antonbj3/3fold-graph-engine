@@ -33,8 +33,26 @@ not taken from the reported factors:
 |---|---:|---:|---:|---:|---:|---:|---:|
 | S1, against control B | 125 | 5 | 25.0 | 0.452–0.514 s | 0.213 s | **10.76×** | 10.76× |
 | S1, against the strongest control | 125 | 5 | 25.0 | 0.452–0.514 s | 0.11–0.13 s | **5.56–6.57×** | 4.6–8.1×, median ~7× |
-| S2 | 125 | 103 | 1.21 | 0.173–0.219 s | ≤ 0.133 s | **≤ 0.82×** | 0.83× |
+| S2 (as first reported) | 125 | 103 | 1.21 | 0.173–0.219 s | ≤ 0.133 s | ≤ 0.82× | 0.83× |
+| S2 (corrected admission) | 125 | 125 | **1.00** | 0.173–0.219 s | ≤ 0.133 s | **≤ 0.68×** | — |
 | S3 | 102 | 30 | 3.40 | 0.051–0.066 s | ≤ 0.035 s | **≤ 1.97×** | 2.0× |
+
+S2's row moved after review, and the reason is the span rule again. Its 103 bases were admitted by a
+check that did not identify the moments, the same defect the field lane's own review found in its three
+isotropic controls. Under the corrected admission S2 admits nothing from any of its 125 bases, so
+`reach = 1.00`; allowing fresh answers for the 48 targets no basis covers gives an optimistic
+`reach = 1.4205`. The law then gives 0.68× and 0.96× instead of 0.82×. S2 is a loss under all three
+readings, which sharpens rather than weakens the point: `reach` is what decides, and a `reach` near 1
+cannot be rescued by any `start` or `step`. Source: `J3B_COVER_TRANSFER`, reviewed in
+`root_review/J3B_COVER_TRANSFER/RESULTS.md`.
+
+A second measured caution belongs with it, because it is the opposite of what a covering design is
+usually sold on. **Coverage is not low variance.** On the same consumer, a randomized design that
+covers 100 % of the 300 target rows within the real 360-cell budget, against 66.18 % for the sampling
+it replaces, carries **17.34× higher** global Horvitz-Thompson variance, because the unchosen points
+have inclusion probability zero. Only coverage plus population-proportional extra draws turns that
+into 2.07× lower variance, and then at 5 760 cells rather than 360 — sixteen times the budget. A design
+chosen for coverage and read for a mean is a trap.
 
 The S1 control matters more than the law does, and it moved under review. Control B used a fixed mesh
 whose widths were 1.26–1.43 % and so left the declared 2 % tolerance unused. A two-level control at the
