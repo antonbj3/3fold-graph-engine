@@ -130,7 +130,7 @@ def _energies(rows, flow, phi, check=lambda: None):
     return upper, energy
 
 
-def certified_cross_resistance(edges, a, b, budget, *, initial_flow="shortest", checkpoint=None, diagnostics=None, initial_potential="distance"):
+def certified_cross_resistance(edges, a, b, budget, *, initial_flow="shortest", checkpoint=None, diagnostics=None, initial_potential="distance", stop=None):
     """Return (lo, hi, local witness) from feasible flow and unit-drop potential.
 
     The default uses no elimination or pseudoinverse. Optional quotient starts
@@ -162,6 +162,16 @@ def certified_cross_resistance(edges, a, b, budget, *, initial_flow="shortest", 
     def check():
         if deadline is not None and perf_counter() >= deadline:
             raise _Expired
+
+    def settled(lo, hi):
+        # ``stop`` lets a caller end refinement as soon as its own question is
+        # decided, without weakening the bounds: both are exact when it fires.
+        # Only a caller that supplies ``stop`` also gets the exact-interval exit;
+        # the default path keeps its historical update count, which
+        # test_default_matches_preserved_t1 pins.
+        if stop is None:
+            return False
+        return lo == hi or stop(lo, hi)
 
     if a == b:
         return F(0), F(0), ResistanceWitness("same_port", elapsed_seconds=perf_counter()-started)
@@ -377,7 +387,7 @@ def certified_cross_resistance(edges, a, b, budget, *, initial_flow="shortest", 
         p, rz = z.copy(), float(residual@z)
         # A floating breakdown merely stops proposals, leaving exact bounds.
         with np.errstate(over='ignore',invalid='ignore',divide='ignore'):
-            while budget.max_updates is None or updates < budget.max_updates:
+            while not settled(lo, hi) and (budget.max_updates is None or updates < budget.max_updates):
                 check()
                 ap = matvec(p); denom = float(p@ap)
                 if not math.isfinite(denom) or denom <= 0 or not math.isfinite(rz) or rz <= 0:
@@ -415,7 +425,7 @@ def certified_cross_resistance(edges, a, b, budget, *, initial_flow="shortest", 
                 improve_projected_flow(raw)
                 if checkpoint is not None:
                     checkpoint(lo, hi, updates, flow, phi)
-                if lo == hi:
+                if lo == hi or settled(lo, hi):
                     break
                 z = residual/degree
                 next_rz = float(residual@z)
@@ -427,7 +437,7 @@ def certified_cross_resistance(edges, a, b, budget, *, initial_flow="shortest", 
             cg_proposals()
         if budget.refinement == "tree":
             improve_projected_flow()
-        while budget.refinement != "cg" and (budget.max_updates is None or updates < budget.max_updates):
+        while budget.refinement != "cg" and not settled(lo, hi) and (budget.max_updates is None or updates < budget.max_updates):
             check()
             step = updates // 2
             if updates % 2 == 0 and chord_indices and budget.refinement == "cycle":
@@ -468,7 +478,7 @@ def certified_cross_resistance(edges, a, b, budget, *, initial_flow="shortest", 
                 improve_projected_flow()
             if checkpoint is not None:
                 checkpoint(lo, hi, updates, flow, phi)
-            if lo == hi:
+            if lo == hi or settled(lo, hi):
                 break
             if updates % (2 * width) == 0:
                 if not sweep_changed:

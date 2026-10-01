@@ -33,13 +33,16 @@ from fractions import Fraction
 from ._rational_interface import nullspace, solve_right, rref
 from .certified_resistance import (certified_cross_resistance, ResistanceBudget,
                                    verify_resistance_witness)
+from .certified_decision import (certified_decision, verify_decision_witness,
+                                 certified_decisions, verify_decision_batch)
 
 import numpy as np
 import scipy.sparse as sp
 import scipy.sparse.linalg as spla
 
 __all__ = ["GraphInterface", "cross_resistance", "certified_cross_resistance",
-           "ResistanceBudget", "verify_resistance_witness"]
+           "ResistanceBudget", "verify_resistance_witness", "certified_decision",
+           "verify_decision_witness", "certified_decisions", "verify_decision_batch"]
 
 
 @dataclass
