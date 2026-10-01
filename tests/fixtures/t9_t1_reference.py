@@ -2,8 +2,7 @@
 
 Edges are (tail, head, conductance). Integers and Fractions are exact; real
 floating inputs mean their represented binary value. Returned endpoints are
-Fractions (or +inf), never inward-rounded floats. The default does not assemble
-a Laplacian. Optional distance quotients assemble a matrix of at most 64 groups.
+Fractions (or +inf), never inward-rounded floats. No Laplacian is assembled.
 
 An integer budget limits refinement attempts AFTER mandatory initialization.
 ResistanceBudget(seconds=...) instead limits total wall time, including that
@@ -130,27 +129,14 @@ def _energies(rows, flow, phi, check=lambda: None):
     return upper, energy
 
 
-def certified_cross_resistance(edges, a, b, budget, *, initial_flow="shortest", checkpoint=None, diagnostics=None, initial_potential="distance"):
-    """Return (lo, hi, local witness) from feasible flow and unit-drop potential.
-
-    The default uses no elimination or pseudoinverse. Optional quotient starts
-    solve a capped group system; on small graphs with singleton classes this can
-    coincide with the full system. Large-graph witness and verification still
-    bind to every original edge. Initial construction is separately charged.
-    ``initial_flow`` selects shortest, edge_disjoint, retained_sp, or the frozen
-    routed policy. ``initial_potential`` selects distance, hub_harmonic,
-    tree_voltage, distance_quotient, or port_conditioned_quotient. ``checkpoint``
-    is a research trace hook called on exact endpoints; diagnostics also cost work.
+def certified_cross_resistance(edges, a, b, budget):
+    """Return (lo, hi, local witness) without elimination or a pseudoinverse.
 
     ``budget=0`` constructs just the start witnesses; larger integer budgets
     give a deterministic nested sequence. To cap total work by wall time use
     ``ResistanceBudget(seconds=t)``. If the latter cannot pay the initial edge
     scan and certificate construction the interval is [0, inf].
     """
-    if initial_flow not in ("shortest", "edge_disjoint", "retained_sp", "routed"):
-        raise ValueError("unknown initial flow")
-    if initial_potential not in ("distance", "hub_harmonic", "tree_voltage", "distance_quotient", "port_conditioned_quotient"):
-        raise ValueError("unknown initial potential")
     started = perf_counter()
     a, b = _node(a), _node(b)
     if isinstance(budget, Integral) and not isinstance(budget, bool):
@@ -203,64 +189,6 @@ def certified_cross_resistance(edges, a, b, budget, *, initial_flow="shortest", 
         for u in adj:
             check()
             phi[u] = min(F(1), dist[u] / dist[a]) if u in dist else F(0)
-        if initial_potential in ("distance_quotient", "port_conditioned_quotient"):
-            from .instance_slack import distance_quotient_potential
-            quotient_start = perf_counter()
-            proposed_phi, quotient_details = distance_quotient_potential(rows,adj,a,b,dist,check,condition_ports=initial_potential=="port_conditioned_quotient")
-            if proposed_phi is not None:phi = proposed_phi
-            if diagnostics is not None:
-                diagnostics.update(quotient_details)
-                diagnostics["quotient_seconds"] = perf_counter()-quotient_start
-        if initial_potential == "tree_voltage":
-            phi = {b: F(0)}
-            u = a
-            while u != b:
-                check()
-                phi[u] = dist[u]/dist[a]
-                u = parent[u][0]
-            for u in adj:
-                check()
-                if u not in done:
-                    phi[u] = F(0)
-                    continue
-                branch, v = [], u
-                while v not in phi:
-                    check()
-                    branch.append(v)
-                    v = parent[v][0]
-                for v in reversed(branch):
-                    phi[v] = phi[parent[v][0]]
-        if initial_potential == "hub_harmonic":
-            hubs = sorted((u for u in done if u not in (a,b)),
-                          key=lambda u: (-sum(rows[i][2] for _,i,_ in adj[u]),u))[:2]
-            touched = 0
-            for u in hubs:
-                check()
-                degree = sum(rows[i][2] for _,i,_ in adj[u])
-                phi[u] = sum(rows[i][2]*phi[v] for v,i,_ in adj[u])/degree
-                touched += len(adj[u])
-            if diagnostics is not None:
-                diagnostics["startup_harmonic_coordinates"] = len(hubs)
-                diagnostics["startup_harmonic_edge_touches"] = touched
-        flow_choice = initial_flow
-        if initial_flow == "routed":
-            from .instance_slack import select_initial_flow
-            flow_choice, route_statistic = select_initial_flow(adj,done)
-            if diagnostics is not None:
-                diagnostics["route_statistic"] = route_statistic
-                diagnostics["route_flow_selected"] = flow_choice
-        if flow_choice != "shortest":
-            from .instance_slack import avoided_hub_flow
-            proposed, details = avoided_hub_flow(rows, adj, a, b, check)
-            if diagnostics is not None:
-                diagnostics.update(details)
-            if proposed is not None:
-                if flow_choice == "retained_sp":
-                    old_u = sum(f*f/c for (_,_,c),f in zip(rows,flow))
-                    new_u = sum(f*f/c for (_,_,c),f in zip(rows,proposed))
-                    if new_u < old_u: flow = proposed
-                else:
-                    flow = proposed
         hi, energy = _energies(rows, flow, phi, check)
         lo = 1 / energy
         chord_indices = []
@@ -271,11 +199,6 @@ def certified_cross_resistance(edges, a, b, budget, *, initial_flow="shortest", 
                 chord_indices.append(i)
         coordinates = sorted(done - {a, b})
         startup = perf_counter() - started
-        if diagnostics is not None:
-            from .instance_slack import structural_stats
-            stats_started = perf_counter()
-            diagnostics["statistics"] = structural_stats(rows,adj,a,b,dist,lo,hi,parent)
-            diagnostics["statistics_seconds"] = perf_counter()-stats_started
     except _Expired:
         return F(0), math.inf, ResistanceWitness(
             "uninformative", elapsed_seconds=perf_counter()-started,
@@ -296,8 +219,6 @@ def certified_cross_resistance(edges, a, b, budget, *, initial_flow="shortest", 
         return z
 
     updates, exhausted = 0, False
-    if checkpoint is not None:
-        checkpoint(lo, hi, updates, flow, phi)
     width = max(len(chord_indices), len(coordinates), 1)
     bits, sweep_changed = budget.bits, False
 
@@ -413,8 +334,6 @@ def certified_cross_resistance(edges, a, b, budget, *, initial_flow="shortest", 
                     phi,energy = candidate_phi,candidate_energy
                     lo = 1/energy
                 improve_projected_flow(raw)
-                if checkpoint is not None:
-                    checkpoint(lo, hi, updates, flow, phi)
                 if lo == hi:
                     break
                 z = residual/degree
@@ -466,8 +385,6 @@ def certified_cross_resistance(edges, a, b, budget, *, initial_flow="shortest", 
             updates += 1
             if budget.refinement == "tree" and coordinates and updates % (2*len(coordinates)) == 0:
                 improve_projected_flow()
-            if checkpoint is not None:
-                checkpoint(lo, hi, updates, flow, phi)
             if lo == hi:
                 break
             if updates % (2 * width) == 0:

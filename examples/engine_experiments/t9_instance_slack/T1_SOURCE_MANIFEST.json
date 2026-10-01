@@ -1,0 +1,26 @@
+[
+  {
+    "file": "src/graph_engine/graph_interface.py",
+    "source_sha256": "f409e05a01b225fc273f71c5b5d251e3a6adb112e2d62924f270e5fff0134054",
+    "copied_sha256": "f409e05a01b225fc273f71c5b5d251e3a6adb112e2d62924f270e5fff0134054",
+    "sha256_after": "f409e05a01b225fc273f71c5b5d251e3a6adb112e2d62924f270e5fff0134054"
+  },
+  {
+    "file": "src/graph_engine/certified_resistance.py",
+    "source_sha256": "82c572165f40fdef0c33ed7724ac5f2627f9dc19b21f12bd085bfc16d0325cfb",
+    "copied_sha256": "82c572165f40fdef0c33ed7724ac5f2627f9dc19b21f12bd085bfc16d0325cfb",
+    "sha256_after": "82c572165f40fdef0c33ed7724ac5f2627f9dc19b21f12bd085bfc16d0325cfb"
+  },
+  {
+    "file": "tests/test_certified_resistance.py",
+    "source_sha256": "60b3f62df44c4282a5623dc526bc93f7ce60a0e4605f82363bc3b48ab69c0a95",
+    "copied_sha256": "60b3f62df44c4282a5623dc526bc93f7ce60a0e4605f82363bc3b48ab69c0a95",
+    "sha256_after": "60b3f62df44c4282a5623dc526bc93f7ce60a0e4605f82363bc3b48ab69c0a95"
+  },
+  {
+    "file": "examples/engine_experiments/certified_resistance.md",
+    "source_sha256": "67bcfaf1eb27986a352eda57a5ae9911975885c7befc2da8178e5bc5a1a80ca9",
+    "copied_sha256": "67bcfaf1eb27986a352eda57a5ae9911975885c7befc2da8178e5bc5a1a80ca9",
+    "sha256_after": "67bcfaf1eb27986a352eda57a5ae9911975885c7befc2da8178e5bc5a1a80ca9"
+  }
+]

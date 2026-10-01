@@ -1,0 +1,122 @@
+[
+  {
+    "id": "G1",
+    "parent_source_ids": [
+      "T9_INSTANCE_SLACK_GRAPH",
+      "T1_CERT_RESISTANCE",
+      "T7_DECIDE_WITHOUT_SOLVING",
+      "PMAX_ROUTING"
+    ],
+    "hypothesis": "degree/hub prediction",
+    "changed_operation": "unchanged T1",
+    "executed_outcome": "edge count rho .539 holdout; hub share -.361",
+    "binding_requirement": "fixed-schedule coverage and terminal dependence",
+    "next_brief": "T9C_PORT_ROUTER",
+    "evidence": "/mnt/games-240/research/claude24h_night/T9_INSTANCE_SLACK_GRAPH"
+  },
+  {
+    "id": "G2",
+    "parent_source_ids": [
+      "T9_INSTANCE_SLACK_GRAPH",
+      "T1_CERT_RESISTANCE",
+      "T7_DECIDE_WITHOUT_SOLVING",
+      "PMAX_ROUTING"
+    ],
+    "hypothesis": "avoid maximum hub",
+    "changed_operation": "8 greedy edge-disjoint paths",
+    "executed_outcome": "CG12 FULL3459 9.294->5.082; two hard cases unchanged",
+    "binding_requirement": "single alternative support and dual-side slack",
+    "next_brief": "T9B_THRESHOLD_QUOTIENT",
+    "evidence": "/mnt/games-240/research/claude24h_night/T9_INSTANCE_SLACK_GRAPH"
+  },
+  {
+    "id": "G3",
+    "parent_source_ids": [
+      "T9_INSTANCE_SLACK_GRAPH",
+      "T1_CERT_RESISTANCE",
+      "T7_DECIDE_WITHOUT_SOLVING",
+      "PMAX_ROUTING"
+    ],
+    "hypothesis": "single-threshold routing",
+    "changed_operation": "frozen 3.245 native policy",
+    "executed_outcome": "holdout mean .216509->.205760; F1 loses to ED",
+    "binding_requirement": "size/port distribution transfer",
+    "next_brief": "T9C_PORT_ROUTER",
+    "evidence": "/mnt/games-240/research/claude24h_night/T9_INSTANCE_SLACK_GRAPH"
+  },
+  {
+    "id": "leaf",
+    "parent_source_ids": [
+      "T9_INSTANCE_SLACK_GRAPH",
+      "T1_CERT_RESISTANCE",
+      "T7_DECIDE_WITHOUT_SOLVING",
+      "PMAX_ROUTING"
+    ],
+    "hypothesis": "remove zero-current branches",
+    "changed_operation": "leaf support + exact extension",
+    "executed_outcome": "star4096 gap2046.5->0 at 0; small F1 effect",
+    "binding_requirement": "F1 has large non-tree core",
+    "next_brief": "T9B_THRESHOLD_QUOTIENT",
+    "evidence": "/mnt/games-240/research/claude24h_night/T9_INSTANCE_SLACK_GRAPH"
+  },
+  {
+    "id": "warm_hub",
+    "parent_source_ids": [
+      "T9_INSTANCE_SLACK_GRAPH",
+      "T1_CERT_RESISTANCE",
+      "T7_DECIDE_WITHOUT_SOLVING",
+      "PMAX_ROUTING"
+    ],
+    "hypothesis": "central coordinate defect",
+    "changed_operation": "two harmonic hub coordinates",
+    "executed_outcome": "small cycle gains; CG12 unchanged",
+    "binding_requirement": "defect spread across chord geometry",
+    "next_brief": "T9B_THRESHOLD_QUOTIENT",
+    "evidence": "/mnt/games-240/research/claude24h_night/T9_INSTANCE_SLACK_GRAPH"
+  },
+  {
+    "id": "tree_voltage",
+    "parent_source_ids": [
+      "T9_INSTANCE_SLACK_GRAPH",
+      "T1_CERT_RESISTANCE",
+      "T7_DECIDE_WITHOUT_SOLVING",
+      "PMAX_ROUTING"
+    ],
+    "hypothesis": "zero-flow tree potential",
+    "changed_operation": "constant branches",
+    "executed_outcome": "F1 cycle gap worsens; CG12 unchanged",
+    "binding_requirement": "non-tree chord energy",
+    "next_brief": "T9B_THRESHOLD_QUOTIENT",
+    "evidence": "/mnt/games-240/research/claude24h_night/T9_INSTANCE_SLACK_GRAPH"
+  },
+  {
+    "id": "quotient",
+    "parent_source_ids": [
+      "T9_INSTANCE_SLACK_GRAPH",
+      "T1_CERT_RESISTANCE",
+      "T7_DECIDE_WITHOUT_SOLVING",
+      "PMAX_ROUTING"
+    ],
+    "hypothesis": "dual restricted energy",
+    "changed_operation": "exact distance quotient",
+    "executed_outcome": "fullbank cycle128 975.906->1.740",
+    "binding_requirement": "boundary grouped with nuisance vertices",
+    "next_brief": "T9B_THRESHOLD_QUOTIENT",
+    "evidence": "/mnt/games-240/research/claude24h_night/T9_INSTANCE_SLACK_GRAPH"
+  },
+  {
+    "id": "conditioned",
+    "parent_source_ids": [
+      "T9_INSTANCE_SLACK_GRAPH",
+      "T1_CERT_RESISTANCE",
+      "T7_DECIDE_WITHOUT_SOLVING",
+      "PMAX_ROUTING"
+    ],
+    "hypothesis": "boundary representation",
+    "changed_operation": "singleton ports + quotient",
+    "executed_outcome": "fullbank cycle128 1.131; CG12 .919; no new close signs",
+    "binding_requirement": "within-class geometry and theta margins",
+    "next_brief": "T9B_THRESHOLD_QUOTIENT",
+    "evidence": "/mnt/games-240/research/claude24h_night/T9_INSTANCE_SLACK_GRAPH"
+  }
+]

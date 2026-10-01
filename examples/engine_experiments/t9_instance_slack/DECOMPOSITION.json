@@ -1,0 +1,15 @@
+{
+  "parent": "T9_INSTANCE_SLACK_GRAPH; PMAX_ROUTING; T1_CERT_RESISTANCE; T7_DECIDE_WITHOUT_SOLVING",
+  "decision_and_observable": {"decision":"strict sign of R-theta", "primary_gap":"(U-L)/L", "secondary_gap":"(U-L)/R_exact", "cost_unit":"T1 refinement attempts, separately startup edge touches and seconds"},
+  "constituents": ["oriented incidence B", "positive rational conductances c", "terminal injection b", "conserved unit flow f", "unit-drop potential phi", "fundamental-cycle and coordinate schedule"],
+  "interactions": ["Bf=b exactly", "U=sum(f*f/c)", "D=sum(c*(B^T phi)^2)", "L=1/D", "L<=R<=U"],
+  "governing_relations": {"gap_factorization":"1+gap_lo=(U/R)*(R/L)", "strict_sign":"U<theta or L>theta", "hanging_leaf":"zero current; potential equals its attachment", "hub_harmonic_update":"phi_u=sum(c_uv*phi_v)/sum(c_uv); D decreases"},
+  "leaves": [
+    {"name":"variational bounds", "status":"DERIVED_UNDER_ASSUMPTIONS", "regime":"finite undirected positive resistor model; exact rational arithmetic", "provenance":"Thomson/Dirichlet; T1 exact witness verifier"},
+    {"name":"free-statistic correlation", "status":"UNKNOWN", "regime":"distribution and budget dependent", "stopping_argument":"measure on adversarial split; no universal inference"},
+    {"name":"document-edge conductance semantics", "status":"UNKNOWN", "regime":"F1 unit synthetic relation conductance", "stopping_argument":"no empirical edge law provided; structural findings only"},
+    {"name":"threshold consumer workload", "status":"UNKNOWN", "regime":"ratios around exact resistance are diagnostics", "stopping_argument":"native consumer theta distribution unavailable"}
+  ],
+  "reconstruction":"flow and potential supply separate error factors; routing changes initialization only; support pruning and harmonic extension preserve original graph's exact certificate",
+  "discriminating_test":"400 exact graphs, 200 unseen holdout; same updates; report all rho, cost, censored sign counts; one exact containment violation stops lane"
+}
