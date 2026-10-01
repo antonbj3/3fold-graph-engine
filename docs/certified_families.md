@@ -266,6 +266,41 @@ So the gate reads: before computing a quantity against a threshold, read what se
 declared over and what set the code evaluates. If they differ, the verdict is undetermined no matter how
 exact the arithmetic is, and a sample that passes is not evidence that the declaration holds.
 
+### The census: this is not an exception
+
+Measured across all 175 requirements in the corpus. **167 carry both an identifiable declared domain and
+an identifiable evaluated set**; 7 are point requirements with no declared domain and 1 has a domain with
+no locatable evaluation. Of the 167, **101 (60.5 %) evaluate a strict subset of what they declare**.
+
+| form | count | flips | holds | undetermined |
+|---|---:|---:|---:|---:|
+| finite sample of a continuum | 48 | 11 | 23 | 14 |
+| grid over a continuum | 27 | 5 | 12 | 10 |
+| subset of a finite set | 20 | 4 | 7 | 9 |
+| boundary vs interior | 6 | 0 | 2 | 4 |
+| **total** | **101** | **20** | **44** | **37** |
+
+**20 verdicts flip.** The 44 that hold each do so on a stated basis — exact coverage, proved monotonicity,
+a corner theorem, exhaustive enumeration, or witness sufficiency — and never on a bare sample. The corpus
+declares its domains explicitly, often in a frozen pre-registration: one job records that a ratio "is the
+*continuum* value" while shipping a seven-value grid.
+
+### The asymmetry that makes the repair cheap
+
+One exactly evaluated rational point inside the declared set refutes a universal claim. No number of
+points establishes one. So the flip risk sits almost entirely on requirements asserted to be **met**, and
+refuting a false MET needs neither monotonicity nor root isolation — just one exact point.
+
+Measured on the fixture above: all 57 point-feasible designs are exactly violated, 47 at ω = 7/20 and 10
+at ω = 13/10, none left undetermined. The starkest case is the stopband the two-point test never
+examined. Mask 3247 passes both sampled frequencies — 0.2253 at ω = 1.35 and 0.1891 at ω = 1.70 against
+a 0.25 cap — and reaches **0.7503750725724 at ω = 41/26, three times the cap**, inside the declared band.
+A design booked as meeting the requirement exceeds it threefold.
+
+This also bounds the earlier caution correctly. That the band minimum sits at an endpoint on a grid is
+indeed not a certificate — but only for establishing MET. For refutation the endpoint is not needed at
+all: any single exact interior point that violates the bound closes the question.
+
 ## What is not claimed
 
 No speed claim for a single certified answer: 7.7× for the field lane's single answer has 66 % of its
