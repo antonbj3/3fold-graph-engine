@@ -43,28 +43,27 @@ def _port_claim(part: Part, port: Port, side: str) -> dict:
     return {"subject": port.q, "object": other, "validity": dict(part.box), "units": units}
 
 
+def _port_link(A: Part, o: Port, B: Part, i: Port) -> Link:
+    """Check one supply occurrence, rather than another port with the same name."""
+    reasons, notes = [], []
+    tc = typecheck_link(_port_claim(A, o, "a"), _port_claim(B, i, "b"), concepts=[{"id": o.q}])
+    for r in tc["reasons"]:
+        (notes if r.startswith(_OPERATOR_ONLY_REASONS) else reasons).append(r)
+    notes += tc["notes"]
+    if o.kind != i.kind:
+        reasons.append(f"port_kind_mismatch:{o.kind}!={i.kind}")
+    if regime_intersection([A.regime, B.regime]) is None:
+        bad = [ax for ax in set(A.regime) & set(B.regime) if not set(A.regime[ax]) & set(B.regime[ax])]
+        reasons.append("regime_disjoint:" + ",".join(sorted(bad)))
+    conf = assumption_conflicts(A.assumptions, B.assumptions)
+    if conf:
+        reasons.append("assumption_conflict:" + ";".join(f"{x}|{y}" for x, y in conf))
+    return Link(A.id, B.id, o.q, not reasons, reasons, notes)
+
+
 def link(A: Part, B: Part) -> list[Link]:
     """All candidate links A→B over shared quantities, each with its verdict."""
-    out = []
-    for o in A.outputs:
-        for i in B.inputs:
-            if o.q != i.q:
-                continue
-            reasons, notes = [], []
-            tc = typecheck_link(_port_claim(A, o, "a"), _port_claim(B, i, "b"), concepts=[{"id": o.q}])
-            for r in tc["reasons"]:
-                (notes if r.startswith(_OPERATOR_ONLY_REASONS) else reasons).append(r)
-            notes += tc["notes"]
-            if o.kind != i.kind:
-                reasons.append(f"port_kind_mismatch:{o.kind}!={i.kind}")
-            if regime_intersection([A.regime, B.regime]) is None:
-                bad = [ax for ax in set(A.regime) & set(B.regime) if not set(A.regime[ax]) & set(B.regime[ax])]
-                reasons.append("regime_disjoint:" + ",".join(sorted(bad)))
-            conf = assumption_conflicts(A.assumptions, B.assumptions)
-            if conf:
-                reasons.append("assumption_conflict:" + ";".join(f"{x}|{y}" for x, y in conf))
-            out.append(Link(A.id, B.id, o.q, not reasons, reasons, notes))
-    return out
+    return [_port_link(A, o, B, i) for o in A.outputs for i in B.inputs if o.q == i.q]
 
 
 def best_link(A: Part, B: Part) -> Link | None:
@@ -106,13 +105,17 @@ def evaluate_chain(parts: list[Part]) -> Chain:
             return Chain([p.id for p in parts], links, False, False, [], None, None, "none")
         links.append(l)
         ok_adj &= l.ok
-    avail = {i.q for i in parts[0].inputs}          # the chain's head consumes its own inputs as given
+    # The head's inputs are external supplies by the existing chain convention.
+    # Keep their actual types, and every earlier output occurrence: quantity
+    # names alone do not establish typed AND-input closure.
+    avail = [(parts[0], i) for i in parts[0].inputs]
     missing = []
     for p in parts:
         for i in p.inputs:
-            if i.required and not i.given and i.q not in avail and p is not parts[0]:
+            if (i.required and not i.given and p is not parts[0]
+                    and not any(o.q == i.q and _port_link(a, o, p, i).ok for a, o in avail)):
                 missing.append((p.id, i.q))
-        avail |= {o.q for o in p.outputs}
+        avail.extend((p, o) for o in p.outputs)
     reg = regime_intersection([p.regime for p in parts])
     box = box_intersection_many([p.box for p in parts])
     from itertools import combinations

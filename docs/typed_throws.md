@@ -8,9 +8,14 @@ There are no new model dependencies.
 
 `Part` declares inputs/outputs (`Port`), operator tokens, unit dimensions,
 categorical regimes, validity boxes, assumptions and provenance reach.
-`evaluate_chain` checks adjacent links, required inputs, all assumptions and the
-whole regime. `closure_value` follows directed AND inputs and refuses incompatible
-sets. Source inputs must be explicitly given for closed execution.
+`evaluate_chain` checks adjacent links, every required input's typed supply,
+all assumptions and the whole regime. Supply may come from an earlier part,
+including a non-adjacent part, and must obey the existing unit-dimension and
+port-kind link rules. One compatible adjacent link cannot satisfy a second mismatched
+required input. The head's external inputs retain their declared types;
+explicitly given inputs need no earlier producer. `closure_value` follows
+directed AND inputs and refuses incompatible sets. Source inputs must be
+explicitly given for closed execution.
 
 `StructuralImage.value_Q` and `closure_value` are structural information models:
 unit elasticities and reach-dependent noise are declared modeling choices. They
