@@ -113,6 +113,15 @@ degenerate case is part of the same gate: a box of zero width still has a non-ze
 point-box can carry a non-zero value. Returning zero there was a real defect, found by
 `T6_PARAMETRIC_METER` on `l = u = (0, 1)`, where the true value is `(e − 1) / (2(e + 1)) = 0.2310585786`.
 
+Monotonicity is sufficient but not the only sufficient condition, and the second known one is cheaper
+to test. The field lane's stiffness-box work (`STYVHETSINTERVALL`) established that the whole solution
+set lies in the convex hull of the corners exactly when all corner determinants carry the same sign.
+That is a free gate of the same kind: a determinant sign per corner decides whether the corners suffice
+for velocity and wrench, with no appeal to monotonicity. Their contact energy satisfies neither
+condition, which is why its minimum sits in the interior and all 16 corners miss it. So the gate reads:
+establish per-coordinate monotonicity, or a same-sign corner-determinant condition, or treat the sweep
+as a sample.
+
 ## Gate 3: green controls check only the directions their rows span
 
 A set of controls that all pass validates a linear, or linearised, model only in the directions their
