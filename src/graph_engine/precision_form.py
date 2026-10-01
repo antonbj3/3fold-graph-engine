@@ -298,6 +298,39 @@ class PrecisionForm:
         sign, ld = np.linalg.slogdet(np.eye(len(H)) + M)
         return float(ld / (2 * _LOG2)) if sign > 0 else float("-inf")
 
+    def gaussian_set_value_bits(self, H, noise_covariance) -> float:
+        """Gaussian I(x; Hx + e) in bits for a supplied full SPD Cov(e).
+
+        Uses this form's posterior covariance, with the same gauge convention
+        as set_value_bits. Use a proper prior for absolute information claims.
+        This method always uses the Gaussian model; it does not compute exact
+        discrete Bernoulli information. The caller supplies the joint error
+        model: neither zero covariance nor this value certifies independence.
+        Correlated errors do not inherit best_set's submodularity guarantee.
+        """
+        if np.iscomplexobj(H) or np.iscomplexobj(noise_covariance):
+            raise ValueError("real Gaussian observation model required")
+        H = np.atleast_2d(np.asarray(H, float))
+        R = np.asarray(noise_covariance, float)
+        if H.ndim != 2 or H.shape[1] != self.d or R.shape != (len(H), len(H)):
+            raise ValueError("H and noise covariance dimensions must agree")
+        if not np.all(np.isfinite(H)) or not np.all(np.isfinite(R)):
+            raise ValueError("finite observation model required")
+        if len(H) == 0:
+            return 0.0
+        scale = max(float(np.max(np.abs(R))), np.finfo(float).tiny)
+        if not np.allclose(R, R.T, rtol=1e-12, atol=1e-12 * scale):
+            raise ValueError("symmetric noise covariance required")
+        try:
+            L = np.linalg.cholesky(R)
+        except np.linalg.LinAlgError as exc:
+            raise ValueError("SPD noise covariance required; singular models need an explicit treatment") from exc
+        W = np.linalg.solve(L, H)
+        sign, ld = np.linalg.slogdet(np.eye(len(H)) + W @ self.cov() @ W.T)
+        if sign <= 0 or not np.isfinite(ld):
+            raise ValueError("invalid Gaussian information determinant")
+        return float(ld / (2 * _LOG2))
+
     def value_of(self, cands: list[Candidate], exact_bernoulli: bool = True) -> float:
         return self.set_value_bits(np.array([c.h for c in cands]), np.array([c.sigma for c in cands]),
                                    exact_bernoulli=exact_bernoulli)
