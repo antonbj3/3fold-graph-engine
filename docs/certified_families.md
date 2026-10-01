@@ -291,6 +291,19 @@ One exactly evaluated rational point inside the declared set refutes a universal
 points establishes one. So the flip risk sits almost entirely on requirements asserted to be **met**, and
 refuting a false MET needs neither monotonicity nor root isolation — just one exact point.
 
+The other side of the asymmetry is not closed by sampling harder; it is closed by changing the kind of
+statement. To **establish** a universal over a continuum, turn the requirement into a root count on a
+rational polynomial. For the stopband above, writing `T² = |A|²/|B|²` from two cofactors and substituting
+`t = ω²` gives a rational `P(t) = |B|² − 16|A|²`; a positive endpoint value plus **exactly zero roots** on
+`[169/100, 49/16]`, with the denominator nonzero at positive frequency by the positive imaginary quadratic
+form of the principal minor, certifies the cap on the **whole band**. Measured on the same fixture: of 57
+designs the two-point test had admitted, 40 are refuted by one exact point each and the remaining **17 are
+certified over the entire interval** this way — and the approved fraction moves 57/4096 → 17/4096, a
+difference of −5/512, while the cheapest design is unchanged.
+
+So the two directions need different instruments, and both are cheap once named: a point to refute, a root
+count to establish. What is expensive is neither — it is a sample asked to do either job.
+
 Measured on the fixture above: all 57 point-feasible designs are exactly violated, 47 at ω = 7/20 and 10
 at ω = 13/10, none left undetermined.
 
