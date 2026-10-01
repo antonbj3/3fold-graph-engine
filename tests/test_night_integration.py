@@ -1,7 +1,7 @@
-"""Night integration: evidence federation + continuum backend + fast probe choice together.
+"""Integration: evidence federation + continuum backend + fast probe choice together.
 
-The three features were developed on separate branches. These tests exercise the seams
-between them on real ``CompiledRegime``/``ContinuumRegime`` objects:
+These tests exercise the seams between the three features on real
+``CompiledRegime``/``ContinuumRegime`` objects:
 
 * a federated native regime keeps the covariance probe path of its inputs and chooses the
   same probe as the direct loop and as a regime built from the evidence-ID union;

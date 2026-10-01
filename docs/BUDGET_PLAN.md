@@ -71,10 +71,10 @@ branches / correlation, the three constructed cases, and two independent checks:
 enumerated **policy-tree** oracle on 120 random finite cases (max abs error 2.2e-16) and the
 `settle_cost` special case. The existing `tests/test_plan_value.py` is untouched and still passes.
 
-## Root integration review
+## Integration review
 
 Call `plan_value.budgeted_plan` from the existing planning API, with transition
-types from `budget_plan`. Root review replaced recursive path accounting with
+types from `budget_plan`. The integration review replaced recursive path accounting with
 bottom-up values and expected moments: merged branches are evaluated once per
 (state,budget), including a tested1100-step case. Stop wins exact value ties;
 small real improvements are reflected in both the selected policy and reported

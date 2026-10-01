@@ -141,7 +141,7 @@ their own data, full costs, calibration protocol and independent evaluation.
 
 ### Integrated outcome contract
 
-Root review adds atomic validation of reported cost and executable calibration
+The integration review adds atomic validation of reported cost and executable calibration
 identity before belief replacement. `calibrated_outcome` carries calibration
 version, channel fingerprint, executable instrument and source root; `apply`
 checks these against the planned action. The declared channel cost prices the

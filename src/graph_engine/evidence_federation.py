@@ -23,8 +23,8 @@ Refusals (never silent):
 
 Scope: probes are declared conditionally independent given the world. Unknown overlap
 (no IDs), a persistent unknown reliability shared across nodes, or different priors do
-not reduce to this additive merge; see the Lane D research report for the exact
-mixture forms. ID equality is trusted as provenance; this module does not authenticate it.
+not reduce to this additive merge; their exact mixture forms are outside this
+module's scope. ID equality is trusted as provenance; this module does not authenticate it.
 """
 from __future__ import annotations
 

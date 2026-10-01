@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import importlib
 import itertools
-import json
 import math
 import os
 import sys
@@ -19,6 +18,7 @@ import numpy as np
 import pytest
 
 from graph_engine.compiled_regime import CompiledRegime
+from graph_engine.instruments import ContactSolverSweep, SweepFamily, _reliability_of
 
 _KERNEL_SRC = os.environ.get("KERNEL_ENGINE_SRC")
 _BUILD = os.environ.get("BRIDGE_BUILD_DIR")
@@ -128,7 +128,7 @@ def _check_parity(reg, r, methods=("batch", "covariance"), expect_path=None):
         if path["resolved"]:
             assert got[1] == ref[1]                      # multi-cell tie re-decided by the direct path
         # Value scale: the loss is in bits x length, at most (hi - lo). Relative to the loss itself
-        # neither path is 1e-12-accurate on nearly resolved regimes (80-bit referee in lane Y:
+        # neither path is 1e-12-accurate on nearly resolved regimes (an 80-bit reference:
         # direct is 1e-8 relative off at before = 2e-4 bits), so the tolerance is on that scale.
         scale = _REL * (reg.hi - reg.lo)
         assert abs(got[1] - ref[1]) <= scale
@@ -307,24 +307,52 @@ def test_native_chunked_covariance_rows(kernels):
     assert np.max(np.abs(full - part) / full) < 1e-14         # BLAS order may differ per chunk
 
 
-def _e39_regimes(R, LK):
-    base = os.path.join(os.path.dirname(__file__), "..", "examples", "engine_experiments")
-    spec = importlib.util.spec_from_file_location(
-        "e39_fast_probe", os.path.join(base, "e39_contact_solver_sweep_instrument.py"))
-    e39 = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(e39)
-    from graph_engine.instruments import ContactSolverSweep, _reliability_of
-    d = json.load(open(os.path.join(base, "e39_contact_solver_data.json")))
+# ---------------------------------------------------------------- self-contained instrument fixture
+_FIXTURE_RELIABILITY = 0.75
+
+
+def _fixture_rows(seed, n, x_lo, x_hi, tilt):
+    """Deterministic synthetic scenes for a ContactSolverSweep.
+
+    Method A's log-advantage over B varies across the condition axis (``tilt`` is the slope), so
+    the family has both easy and hard regions and the instrument's MEASURED spread drives p.
+    """
+    rng = np.random.default_rng(seed)
+    xs = np.sort(rng.uniform(x_lo, x_hi, n))
+    center = 0.5 * (x_lo + x_hi)
+    rows = []
+    for i, x in enumerate(xs):
+        a = float(rng.uniform(50.0, 5000.0))
+        l = tilt * (x - center) + float(rng.normal(0.0, 0.35))
+        b = float(a * math.exp(l))
+        rows.append(SweepFamily(f"scene{i:03d}", float(x), a, b,
+                                float(rng.uniform(1e-3, 5.0)), tag="fixture"))
+    return rows
+
+
+def _fixture_regimes(R, LK):
+    """Native regimes built from a self-contained instrument fixture.
+
+    Same shape as the contact-solver sweep integration: three named families, each reduced by
+    ``ContactSolverSweep`` to a sign/probability at every scene and entered under one lineage root
+    per family. No repository-external data or example script is read.
+    """
+    windows = {"router": 0.14, "rho": 0.30, "channels": 0.22}
+    signs = {"router": -1, "rho": -1, "channels": 1}
+    spec = (("router", 0, 24, -2.0, 2.0, 0.30),
+            ("rho", 1, 30, -1.5, 1.5, 0.45),
+            ("channels", 2, 40, 0.0, 4.0, 0.25))
     out = []
-    for build, name, hw in ((e39.router_family, "router", 0.14), (e39.rho_family, "rho", 0.30),
-                            (e39.channel_family, "channels", 0.22)):
-        rows, _facit, pair, _var, sign = build(d)
+    for name, seed, n, x_lo, x_hi, tilt in spec:
+        rows = _fixture_rows(seed, n, x_lo, x_hi, tilt)
         lo = min(r.x for r in rows) - 1e-9
         hi = max(r.x for r in rows) + 1e-9
-        ins = ContactSolverSweep(f"{name}:scene", rows, f"campaign:{name}:scene", window=hw)
+        pair = (f"{name}:scene", "method_advantage_over_baseline")
+        sign = signs[name]
+        ins = ContactSolverSweep(f"{name}:scene", rows, f"campaign:{name}:scene", window=windows[name])
         reg = CompiledRegime(lo, hi, backend=R, covariance_backend=LK,
-                             reliability=e39.SEED_RELIABILITY, p_flip=0.3,
-                             claims=[(lo, hi, sign, 1.0, e39.SEED_RELIABILITY)])
+                             reliability=_FIXTURE_RELIABILITY, p_flip=0.3,
+                             claims=[(lo, hi, sign, 1.0, _FIXTURE_RELIABILITY)])
         for r in rows:
             rd = ins.probe(pair, r.x)
             reg.add_probe(float(r.x), rd.sign, _reliability_of(rd.p), 1.0,
@@ -334,10 +362,10 @@ def _e39_regimes(R, LK):
 
 
 @_native
-def test_native_parity_e39_closed_loop(kernels):
+def test_native_parity_closed_loop_fixture(kernels):
     R, LK = kernels
     _need_cov(kernels)
-    for name, reg in _e39_regimes(R, LK):
+    for name, reg in _fixture_regimes(R, LK):
         rng = np.random.default_rng(len(name))
         for t in range(6):
             x, _ = _check_parity(reg, 0.95)
