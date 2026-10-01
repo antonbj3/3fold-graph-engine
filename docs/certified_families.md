@@ -16,34 +16,46 @@ Three quantities, not one factor:
 | `reach` | how many members one basis covers before the certificate stops binding | sets the achievable factor; it is a property of the problem, not of the implementation |
 
 For a family of `m` members needing `b = ceil(m / reach)` bases, the amortized cost per answer is
-`(b · start + m · step) / m`, against an uncertified control cost `c` per answer. The factor is
-`c · m / (b · start + m · step)`. It rises with `m` while `b` stays fixed and falls back by a step each
-time a new basis is needed. Reporting a single factor without `reach` is therefore not reproducible:
-the same implementation gives 10.76× and 47.1× on the same `start` and `step`.
+`(b · start + m · step) / m`, against an uncertified control cost `c` per answer. Writing `reach = m/b`,
+the factor is
+
+    factor = c / (start / reach + step)
+
+so `m` cancels: the family's size does not set the factor, `reach` does. Reporting a single factor
+without `reach` is therefore not reproducible — the same implementation gives 10.76× and 47.1× on the
+same `start` and `step`.
+
+Checked against three families whose only common parameter is `step`. `start` and `c` are recomputed
+here from each family's raw wall-clock totals (`(total − m · step) / b` and the control's own median),
+not taken from the reported factors:
+
+| family | `m` | bases | `reach` | `start` per basis | `c` | factor from the law | reported |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| S1 | 125 | 5 | 25.0 | 0.452–0.514 s | 0.213 s | **10.76×** | 10.76× |
+| S2 | 125 | 103 | 1.21 | 0.173–0.219 s | 0.133 s | **0.82×** | 0.83× |
+| S3 | 102 | 30 | 3.40 | 0.051–0.066 s | 0.035 s | **1.97×** | 2.0× |
+
+The three families differ in mesh, in basis cost by an order of magnitude, and in control by a factor
+of six, and the one formula reproduces all three medians. S2 is the informative row: at `reach = 1.21`
+no `start` and no `step` can produce a win, because almost every member pays for its own basis. That is
+what a family-basis method has to move; nothing else in the law is adjustable.
 
 ## The two measured instances
 
 **Guaranteed scalar over a parameter family** (field lane `SOL_FALT_VERIFIERFONSTER_20261001`,
 `raw/gate_summary.json`, `raw/pilot_share_v1.json`). Strength tolerance frozen at 2 % width:
 
-| | `start` | `step` | `reach` | `m` | bases | per answer | control | factor |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| S1 gate | ~0.46 s | 0.46 ms | ~25 | 125 | 5 | 18.6–21.1 ms | 209–217 ms | **10.76×** |
-| share pilot, no width acceptance | 0.507 s | 0.46 ms | ∞ (assumed) | 125 | 1 | 4.52 ms | 213 ms | 47.1× |
-| single answer | — | — | — | 1 | 1 | — | — | 7.7× |
-| S2 | — | — | ~1.2 | 125 | 103 | — | — | 0.83× |
-| S3 | — | — | ≈1 | — | — | — | — | 2.0× |
+The three rows above are that lane's S1, S2 and S3 gates. Two further measurements from it:
 
-The pilot's 47.1× is the ceiling one basis would give and is not an achieved factor; its shared
-fraction is `U(2) = 0.998` and `U(64) = 0.945`. S2 at 103 bases falls below the control. S3 reached no
-basis past `k ≈ 1`. The same mechanism therefore spans 0.83× to 10.76× purely through `reach`.
+| | `m` | bases | per answer | control | factor |
+|---|---:|---:|---:|---:|---:|
+| share pilot, no width acceptance | 125 | 1 | 4.52 ms | 213 ms | 47.1× |
+| single answer, no family | 1 | 1 | — | — | 7.7× |
 
-One number in that table is not reproduced by the cost law and is marked open: with `start = 0.46 s`
-and 103 bases the law gives 379.5 ms per answer, a factor of 0.56×, not the reported 0.83×. Reaching
-0.83× needs `start = 0.311 s` on S2. Either S2's basis is cheaper than S1's, or its control differs;
-until the field lane states which, S2's factor stands as reported and not as derived. The S1 row is
-consistent: the law gives 18.86 ms and 11.29× against the control's midpoint, inside the reported
-18.6–21.1 ms and bracketing the paired median of 10.76×.
+The pilot's 47.1× is the ceiling one basis would give, not an achieved factor; its shared fraction is
+`U(2) = 0.998` and `U(64) = 0.945`. The single answer's 7.7× has 66 % of its cost in the solve itself.
+`step = 0.46 ms` is measured on the S1 pilot only; on S2 and S3 it is not separately measured and is
+negligible in both.
 
 **Certified decisions over a threshold family** (`certified_decision`, lane
 `T7_DECIDE_WITHOUT_SOLVING`, reviewed in `root_review/T7_DECIDE_WITHOUT_SOLVING/RESULTS.md`).
