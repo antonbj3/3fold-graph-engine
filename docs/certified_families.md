@@ -292,7 +292,13 @@ points establishes one. So the flip risk sits almost entirely on requirements as
 refuting a false MET needs neither monotonicity nor root isolation — just one exact point.
 
 Measured on the fixture above: all 57 point-feasible designs are exactly violated, 47 at ω = 7/20 and 10
-at ω = 13/10, none left undetermined. The starkest case is the stopband the two-point test never
+at ω = 13/10, none left undetermined.
+
+The asymmetry is also what the gate should be made of. Joining the census onto a 122-row threshold
+ledger by node and refusing **MET** where the evaluated set is a strict subset with no stated basis —
+while leaving VIOLATED alone, since a subset suffices to refute — blocks **11 of 46 MET verdicts
+(24 %)** and none of the 51 VIOLATED. That is the allocation consequence in one number: the exploitable
+error is concentrated in asserted-met claims, and each costs one exact point to test. The starkest case is the stopband the two-point test never
 examined. Mask 3247 passes both sampled frequencies — 0.2253 at ω = 1.35 and 0.1891 at ω = 1.70 against
 a 0.25 cap — and reaches **0.7503750725724 at ω = 41/26, three times the cap**, inside the declared band.
 A design booked as meeting the requirement exceeds it threefold.
