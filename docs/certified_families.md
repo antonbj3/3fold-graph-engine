@@ -207,6 +207,36 @@ a selector can only buy cost; if neither dominates, measure the oracle ceiling b
 statistic. Reporting a selector's own result without its ceiling cannot distinguish a weak statistic
 from an unreachable target.
 
+## Gate 5: the adjustable quantity is the deciding operation, not the solver
+
+Two lanes on unrelated substrates measured the same shape on the same day, each after a direction
+built on the solver side had been exhausted.
+
+A certified Dirichlet lane spent three rounds on the solver: a quotient potential as a warm start, then
+as a deflation subspace, with spectral mode certificates for the cluster. All of it was outperformed by
+leaving the solver alone and changing **when the exact check runs**. Generating 160 unreliable numerical
+proposals and converting only the final potential — one exact `Fraction` energy scan instead of 160 —
+gives plain cold CG excess **3.6245110366905793e−26 in 0.945–1.182 s**, meeting both the sign and the
+precision requirement in 3/3, where the best solver-side variant needed 7.9 s to reach 1.12e−19. The
+quotient still works; it is 5.5 % better than cold, inside the repetition spread. The diagnosis that
+had motivated the whole direction — a warm start destroying CG's superlinear phase — was wrong: the
+phase was not lost, it arrived later, behind a verification cost that dominated the budget.
+
+A total-variation meter lane split its own factor the same way. Sharing the MPFR preparation across
+calls, with the deciding operation unchanged, gives **1.123–1.289×**. Changing the deciding operation
+on the same sharing gives **1.419–5.919×**, and the two together 1.635–7.611× at τ = 0.20. The
+preparation was the part that looked expensive; it was not the part that was adjustable.
+
+The cost law above says `reach` is the only adjustable quantity in `factor = c/(start/reach + step)`.
+These two measurements say where `reach` lives in practice: in the operation that decides, not in the
+one that computes. So the gate reads: before optimising a solver, a basis, a preconditioner or a shared
+preparation, measure what the **deciding and verifying** operations cost in the same budget. If
+verification is a fixed multiple of iterations, the cheapest correct change is to run it once.
+
+A caveat the lanes themselves recorded, and which this gate inherits: both measurements are on one
+substrate each, against thresholds that are diagnostic rather than native, and a failed construction on
+the solver side never proves that no solver-side construction works.
+
 ## What is not claimed
 
 No speed claim for a single certified answer: 7.7× for the field lane's single answer has 66 % of its
