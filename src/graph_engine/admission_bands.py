@@ -93,6 +93,25 @@ BANDS = ("AUTO_ADMIT", "QUARANTINE", "REJECT")
 BAND_VERDICT = {"AUTO_ADMIT": "admit", "QUARANTINE": "quarantine", "REJECT": "reject"}
 
 
+def apply_admission_obligations(result, obligations):
+    """Carry all scientific admission failures into the existing consumer decision.
+
+    Keep the legacy receipt diagnosis, but prevent a green receipt being read as
+    an accepted result when any requested obligation abstains or vetoes.
+    """
+    out = dict(result); codes = list(out.get("reason_codes", []))
+    for name, check in obligations.items():
+        if check.get("validated") is not True:
+            codes.extend(check.get("reason_codes") or ["OBLIGATION_FAILED"])
+    out["obligations"] = obligations
+    out["reason_codes"] = sorted(set(codes))
+    if codes:
+        out["decision"] = "BLOCK"
+        out["missing"] = list(out.get("missing", [])) + codes
+    out["scientific_admission"] = out.get("decision") == "ALLOW" and out.get("as") == "result"
+    return out
+
+
 def _load_cert_module():
     """Return the video_admission_cert module, or None if it is unavailable."""
     try:

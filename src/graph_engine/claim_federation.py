@@ -84,6 +84,36 @@ Box = dict[str, tuple[float, float]]
 INF = float("inf")
 
 
+def source_family_components(reports):
+    """Conservative independent-unit count for verified, family-bound reports.
+
+    Each report is {verified: bool, source_family: [family IDs]}. Reports sharing
+    any family, including transitively overlapping mixed reports, are one unit.
+    A multi-family report is never several independent observations. These family
+    declarations must come from a trusted provenance registry, not node adjacency.
+    """
+    families = []
+    if not isinstance(reports, (list, tuple)):
+        return dict(valid=False, count=0, reason_codes=["PROVENANCE_MISSING"])
+    for r in reports:
+        if not isinstance(r, dict) or type(r.get("verified")) is not bool:
+            return dict(valid=False, count=0, reason_codes=["PROVENANCE_MISSING"])
+        if r["verified"] is not True:
+            continue
+        f = r.get("source_family")
+        if not isinstance(f, (list, tuple)) or not f or any(not isinstance(x, str) or not x for x in f):
+            return dict(valid=False, count=0, reason_codes=["PROVENANCE_MISSING"])
+        families.append(set(f))
+    components = []
+    for f in families:
+        intersecting = [c for c in components if c & f]
+        for c in intersecting:
+            f |= c; components.remove(c)
+        components.append(f)
+    return dict(valid=True, count=len(components), verified_reports=len(families),
+                components=[sorted(c) for c in components], reason_codes=[])
+
+
 # ------------------------------------------------------------------------------------------------
 # box geometry
 # ------------------------------------------------------------------------------------------------

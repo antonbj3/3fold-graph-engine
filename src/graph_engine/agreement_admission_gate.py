@@ -36,6 +36,73 @@ CALIBRATION_PRECONDITION = ("calibration data must SPAN the adversarial minimum 
                             "cannot self-verify that -- use adversarial_min_registry_check (L210) with a fake-generator.")
 
 
+def equal_selectivity_control(scores, selected, true_labels, candidate_ids, source_families,
+                              n_bootstrap=2000, seed=20261001, min_gain=0.0):
+    """Compare a frozen selection with EVERY single score at exactly the same k.
+
+    Scores must be oriented high=preferred, with selection/score construction frozen
+    before viewing labels. Ties use candidate IDs, never truth. Resample whole source
+    families, recomputing the strongest comparator on each draw. This percentile
+    interval is a calibration diagnostic, not a distribution-free deployment bound.
+    Missing provenance and degenerate scores cannot earn agreement credit.
+    """
+    def fail(code, message):
+        return dict(validated=False, reason_codes=[code], reason=message)
+    try:
+        S = np.asarray(scores, float)
+        A = np.asarray(selected)
+        y = np.asarray(true_labels)
+        ids = list(candidate_ids)
+        fam = list(source_families)
+        if (S.ndim != 2 or S.shape[0] < 2 or y.ndim != 1 or A.shape != y.shape
+                or S.shape[1] != len(y) or len(ids) != len(y) or len(fam) != len(y)
+                or len(y) == 0 or not np.all(np.isfinite(S))
+                or not np.all(np.isin(y, [0, 1])) or not np.all(np.isin(A, [0, 1]))
+                or any(not isinstance(x, str) or not x for x in ids + fam)
+                or len(set(ids)) != len(ids) or not np.isfinite(min_gain) or min_gain < 0
+                or isinstance(n_bootstrap, bool) or not isinstance(n_bootstrap, int)
+                or not 100 <= n_bootstrap <= 100000):
+            return fail("CALIBRATION_INVALID", "finite scores, binary labels, unique IDs and families required")
+        A = A.astype(bool); y = y.astype(float); k = int(A.sum())
+        if k == 0:
+            return fail("CALIBRATION_INVALID", "empty agreement selection")
+        if any(np.ptp(s) == 0 for s in S):
+            return fail("NO_EXCESS_AGREEMENT_GAIN", "constant score cannot provide a ranked control")
+        masks = [A]
+        controls = []
+        for j, s in enumerate(S):
+            order = sorted(range(len(y)), key=lambda i: (-s[i], ids[i]))
+            mask = np.zeros(len(y), bool); mask[order[:k]] = True; masks.append(mask)
+            controls.append(dict(member=j, k=k, hits=int(y[mask].sum()),
+                                 precision=float(y[mask].mean()), selected_ids=[ids[i] for i in order[:k]]))
+        groups = sorted(set(fam)); f = np.asarray(fam)
+        rows_by_family = [np.flatnonzero(f == g) for g in groups]
+        rng = np.random.default_rng(seed); deltas = []; bootstrap_k = []
+        for _ in range(n_bootstrap):
+            rows = np.concatenate([rows_by_family[j] for j in rng.integers(len(groups), size=len(groups))])
+            ka = int(A[rows].sum())
+            if ka == 0:
+                continue
+            ya = y[rows]; p = float(ya[A[rows]].mean()); solo = []
+            for s in S:
+                order = sorted(range(len(rows)), key=lambda i: (-s[rows[i]], ids[rows[i]], i))
+                solo.append(float(ya[order[:ka]].mean()))
+            deltas.append(p - max(solo)); bootstrap_k.append(ka)
+        if len(groups) < 2 or len(deltas) < n_bootstrap * .95:
+            return fail("CALIBRATION_INVALID", "insufficient independent family bootstrap coverage")
+        precision = float(y[A].mean()); best = max(c["precision"] for c in controls)
+        delta = precision - best; ci = np.quantile(deltas, [.025, .975]).tolist()
+        valid = bool(delta > min_gain and ci[0] > min_gain)
+        return dict(validated=valid, k=k, hits=int(y[A].sum()), precision=precision,
+                    controls=controls, best_single_precision=best, delta=delta, delta_ci=ci,
+                    n_families=len(groups), n_bootstrap=n_bootstrap, valid_draws=len(deltas),
+                    bootstrap_k_matched=True, bootstrap_k_range=[min(bootstrap_k), max(bootstrap_k)],
+                    reason_codes=[] if valid else ["NO_EXCESS_AGREEMENT_GAIN"],
+                    reason="excess agreement gain at equal k" if valid else "no confident excess over strongest single score")
+    except (TypeError, ValueError, OverflowError):
+        return fail("CALIBRATION_INVALID", "malformed equal-selectivity calibration")
+
+
 def _coverage(answers, rule, need):
     stk = np.stack(answers, 0); n = stk.shape[1]
     if rule == "all":
@@ -49,7 +116,8 @@ def _coverage(answers, rule, need):
 
 
 def agreement_admission_gate(member_answers, true_labels, strata=None, min_power=0.90, min_competence=None,
-                             agreement_rule="majority", min_coverage=0.05):
+                             agreement_rule="majority", min_coverage=0.05, *,
+                             selection_calibration=None, require_equal_selectivity=False):
     """member_answers: list of K arrays (predicted labels); true_labels: array. Returns dict(admit, verdict,
     decorrelation_validated, certifying_power, coverage, reason, calibration_precondition). verdict in
     {ADMIT, ABSTAIN, VETO}: VETO = a member is blind/correlated (decorrelation fails); ABSTAIN = power below the confident
@@ -140,7 +208,20 @@ def agreement_admission_gate(member_answers, true_labels, strata=None, min_power
         verdict, admit = "ADMIT", True
         reason = ("decorrelated + certifying power %.3f (Wilson lower) >= %.2f + coverage %.3f under '%s'"
                   % (powr.get("certifying_power_lower_ci", powr["certifying_power"]), min_power, cov, agreement_rule))
+    equal = None
+    if selection_calibration is not None:
+        equal = equal_selectivity_control(**selection_calibration)
+    if require_equal_selectivity and equal is None:
+        equal = dict(validated=False, reason_codes=["CALIBRATION_MISSING"],
+                     reason="equal-selectivity calibration required")
+    if equal is not None and not equal["validated"]:
+        if verdict != "VETO":
+            verdict = "ABSTAIN"
+        admit = False
+        reason += "; " + equal["reason"]
     return dict(admit=admit, verdict=verdict, decorrelation_validated=dec["validated"],
+                equal_selectivity_control=equal,
+                agreement_gain_credited=bool(admit and equal and equal["validated"]),
                 blind_members=dec.get("blind_members", []), abstain_members=dec.get("abstain_members", []),
                 certifying_power=powr["certifying_power"], certifying_power_lower_ci=powr.get("certifying_power_lower_ci"),
                 coverage=round(cov, 3), n_members=K, reason=reason, calibration_precondition=CALIBRATION_PRECONDITION,

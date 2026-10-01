@@ -35,7 +35,7 @@ CLI:       python3 scripts/fold_gate.py <submission.json | ->            # gate 
            python3 scripts/fold_gate.py --execute <submission.json>      # Level-2: also re-run the command
            python3 scripts/fold_gate.py --selftest                       # run the 4 real cases, write JSON
 """
-import json, os, re, sys, subprocess
+import json, os, re, sys, subprocess, math
 
 # repo root = parent of scripts/ (this file lives in scripts/)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -102,9 +102,12 @@ def _dig(obj, dotted):
 def _match(claimed, actual, tol):
     """True iff claimed matches actual. Numbers within tol (abs); bool/str/None exact."""
     if isinstance(claimed, bool) or isinstance(actual, bool):
-        return claimed == actual
+        return type(claimed) is type(actual) and claimed == actual
     if isinstance(claimed, (int, float)) and isinstance(actual, (int, float)):
         t = tol if tol is not None else (1e-6 + 1e-6 * abs(actual))
+        if (isinstance(t, bool) or not isinstance(t, (int, float))
+                or not all(math.isfinite(v) for v in (claimed, actual, t)) or t < 0):
+            return False
         return abs(claimed - actual) <= t
     return claimed == actual
 

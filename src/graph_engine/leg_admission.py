@@ -85,7 +85,8 @@ def pairwise_min_decorrelation(candidate_scores: np.ndarray, existing_legs: np.n
     return float(np.max([abs(_spearman(candidate_scores, L[:, j])) for j in range(L.shape[1])]))
 
 
-def admits(candidate_scores: np.ndarray, existing_legs: np.ndarray, truth: np.ndarray, min_gain: float = 0.01) -> tuple:
+def admits(candidate_scores: np.ndarray, existing_legs: np.ndarray, truth: np.ndarray, min_gain: float = 0.01,
+           *, selection_calibration=None, require_equal_selectivity=False) -> tuple:
     """Admission decision for a candidate cert-leg -- the DIRECT test: does adding it to the strength-weighted fused ensemble
     IMPROVE held-out prediction of `truth`? (This is what actually matters; partial coverage & pairwise rho are diagnostics.)
     candidate_scores: (n) per-region softness of the candidate leg.
@@ -105,12 +106,23 @@ def admits(candidate_scores: np.ndarray, existing_legs: np.ndarray, truth: np.nd
     solo = _spearman(candidate_scores, truth)
     pair = pairwise_min_decorrelation(candidate_scores, L)
     admit = bool(np.isfinite(gain) and gain > min_gain)
+    equal = None
+    if selection_calibration is not None:
+        from .agreement_admission_gate import equal_selectivity_control
+        equal = equal_selectivity_control(**selection_calibration)
+    if require_equal_selectivity and equal is None:
+        equal = dict(validated=False, reason_codes=["CALIBRATION_MISSING"])
+    if equal is not None and not equal["validated"]:
+        admit = False
     reason = ("admit: adding it lifts the fused held-out prediction by %+.3f (unique coverage %.3f)" % (gain, cov)
               if admit else
               "reject: fused-prediction gain %+.3f <= %.2f (unique coverage %.3f) -- pairwise min|rho|=%.2f, solo=%.3f: "
               "pairwise-decorr and/or solo-predictive is NOT enough (decorr-signal != decorr-coverage); it adds no lift"
               % (gain, min_gain, cov, pair, solo))
-    return admit, {"fused_gain": gain, "partial_coverage": cov, "solo_predictiveness": solo,
+    if equal is not None and not equal["validated"]:
+        reason = "reject: " + equal.get("reason", "equal-selectivity calibration required")
+    return admit, {"equal_selectivity_control": equal,
+                   "fused_gain": gain, "partial_coverage": cov, "solo_predictiveness": solo,
                    "pairwise_min_decorr": pair, "min_gain": min_gain, "reason": reason}
 
 
