@@ -326,6 +326,34 @@ quantifier, and the row costs whatever an exact evaluator costs. State which of 
 before computing, not after. A ceiling counted over declared domains is a logical potential — it is not a
 promise that the evaluators exist.
 
+### Removable and worth removing are different questions
+
+A census of hand-set numerical tolerances over one engine and its member nodes found **376** that gate a
+decision, out of 971 lexical candidates, of which **102** sit on a quantity that can be made exact: a
+matrix whose entries are rational or scalable to integers, where rank over a prime field decides what the
+tolerance was guessing. That is a general route, not a single case — but it is only half an answer.
+
+The most expensive of the 102, a `1e-8` with seven consumers, rewrites to an exact identity: with
+`T = diag(n_e)` and `H_ef = coef²(d_e·d_f)²` integer, `G = T⁻¹HT⁻¹` gives `rank(G) = rank(H)` by
+congruence, so `rank_p(H) = E` proves independence over five primes with no threshold at all. Run over 52
+cases it agrees with the old float path in every one: 47 agree, 5 not applicable, **zero** cases where the
+tolerance was wrong. The reason is that the spectrum is two-state — the smallest relative eigenvalue is
+either above `2.4852e-01`, 7.40 decades clear of the threshold, or at `±2.5e-16` — so every tolerance in
+`(1e-15, 1e-2)` returns the same answer. The rewrite buys **threshold-freedom, not correction**.
+
+A neighbouring tolerance in the same file, on the same net, is a different story: at its native `1e-2` it
+returns a gauge of **14** where the exact value is **13**.
+
+So the gate reads: the classification says a threshold *can* be removed; only the **margin between the
+gated quantity and the threshold** says whether it *must*. A census that ranks by class alone puts a
+verdict-correcting tolerance and an assumption-swapping one in the same bucket. Measure the margin on each
+candidate before spending anything on the rewrite — and when a sweep finds no counterexample, that
+certifies nothing about the tolerance. Not found stays not found.
+
+One direction only, and it matters here: `rank_p(H) ≤ rank_Q(H)`. Full rank over the prime field proves
+full rank over ℚ; a lower rank proves nothing, since the prime may divide a maximal minor. Use several
+primes and report a low result as inconclusive unless an exact null vector is exhibited.
+
 ## Gate 7: tell a weak selector from a degenerate criterion
 
 Gate 4 says to measure the ceiling before building a selector. This is what happens when that is skipped,
