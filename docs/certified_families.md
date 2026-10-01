@@ -307,6 +307,39 @@ This also bounds the earlier caution correctly. That the band minimum sits at an
 indeed not a certificate — but only for establishing MET. For refutation the endpoint is not needed at
 all: any single exact interior point that violates the bound closes the question.
 
+## Gate 7: tell a weak selector from a degenerate criterion
+
+Gate 4 says to measure the ceiling before building a selector. This is what happens when that is skipped,
+measured three times in one day on three unrelated substrates.
+
+| what was built | arena | measured ceiling |
+|---|---|---|
+| routing a total-variation meter on an instance statistic | 265 104 evaluation cells | **6 cells**, 0.002263 pp |
+| choosing a solver against a direct sparse factorisation | 3 457 unknowns, 1–8 s budgets | the incumbent already answered in ~1 s |
+| ranking next actions on a research graph | 3 939 rank rows | **1 row** |
+
+The third is the clearest, because its own report concluded "superiority not shown" — which reads as a
+verdict on the selector. Measuring the control instead reverses it. The selector discriminates: 904
+distinct scores over 1 443 rows. The criterion does not: the unlock column is identically zero in all
+1 443 rows, one distinct value, and the equally informed control carries one nonzero score across 3 939
+rows with zero immediate unlocks. No selector can be superior where there is nothing to be superior at.
+
+So the gate reads: when a selector fails to beat its control, measure the **control's own discriminating
+power** before concluding anything about the selector. Two different failures look identical in a
+head-to-head number:
+
+- a **weak selector** — the control spreads, the selector does not;
+- a **degenerate criterion** — neither spreads, because the arena has no signal to rank.
+
+The cheap test is a spread count on the criterion column: distinct values, and the share that are
+nonzero. One distinct value is not a close contest, it is an absent one. Reporting the head-to-head
+without it cannot distinguish the two, which is the same defect Gate 4 names on the other side: a
+selector's result without its ceiling cannot distinguish a weak statistic from an unreachable target.
+
+A caution on the inference: a ceiling of one row bounds what a selector can win **on that arena with
+that criterion**. It is not evidence that the question is unanswerable, and three instances in one
+corpus do not make it a general rate.
+
 ## What is not claimed
 
 No speed claim for a single certified answer: 7.7× for the field lane's single answer has 66 % of its
