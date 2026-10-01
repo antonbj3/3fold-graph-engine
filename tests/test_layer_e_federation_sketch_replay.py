@@ -601,3 +601,97 @@ def test_lineage_information_can_never_hit_the_out_of_range_branch():
     assert outside > 0.4
     v = np.array([2.0, -1.0])
     assert np.isclose(v @ np.ones(2), 1.0) and float(v @ Sigma @ v) < 1e-30
+
+
+def test_typed_gate_on_inferred_links_fires_on_the_shared_variable():
+    """Wiring claim_types.typecheck_link into Federation.inferred_links, for the field lane's Farkas
+    pilot: it reported 0 of 224 contradiction nodes carrying explicit conditions, and T7 independently
+    decided 0 semantic incompatibilities.  Part of the cause was on this side -- `add_graph` dropped
+    the declared `units` and per-claim `scales`, so the typed gate had nothing to check even though
+    typed_throw_ops.compose already emits units.
+
+    Two defects are pinned here.  First the fields now survive ingest.  Second the adapter indexes
+    them under both spellings: `canon` rewrites `grain_size_nm` as `grain size nm` while a units dict
+    keeps the underscores, so the shared-variable lookup missed and the gate passed every pair -- a
+    gate that cannot fail is worse than no gate, because it reads as a check in the receipt.
+    """
+    from graph_engine.claim_federation import Federation
+
+    def build(unit_b, scale_b=None):
+        f = Federation()
+        f.add_graph({"graph_id": "A", "scales": {"grain_size_nm": "log"}, "sources": [{"id": "labA"}],
+                     "claims": [{"id": "1", "subject": "dose", "object": "grain_size_nm", "sign": 1,
+                                 "validity": {"grain_size_nm": (1, 100)}, "evidence": ["labA"],
+                                 "units": {"grain_size_nm": "nm"}}]})
+        c = {"id": "1", "subject": "grain_size_nm", "object": "hardness", "sign": 1,
+             "validity": {"grain_size_nm": (1, 100)}, "evidence": ["labB"],
+             "units": {"grain_size_nm": unit_b}}
+        if scale_b:
+            c["scales"] = {"grain_size_nm": scale_b}
+        f.add_graph({"graph_id": "B", "sources": [{"id": "labB"}], "claims": [c]})
+        return f
+
+    # the declared fields reach the stored claim
+    f = build("nm")
+    assert f.claims["A:1"]["units"] == {"grain_size_nm": "nm"}
+
+    # a wrong dimension, an unknown unit and a scale clash each remove the link, with a reason
+    for unit_b, scale_b, needle in (("mmHg", None, "unit_dimension_mismatch"),
+                                    ("widgets", None, "unknown_unit"),
+                                    ("nm", "linear", "scale_mismatch")):
+        f = build(unit_b, scale_b)
+        assert len(f.inferred_links(typecheck=False)[0]) == 1          # untyped path proposes it
+        links, rejected = f.inferred_links(typecheck=True)
+        assert links == [] and any(needle in r["reason"] for r in rejected), (unit_b, scale_b, rejected)
+
+    # and a legitimate unit change of the same dimension still composes
+    links, rejected = build("um").inferred_links(typecheck=True)
+    assert len(links) == 1 and rejected == []
+
+
+def test_typed_gate_rows_span_what_the_gate_decides():
+    """The field lane's span rule, applied to this gate.  A set of green controls validates a model
+    only in the directions its coefficient rows span; a question outside that span is unchecked no
+    matter how many controls pass (their case: three isotropic controls diag(c,c,c) give rows all
+    proportional to (1,1,1), span only the trace, and so cannot see an axis permutation that preserves
+    it -- three greens and a disjoint interval).  Source: SOL_FALT_VERIFIERFONSTER_20261001 REVIEW.md
+    §F2.
+
+    So the gate's own tests must span its rejection reasons, not three of them.  Running that spanning
+    set is what showed `value` was dropped at ingest exactly as `units` and `scales` had been, leaving
+    the sign-versus-number check dead while reading as covered.
+    """
+    from graph_engine.claim_federation import Federation
+
+    def fed(b_extra=None, b_subj="grain_size_nm", b_box=None):
+        f = Federation()
+        f.add_graph({"graph_id": "A", "scales": {"grain_size_nm": "log"}, "sources": [{"id": "labA"}],
+                     "claims": [{"id": "1", "subject": "dose", "object": "grain_size_nm", "sign": 1,
+                                 "validity": {"grain_size_nm": (1, 100)}, "evidence": ["labA"],
+                                 "units": {"grain_size_nm": "nm"}}]})
+        f.add_graph({"graph_id": "B", "sources": [{"id": "labB"}],
+                     "claims": [dict({"id": "1", "subject": b_subj, "object": "hardness", "sign": 1,
+                                      "validity": b_box if b_box is not None else {"grain_size_nm": (1, 100)},
+                                      "evidence": ["labB"], "units": {"grain_size_nm": "nm"}},
+                                     **(b_extra or {}))]})
+        return f
+
+    # one row per direction the gate can decide, plus the pass case
+    rows = [("", {}, None),
+            ("units", {"b_extra": {"units": {"grain_size_nm": "mmHg"}}}, "unit_dimension_mismatch"),
+            ("unknown unit", {"b_extra": {"units": {"grain_size_nm": "widgets"}}}, "unknown_unit"),
+            ("scale", {"b_extra": {"scales": {"grain_size_nm": "linear"}}}, "scale_mismatch"),
+            ("statement kind", {"b_extra": {"value": 3.0}}, "mixed_statement_kinds")]
+    for label, kw, needle in rows:
+        f = fed(**kw)
+        links, rejected = f.inferred_links(typecheck=True)
+        assert len(f.inferred_links(typecheck=False)[0]) == 1, label
+        if needle is None:
+            assert len(links) == 1 and rejected == [], label
+        else:
+            assert links == [] and any(needle in r["reason"] for r in rejected), (label, rejected)
+
+    # two reasons are already enforced by the untyped path, so the gate adds nothing there; recorded
+    # so a later reader does not count them as the gate's contribution
+    for kw in ({"b_subj": "other_thing"}, {"b_box": {"grain_size_nm": (200, 300)}}):
+        assert fed(**kw).inferred_links(typecheck=False)[0] == []

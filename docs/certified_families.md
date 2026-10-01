@@ -31,12 +31,20 @@ not taken from the reported factors:
 
 | family | `m` | bases | `reach` | `start` per basis | `c` | factor from the law | reported |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| S1 | 125 | 5 | 25.0 | 0.452–0.514 s | 0.213 s | **10.76×** | 10.76× |
-| S2 | 125 | 103 | 1.21 | 0.173–0.219 s | 0.133 s | **0.82×** | 0.83× |
-| S3 | 102 | 30 | 3.40 | 0.051–0.066 s | 0.035 s | **1.97×** | 2.0× |
+| S1, against control B | 125 | 5 | 25.0 | 0.452–0.514 s | 0.213 s | **10.76×** | 10.76× |
+| S1, against the strongest control | 125 | 5 | 25.0 | 0.452–0.514 s | 0.11–0.13 s | **5.56–6.57×** | 4.6–8.1×, median ~7× |
+| S2 | 125 | 103 | 1.21 | 0.173–0.219 s | ≤ 0.133 s | **≤ 0.82×** | 0.83× |
+| S3 | 102 | 30 | 3.40 | 0.051–0.066 s | ≤ 0.035 s | **≤ 1.97×** | 2.0× |
+
+The S1 control matters more than the law does, and it moved under review. Control B used a fixed mesh
+whose widths were 1.26–1.43 % and so left the declared 2 % tolerance unused. A two-level control at the
+same tolerance — `n = 3`, then `n = 4` for the 29 of 125 that miss 2 % — is 1.6–1.9× cheaper than B, and
+against it S1 is **4.6–8.1×, median about 7×**, not 10.76×. The law is unchanged; `c` was measured
+against a control that was not the strongest one available. S2 and S3 were only compared against B, so
+their `c` is an upper bound and their factors are upper bounds too.
 
 The three families differ in mesh, in basis cost by an order of magnitude, and in control by a factor
-of six, and the one formula reproduces all three medians. S2 is the informative row: at `reach = 1.21`
+of six, and the one formula reproduces all three medians from the raw totals. S2 is the informative row: at `reach = 1.21`
 no `start` and no `step` can produce a win, because almost every member pays for its own basis. That is
 what a family-basis method has to move; nothing else in the law is adjustable.
 
@@ -104,6 +112,31 @@ A corner sweep without an argument for per-coordinate monotonicity is a sample, 
 degenerate case is part of the same gate: a box of zero width still has a non-zero centre, so a
 point-box can carry a non-zero value. Returning zero there was a real defect, found by
 `T6_PARAMETRIC_METER` on `l = u = (0, 1)`, where the true value is `(e − 1) / (2(e + 1)) = 0.2310585786`.
+
+## Gate 3: green controls check only the directions their rows span
+
+A set of controls that all pass validates a linear, or linearised, model only in the directions their
+coefficient rows span. A question outside that span is unchecked however many controls are green. The
+necessary condition is `rank ≥ the number of free parameters the question depends on`.
+
+The minimal case (field lane, `SOL_FALT_VERIFIERFONSTER_20261001` REVIEW.md §F2, L-prism P2): the
+compared bounds are linear in `G_ii` and `Q_ii`, with coefficient rows `(det / s_i²)` and `(s_i² / det)`.
+Three isotropic controls `diag(c, c, c)` for `c = 7/8, 9/8, 5/4` give rows all proportional to
+`(1, 1, 1)`, so they span the trace direction only. Forging the moments by swapping the y and z axes in
+both `G` and `Q` leaves the trace untouched, passes all three controls, and the admitted entry then
+answers `[1.7657, 1.8589]` at `s = (1, 5/4, 3/4)` where an independent certificate gives
+`[1.8850, 1.9089]` — disjoint.
+
+This gate and gate 2 are the same question asked twice: what does a finite set of evaluations actually
+determine. Monotonicity makes corners sufficient for finding an extremum; spanning makes controls
+sufficient for admitting a model.
+
+Applied here, the rule is not only about field meshes. The typed gate on federated claims
+(`Federation.inferred_links(typecheck=True)`) decides four directions — unit dimension, unknown unit,
+scale, and statement kind — and its first test covered three of them. Running a row per direction is
+what exposed that `value` was being dropped at ingest exactly as `units` and `scales` had been, so the
+sign-versus-number check could never fire while reading as covered in the receipt. A gate that cannot
+fail is worse than no gate.
 
 ## What is not claimed
 

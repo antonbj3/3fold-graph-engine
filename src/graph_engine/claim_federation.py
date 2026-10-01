@@ -206,6 +206,15 @@ class Federation:
                 "box": {v: (float(lo), float(hi)) for v, (lo, hi) in c.get("validity", {}).items()},
                 "evidence": list(c.get("evidence", [])), "cost": float(c.get("cost", 1.0)),
                 "instance": c.get("instance", ""), "regime": c.get("regime", {}),
+                # Kept for claim_types.typecheck_link, which needs the declared units and any
+                # per-claim scale override.  Dropping them here is why the typed gate could not fire
+                # on real federated claims: typed_throw_ops.compose already emits `units`.
+                "units": dict(c.get("units", {})) if isinstance(c.get("units"), dict) else {},
+                "scales": dict(c.get("scales", {})) if isinstance(c.get("scales"), dict) else {},
+                # `value` likewise: a claim that states a NUMBER does not compose with one that states
+                # a SIGN, and the typed gate cannot see that unless the number survives ingest. Found
+                # by spanning the gate's own rejection reasons instead of testing three of them.
+                "value": c.get("value"),
             }
 
     @property
@@ -315,7 +324,12 @@ class Federation:
         return out
 
     # -- inferred links ----------------------------------------------------------------------------
-    def inferred_links(self, cross_graph_only: bool = True) -> tuple[list[InferredLink], list[dict]]:
+    def inferred_links(self, cross_graph_only: bool = True,
+                       typecheck: bool = False) -> tuple[list[InferredLink], list[dict]]:
+        """`typecheck=True` runs claim_types.typecheck_link on every candidate pair before proposing it,
+        so a link only enters when the shared concept resolves to ONE canonical id, the shared variable
+        is on the same scale on both sides, and declared units agree dimensionally. Off by default: it
+        removes links that the untyped path proposes, and callers that counted them must opt in."""
         bp = self._by_pair()
         by_subject = defaultdict(list)
         for c in self.claims.values():
@@ -334,6 +348,12 @@ class Federation:
                 if regime is None:
                     rejected.append({"legs": (a["id"], b["id"]), "reason": "categorical regimes do not intersect"})
                     continue
+                if typecheck:
+                    tc = self._typecheck_pair(a, b)
+                    if not tc["ok"]:
+                        rejected.append({"legs": (a["id"], b["id"]),
+                                         "reason": "typecheck: " + "; ".join(tc["reasons"])})
+                        continue
                 inter = box_intersection(a["box"], b["box"])
                 if inter is None and self.use_validity:
                     rejected.append({"legs": (a["id"], b["id"]), "reason": "validity boxes do not intersect"})
@@ -361,6 +381,36 @@ class Federation:
                                           contradicts=tuple(opposite), instance=instance,
                                           regime={k: sorted(v) for k,v in regime.items()}))
         return links, rejected
+
+    def _typecheck_pair(self, a: dict, b: dict) -> dict:
+        """Adapter. A federated claim stores `pair` and `box`; claim_types reads subject/object/validity.
+        Concepts come from this federation's own alias table, so a name that reaches two canonical ids
+        is reported as ambiguous rather than silently canonicalised."""
+        from .claim_types import typecheck_link
+        concepts: dict[str, list[str]] = {}
+        for surface, canon in self._alias.items():
+            concepts.setdefault(canon, []).append(surface)
+        for c in (a, b):
+            for name in c["pair"]:
+                concepts.setdefault(name, [])
+        def keyed(d: dict) -> dict:
+            """Index under BOTH the declared spelling and this federation's canonical one. `canon`
+            normalises `grain_size_nm` to `grain size nm`, while a units dict keeps the underscores,
+            so a lookup by the canonical name silently missed and the gate passed anything."""
+            out = dict(d or {})
+            for k, v in list(out.items()):
+                out.setdefault(self.canon(k), v)
+            return out
+
+        def shape(c: dict, subj: str, obj: str) -> dict:
+            out = {"subject": subj, "object": obj, "validity": dict(c["box"]), "sign": c["sign"],
+                   "units": keyed(c.get("units")), "scales": keyed(c.get("scales"))}
+            if c.get("value") is not None:
+                out["value"] = c["value"]
+            return out
+        return typecheck_link(shape(a, a["pair"][0], a["pair"][1]),
+                              shape(b, b["pair"][0], b["pair"][1]),
+                              concepts=concepts, scales=self.scales)
 
     # -- next experiment ---------------------------------------------------------------------------
     def next_experiments(self, include_inferred: bool = True, weight_dependents: bool = False) -> list[Probe]:
