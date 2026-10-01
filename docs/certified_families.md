@@ -113,14 +113,32 @@ degenerate case is part of the same gate: a box of zero width still has a non-ze
 point-box can carry a non-zero value. Returning zero there was a real defect, found by
 `T6_PARAMETRIC_METER` on `l = u = (0, 1)`, where the true value is `(e − 1) / (2(e + 1)) = 0.2310585786`.
 
-Monotonicity is sufficient but not the only sufficient condition, and the second known one is cheaper
-to test. The field lane's stiffness-box work (`STYVHETSINTERVALL`) established that the whole solution
-set lies in the convex hull of the corners exactly when all corner determinants carry the same sign.
-That is a free gate of the same kind: a determinant sign per corner decides whether the corners suffice
-for velocity and wrench, with no appeal to monotonicity. Their contact energy satisfies neither
-condition, which is why its minimum sits in the interior and all 16 corners miss it. So the gate reads:
-establish per-coordinate monotonicity, or a same-sign corner-determinant condition, or treat the sweep
-as a sample.
+Monotonicity is one sufficient condition. There is a second, with a narrower reach that has to be
+stated, because it is not an alternative for arbitrary functions. The field lane's stiffness-box
+theorem (`STYVHETSINTERVALL`) requires the quantity to be a **rational function whose numerator and
+denominator are both multiaffine** in the box coordinates, that is of degree at most 1 in each `d_i`.
+When the denominator -- there the corner determinant -- has the same non-zero sign at every corner it
+cannot vanish inside the box, and then the whole value set lies in the convex hull of the corner
+values. The multiaffine structure is the load-bearing premise, not the sign test.
+
+It holds for fixed slip directions, where the solution is linear in each `d_i`. It does not hold for
+the contact energy, which is quadratic in the solution, nor for the non-linear Coulomb model -- which
+is why that energy's minimum sits in the interior and all 16 corners miss it. Nor does it hold for the
+total variation above, where `exp(d_i)` is not affine; there monotonicity is the right gate. Neither
+condition subsumes the other.
+
+So the gate reads:
+
+- **(a)** establish monotonicity in each coordinate, or
+- **(b)** establish that the quantity is rational with multiaffine numerator and denominator, and that
+  the denominator has one sign at every corner, or
+- **(c)** treat the sweep as a sample.
+
+The two halves of (b) do different work, and the distinction generalises past this theorem: **the
+structure requirement classifies the quantity, the sign test classifies the instance.** Every routing
+rule in this document has that shape. `pmax` sorts instances of one quantity; what licenses routing at
+all is a property of the quantity, established once. A cheap per-instance test without a per-quantity
+licence is a sample with a number attached.
 
 ## Gate 3: green controls check only the directions their rows span
 
