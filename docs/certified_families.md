@@ -307,6 +307,25 @@ This also bounds the earlier caution correctly. That the band minimum sits at an
 indeed not a certificate — but only for establishing MET. For refutation the endpoint is not needed at
 all: any single exact interior point that violates the bound closes the question.
 
+### What the asymmetry costs, measured
+
+One exact point is cheap only when the quantity *has* an exact evaluator. Applying the asymmetry to the
+37 undetermined rows of the census settled **1 of 25** falsifiable ones. The method was never in doubt;
+the cost was.
+
+The one that settled shows the boundary. Its quantity is a closed form whose only irrationality is a
+single square root, so the violation is certified by a **rational strict lower bound on the margin** —
+`rho_squared = (trace + sqrt(discriminant))/2 = 3.171392072412` against a cap of `3.153587151347`, a
+margin of `+0.017804921065`, with the irrational value never evaluated. The 24 that did not settle are
+nonlinear 3D solid models, four-state nonlinear stiff ODE baselines, and the like: a nonlinear finite
+element model cannot be exactly evaluated at a rational point cheaply.
+
+So the asymmetry is cheap exactly when the quantity has a closed rational form, or one whose
+irrationality can be enclosed by a rational bound. Otherwise the bottleneck is the **evaluator**, not the
+quantifier, and the row costs whatever an exact evaluator costs. State which of the two a requirement is
+before computing, not after. A ceiling counted over declared domains is a logical potential — it is not a
+promise that the evaluators exist.
+
 ## Gate 7: tell a weak selector from a degenerate criterion
 
 Gate 4 says to measure the ceiling before building a selector. This is what happens when that is skipped,
