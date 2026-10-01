@@ -237,6 +237,35 @@ A caveat the lanes themselves recorded, and which this gate inherits: both measu
 substrate each, against thresholds that are diagnostic rather than native, and a failed construction on
 the solver side never proves that no solver-side construction works.
 
+## Gate 6: check the quantifier, not only the quantity
+
+A requirement declared over a set and evaluated at a sample of that set is not a measurement error. It
+is a different statement, and the gap can decide every instance in the set.
+
+A declared spring-graph fixture requires transmission > 0.30 over the band ω ∈ [0.35, 0.61] rad/s. Its
+own code carries `FREQS = (.38, .58, 1.35, 1.7)` and evaluates the requirement at the two in-band
+frequencies. All five surviving designs pass at both sampled points, and all five fail over the band:
+the best, mask 3695, reaches a band minimum of **0.29905929** against the floor of 0.30, short by
+0.3136 %. At the sampled frequencies the same design reads 0.361421 and 1.245276, comfortably above.
+The fixture's own band scan already recorded zero valid designs at this threshold over a 105-point
+grid per window, so the sample and the declaration had been disagreeing in the same directory.
+
+This is Gate 1's shape — distance from the question to the answer — applied to the quantifier rather
+than the quantity. The quantity was computed correctly every time. What differed was *over what* it was
+required to hold.
+
+A caution on the cheap repair: on a 20 001-point grid the minimum sits at the left endpoint ω = 0.35
+for all five masks, which invites the conclusion that one exact rational evaluation at ω = 7/20 settles
+the requirement and no root isolation is needed. The transmission is **not** monotone on the band — it
+dips and returns without going below the endpoint value — so the endpoint being the band minimum is a
+grid observation, not a certificate. What follows is weaker: the endpoint gives the candidate value, and
+what remains is a one-sided band bound, with no interior extremum to locate. Cheaper than isolating a
+critical point, and not free.
+
+So the gate reads: before computing a quantity against a threshold, read what set the requirement is
+declared over and what set the code evaluates. If they differ, the verdict is undetermined no matter how
+exact the arithmetic is, and a sample that passes is not evidence that the declaration holds.
+
 ## What is not claimed
 
 No speed claim for a single certified answer: 7.7× for the field lane's single answer has 66 % of its
