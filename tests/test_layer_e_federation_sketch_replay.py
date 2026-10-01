@@ -555,3 +555,49 @@ def test_bundle_value_prices_a_pair_exactly_and_between_its_bounds():
             assert np.max(np.abs(qq - q2)) < 1e-12                           # the two-step update is the joint update
             realized += p1 * p2 * (float(trial._u(qq @ _F) @ _w) + lam * h(float(qq @ two)))
     assert abs((now - realized) - gp) < 1e-9, (now - realized, gp)
+
+
+def test_lineage_information_can_never_hit_the_out_of_range_branch():
+    """Root audit 1 Oct, prompted by the field's note that a net quantity is not unique when the
+    components are redundant: `lineage_information` returns ‖M⁺1‖² = 1ᵀ(MMᵀ)⁺1, which is the GLS
+    information only when 1 ∈ range(M).  Outside range(M) a zero-variance combination exists and
+    the true information is unbounded, so a finite answer would be wrong rather than conservative.
+
+    That branch is unreachable here, and the reason is structural, not statistical: M is
+    row-normalized, so M·1_roots = 1_reports exactly, which exhibits 1_reports as a member of
+    range(M) for EVERY root set.  Pinned as a test because the natural "fix" for a rank-deficient
+    pinv (add a guard, or fall back to a particular solution) would be a change for a case that
+    cannot occur, and because the sibling site in margin_net — where Σ = DMMᵀD has unequal row
+    gains and the branch IS reachable — is handled deliberately and differently (its docstring:
+    two reports from one root with σ = 0.1 and 0.2 make 2y₁ − y₂ exact under the model, and that
+    combination is not used because it trusts the declared lineage exactly).
+    """
+    import itertools
+    from graph_engine.claim_federation import lineage_information
+    rng = np.random.default_rng(20261001)
+    roots = [f"r{i}" for i in range(6)]
+    checked = 0
+    for n_reports in (2, 3, 5):
+        for _ in range(40):
+            sets = [frozenset(rng.choice(roots, size=int(rng.integers(1, 4)), replace=False)) for _ in range(n_reports)]
+            allroots = sorted(set().union(*sets))
+            M = np.array([[1.0 if x in r else 0.0 for x in allroots] for r in sets])
+            M /= M.sum(1, keepdims=True)
+            one = np.ones(len(sets))
+            # 1 is in range(M): the exhibited preimage is the all-ones vector over roots
+            assert np.allclose(M @ np.ones(len(allroots)), one)
+            U, sv, _ = np.linalg.svd(M)
+            r = int((sv > 1e-12 * sv[0]).sum())
+            assert np.linalg.norm(one - U[:, :r] @ (U[:, :r].T @ one)) < 1e-9
+            # and the returned value is the GLS information 1ᵀ(MMᵀ)⁺1, not merely ‖M⁺1‖²
+            assert np.isclose(lineage_information(sets), float(one @ np.linalg.pinv(M @ M.T, rcond=1e-9) @ one), rtol=1e-6)
+            checked += 1
+    assert checked == 120
+    # the degenerate case does exist for unequal row gains -- the margin_net geometry, kept here as the contrast
+    B = np.array([[0.1], [0.2]])
+    Sigma = B @ B.T
+    U, sv, _ = np.linalg.svd(Sigma)
+    outside = float(np.linalg.norm(np.ones(2) - U[:, :1] @ (U[:, :1].T @ np.ones(2))))
+    assert outside > 0.4
+    v = np.array([2.0, -1.0])
+    assert np.isclose(v @ np.ones(2), 1.0) and float(v @ Sigma @ v) < 1e-30
