@@ -183,6 +183,30 @@ what exposed that `value` was being dropped at ingest exactly as `units` and `sc
 sign-versus-number check could never fire while reading as covered in the receipt. A gate that cannot
 fail is worse than no gate.
 
+## Gate 4: measure dominance before building a selector
+
+A selector between two sound bounds can never beat their pointwise minimum. So before routing by any
+instance statistic, measure whether one branch dominates the other, and measure the **ceiling** a
+perfect selector would reach rather than the performance of the selector in hand.
+
+Measured on 185 808 evaluation cells per bit width and witness, three tolerances, two witnesses: routing
+the total-variation meter on `pmax` gives Δ = 0 pp with a paired 95 % interval of [0, 0] against the best
+single meter in all eighteen combinations. The ceiling is the decisive number: a perfect selector between
+the two branches would take **six additional cells out of 265 104**, 0.002263 pp, in its best
+combination, and 0 or 1 in every other. No statistic can reach a 0.5 pp criterion on that data, so the
+question is closed rather than merely unanswered.
+
+The looseness this was meant to exploit is real and persists in every prefix regime — it is simply not
+exploitable for coverage, because the expensive branch already dominates. What routing can still buy is
+**cost at identical decisions**: gating on the range theorem `TV ≤ tanh((max u − min l)/4)`, with the
+threshold derived from the tolerance rather than fitted, reproduced the cascade's pass decisions exactly
+at **24.69×** less meter time [22.73, 26.68], and 33.28× against range plus the full check.
+
+So the gate reads: establish dominance first. If one branch dominates pointwise, the minimum is free and
+a selector can only buy cost; if neither dominates, measure the oracle ceiling before choosing a
+statistic. Reporting a selector's own result without its ceiling cannot distinguish a weak statistic
+from an unreachable target.
+
 ## What is not claimed
 
 No speed claim for a single certified answer: 7.7× for the field lane's single answer has 66 % of its
