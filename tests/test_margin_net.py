@@ -277,3 +277,48 @@ def test_a_disagreement_at_small_sigma_still_fires():
     assert e.q == pytest.approx(3.777e6, rel=1e-3)
     assert e.p_agree == 0.0 and e.kind == "CONTRADICTION"
     assert np.linalg.matrix_rank(np.diag([s ** 2 for s in CUBE_SIGMAS]), tol=1e-10) == 0   # the absolute read
+
+
+# Whether the DECLARATION could separate two discordant reports is a different question from whether
+# they disagree. A CONTRADICTION on identical boxes implies an axis nobody declared.
+
+def _two_report_edge(v0, v1):
+    n = MarginNet()
+    n.add_sources([dict(id="s0"), dict(id="s1")])
+    n.add_edge("e", ["a", "b"], [dict(id="r0", margin=0.0, sigma=0.01, sources=["s0"], validity=v0),
+                                 dict(id="r1", margin=1.0, sigma=0.01, sources=["s1"], validity=v1)])
+    return n.estimate("e")
+
+
+def test_identical_boxes_say_the_declaration_cannot_separate_them():
+    """No narrowing of the declared axes can ever separate reports that sit at the same box."""
+    est = _two_report_edge({"T": [0.0, 1.0]}, {"T": [0.0, 1.0]})
+    assert est.kind == "CONTRADICTION"
+    assert est.validity_relation == "IDENTICAL"
+
+
+def test_overlapping_but_different_boxes_could_still_be_separated():
+    est = _two_report_edge({"T": [0.0, 2.0]}, {"T": [1.0, 3.0]})
+    assert est.kind == "CONTRADICTION"
+    assert est.validity_relation == "OVERLAPPING"
+
+
+def test_disjoint_boxes_remain_a_regime_boundary():
+    est = _two_report_edge({"T": [0.0, 1.0]}, {"T": [2.0, 3.0]})
+    assert est.kind == "REGIME-BOUNDARY"
+    assert est.validity_relation == "DISJOINT"
+
+
+def test_an_absent_box_is_not_an_identical_box():
+    """Nothing declared leaves the question open; it must not read as 'the same box'."""
+    assert _two_report_edge({}, {}).validity_relation == "UNDECLARED"
+    assert _two_report_edge({"T": [0.0, 1.0]}, {}).validity_relation == "UNDECLARED"
+
+
+def test_an_agreeing_edge_still_reports_the_relation():
+    n = MarginNet()
+    n.add_sources([dict(id="s0"), dict(id="s1")])
+    n.add_edge("e", ["a", "b"], [dict(id="r0", margin=1.0, sigma=0.1, sources=["s0"], validity={"T": [0.0, 1.0]}),
+                                 dict(id="r1", margin=1.01, sigma=0.1, sources=["s1"], validity={"T": [0.0, 1.0]})])
+    est = n.estimate("e")
+    assert est.kind == "OK" and est.validity_relation == "IDENTICAL"

@@ -87,6 +87,14 @@ class EdgeEstimate:
     p_agree: float           # p-value of Q; small = the reports do not estimate one number
     kind: str                # OK | STRESSED | VIOLATED | CONTRADICTION | REGIME-BOUNDARY | NO-DATA
     roots: dict = field(default_factory=dict)      # root source -> weight a_ir
+    validity_relation: str = "UNDECLARED"
+    # How the two most discordant reports' validity boxes stand to each other, which decides whether the
+    # DECLARATION could separate them at all: DISJOINT (each may hold in its own regime -- REGIME-BOUNDARY),
+    # IDENTICAL (same declared box, so no narrowing of the declared axes can ever separate them: a
+    # CONTRADICTION here implies an axis nobody declared, and a history is one such axis -- see
+    # typed_throw_ops.signature, whose `memory` field already types 'path_dependent' and which nothing in
+    # this layer reads), OVERLAPPING (different boxes that meet, so narrowing could still separate them),
+    # UNDECLARED (no box on one or both: nothing declared, so nothing can be concluded either way).
 
 
 @dataclass
@@ -189,7 +197,25 @@ class MarginNet:
         if p_agree < self.disagree_p:
             kind = "REGIME-BOUNDARY" if self._disjoint_validity(R) else "CONTRADICTION"
         neff = lineage_information(rs) if not groups else info * len(sig) / float((1.0 / sig ** 2).sum())  # rs is None in tree mode
-        return EdgeEstimate(id, e["between"], mhat, s, z, pv, len(m), neff, q, dof, p_agree, kind, dict(zip(allr, a)))
+        return EdgeEstimate(id, e["between"], mhat, s, z, pv, len(m), neff, q, dof, p_agree, kind,
+                            dict(zip(allr, a)), self._validity_relation(R))
+
+    @staticmethod
+    def _validity_relation(R: list[dict]) -> str:
+        """Whether the declared validity boxes of the two most discordant reports could separate them.
+
+        An empty or missing box is not an identical box: nothing was declared, so the question is open rather
+        than answered. Set equality and emptiness are exact tests, so this introduces no threshold.
+        """
+        k = sorted(range(len(R)), key=lambda i: R[i]["margin"])
+        a, b = R[k[0]].get("validity") or {}, R[k[-1]].get("validity") or {}
+        if not a or not b:
+            return "UNDECLARED"
+        if any(v in b and (a[v][1] < b[v][0] or b[v][1] < a[v][0]) for v in a):
+            return "DISJOINT"
+        if set(a) == set(b) and all(tuple(a[v]) == tuple(b[v]) for v in a):
+            return "IDENTICAL"
+        return "OVERLAPPING"
 
     @staticmethod
     def _disjoint_validity(R: list[dict]) -> bool:

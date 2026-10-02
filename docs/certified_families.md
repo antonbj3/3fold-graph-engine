@@ -523,6 +523,56 @@ R-squared, not a reported residual, so it enters as `sigma_source = derived_from
 that it is reported as derived. Verification of the sources is abstract-level; the locators resolve and
 the numbers are unread at source.
 
+## Gate 10: follow a verdict to the thing that acts on it
+
+Four of this document's gates were found at the boundary between producing a signal and consuming it, and
+collapsing them into one sentence was tempting and wrong. They are four **different** failures, and only the
+first is what the measurement below counts:
+
+**Produced and unconsumed.** `certify` placed the agreement gate's answer in its result as `edge_kind` and
+computed `holds` from the Gaussian tail alone, so a contradicted pooling certified at z = 500. `edge_kind`
+occurs in exactly one file. Likewise `typed_throw_ops.signature` types `memory` as `path_dependent` or
+`memoryless` and the claim layer never reads it, so two states differing only in history are one point to a
+validity box. This is the worst of the four, because a produced field reads as a check that happened while an
+absent one is visibly absent.
+
+**Never computed.** `candidates` ranked splits and broke exact ties by whichever came first. The tie was not
+emitted and ignored; the information did not exist — `aliased_with` appears zero times before it was added.
+No reference count can find this, because there is no reference to count.
+
+**Consumed with too strong an interpretation.** `from_mechanism`'s score is read by four modules and three
+test files, so it is not unconsumed at all. Its zero meant "free on the midpoint slice" and its own docstring
+drew the stronger conclusion. The fault was in the reading, not the wiring.
+
+**Emitted too rarely to matter.** A verdict field can be read wherever it appears and still be absent from
+almost every record. Measured on a swarm corpus outside this repository, one honest-negative field was present
+in 47 of 11,799 results, about 0.4 %, with six of those carrying prose where a boolean was expected. Not
+verified here; recorded because it is the mode that the instrument below is blind to, since the few records
+that do carry the field look consumed.
+
+The first mode is countable. Walking every `return` in the package for the string keys of dict literals and
+`dict(...)` keywords, then asking whether the key's name appears in any **other** file under `src/` or
+`tests/`, gives **586 produced-and-unread keys across 78 of 153 modules**.
+
+That is not a defect count. Most are report fields, and these outputs are written to be read by a person;
+unread **by code** is not unused. The subset that matters is the one whose name claims a verdict — admissible,
+violated, contradicted, refused, unverified, degenerate, aliased, reversed, certified, abstains, gate, guard,
+valid, holds, passed, failed — because a field announcing a decision that no code path depends on is the first
+mode exactly. That filter, the same one separating a vacuous check from the NaN idiom in gate 8, leaves
+**37 verdict-named keys in 20 modules that nothing reads**.
+
+Thirty-seven is an upper bound, not thirty-seven defects, and gate 8's ratio is the right prior: of 89
+self-comparison candidates, 10 were defects and 73 were not. `edge_kind` was in this category and was real;
+`validity_threshold_m` may be a number a reader is meant to see. The count bounds the work and says where to
+look. The heaviest are `motion_validity_cert` with 7, `render_match_decorrelation_judge` with 5 and
+`tools/fold_ledger_tools` with 5, the last of whose unread verdicts are named `stale_consumers` and
+`stale_fold_consumer_count`.
+
+So the gate is a reading discipline, not a count: when a module computes a verdict, follow it to the thing
+that acts on it, and ask which of the four modes applies. Emitting a verdict is not gating on it. The check
+that proves the difference is a test that fails when the verdict is ignored, and none of the four failures
+above had one, which is why they survived 3341 tests.
+
 ## What is not claimed
 
 No speed claim for a single certified answer: 7.7× for the field lane's single answer has 66 % of its
