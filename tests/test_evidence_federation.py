@@ -234,3 +234,52 @@ def test_native_kernel_parity_random():
         np.testing.assert_allclose(joint.p_plus_cells(),
                                    dense_union_p_plus(joint, [p[:4] for p in union.values()]),
                                    rtol=0, atol=1e-10)
+
+
+# A universal over a filtered set is vacuously true when the filter admits nothing. _contains checked
+# only the axes the point carries, so a point sharing no axis with a non-empty box read as contained
+# and belief(..., point=...) returned unfiltered beliefs while its caller believed otherwise.
+
+BOX = {"temperature": (0.0, 100.0), "pressure": (1.0, 2.0)}
+
+
+def test_a_point_inside_is_contained():
+    from graph_engine.claim_federation import _contains
+    assert _contains(BOX, {"temperature": 50.0, "pressure": 1.5}) is True
+
+
+def test_a_point_outside_is_not():
+    from graph_engine.claim_federation import _contains
+    assert _contains(BOX, {"temperature": 500.0, "pressure": 1.5}) is False
+
+
+def test_a_partial_point_is_checked_on_the_axes_it_carries():
+    from graph_engine.claim_federation import _contains
+    assert _contains(BOX, {"temperature": 50.0}) is True
+    assert _contains(BOX, {"temperature": 500.0}) is False
+
+
+def test_a_point_sharing_no_axis_is_not_contained():
+    """The filter checked nothing; that must not read as containment."""
+    from graph_engine.claim_federation import _contains
+    assert _contains(BOX, {"ph": 7.0}) is False
+    assert _contains(BOX, {}) is False
+
+
+def test_an_empty_box_is_unrestricted():
+    """A claim that declares no validity box applies everywhere; that is a different case."""
+    from graph_engine.claim_federation import _contains
+    assert _contains({}, {"ph": 7.0}) is True
+    assert _contains({}, {}) is True
+
+
+def test_validity_filtering_actually_filters_on_an_unrelated_point():
+    """belief() with use_validity must not silently fall back to every claim."""
+    from graph_engine.claim_federation import Federation
+    fed = Federation()
+    fed.add_graph(dict(graph_id="g", label="L", sources=[dict(id="s")],
+                       claims=[dict(id="c", subject="a", object="b", sign=1,
+                                    validity={"temperature": [0.0, 100.0]}, evidence=["s"])]))
+    inside = fed.belief(("a", "b"), point={"temperature": 50.0})
+    unrelated = fed.belief(("a", "b"), point={"ph": 7.0})
+    assert inside != unrelated

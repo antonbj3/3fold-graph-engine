@@ -158,7 +158,20 @@ def box_gap_point(a: Box, b: Box, log_vars: frozenset = frozenset()) -> dict[str
 
 
 def _contains(box: Box, point: dict[str, float]) -> bool:
-    return all(lo <= point[v] <= hi for v, (lo, hi) in box.items() if v in point)
+    """Is `point` inside `box`, checking only the axes the point actually carries?
+
+    An EMPTY box is unrestricted, so it contains every point. A NON-EMPTY box that shares no axis with
+    the point is a different case and must not read the same way: the filter checked nothing, and
+    reporting containment there made `belief(..., point=...)` return unfiltered beliefs while its caller
+    believed they were validity-filtered. The old form was `all(... if v in point)`, a universal over a
+    filtered set that is vacuously true when the filter admits nothing -- the same shape as a conditional
+    gate passing because its comparison had no comparands. Absence of a shared axis is not agreement,
+    for the same reason that an absent validity box is not an identical one (margin_net.validity_relation).
+    """
+    shared = [(v, box[v]) for v in box if v in point]
+    if box and not shared:
+        return False
+    return all(lo <= point[v] <= hi for v, (lo, hi) in shared)
 
 
 def _h(p: float) -> float:

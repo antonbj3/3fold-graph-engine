@@ -444,6 +444,25 @@ lines above, and no independently computed quantity exists in the file to compar
 newly found vacuous checks are this mechanism — it is the most common and the easiest to miss, because the
 line reads like a comparison.
 
+**6. The comparison has nothing to compare.** A universal over a filtered set is vacuously true when the
+filter admits nothing, so `all(... for row in rows if condition)` passes when no row satisfies `condition`.
+This is where this gate meets gate 6: the evaluated set is empty, and every universal holds on the empty set.
+Found by another lane in its own conditional gate, where twelve requested reference rows yielded zero valid
+comparisons and the check reported PASS. Scanning this package for `all()` over a filtered comprehension
+returns six sites, five with a promise word on the line, and one of them was a defect:
+
+```python
+def _contains(box, point):
+    return all(lo <= point[v] <= hi for v, (lo, hi) in box.items() if v in point)
+```
+
+A point sharing no axis with a non-empty box makes the filter admit nothing, so the universal is True and the
+point reads as contained. Its one consumer filters claims by validity, so `belief(pair, point)` with
+`use_validity` returned **unfiltered** beliefs whenever the probe point named none of a claim's declared axes
+— a validity filter that silently did nothing. An empty box is a different case and still contains everything,
+since a claim declaring no box applies everywhere. The rule is the one gate 10's `validity_relation` needed:
+absence of a shared axis is not agreement.
+
 So the gate reads: for every check, name the perturbation and follow it to the measurement. If the
 perturbation is cancelled, never applied, held constant, placed where the alternatives coincide, or
 compared against itself, the check cannot fail — and a check that cannot fail is worse than no check,
