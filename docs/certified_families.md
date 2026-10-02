@@ -450,6 +450,25 @@ compared against itself, the check cannot fail — and a check that cannot fail 
 because a reader takes it as evidence. A simple fixture is not a defect; a fixture that collapses the
 distinction the check exists to probe is.
 
+A sixth property of mechanism 5 was measured after the fact and changes how it is found. In three of the
+four instances, the vacuous line sits **immediately beside a correct one** — `"matches_C0_log": i_log ==
+i_log` next to the genuine `i_log == i_raw`, and `abs(1.0/g - 1.0/g)` next to a real comparison. So the
+failure is not ignorance of how to write the check; it is a duplicated line with one operand left
+unchanged. That makes it findable by looking for near-identical adjacent comparisons, and it also means
+reading a file top to bottom was never going to catch it.
+
+An AST pass is the instrument that does find it, and it needs one filter to be useful. Flagging `a - a`,
+`a / a` and `a == a` over 300 result directories gives 394 hits, and most are legitimate: `x == x` is the
+standard NaN idiom and `unit / unit` is a dimensional cancellation. Reporting only where the assignment
+target or dict key on the same line **promises** something — reproduces, matches, invariant, verified,
+passed, identical, agrees — is what separates a vacuous check from an idiom.
+
+Run over this repository, that instrument returns **two hits in 108 modules and zero in 3341 tests**, and
+both hits are the NaN idiom: `rg["p_value"] != rg["p_value"]` asserting that a guarded path *does* return
+NaN, and `r["sync_score"] == r["sync_score"]` guarding a format string. So the mechanism that accounts for
+four of the six instances found elsewhere does not occur here, measured by a tool that does not share the
+assumptions of the pass that first looked.
+
 Two cautions that the scan itself recorded. These are diagnoses of the **checks**, not refutations of the
 models they sit in, and two of the ten are in files already marked superseded, with corrections
 downstream. The count is ten checks that cannot fail, not ten live errors.
