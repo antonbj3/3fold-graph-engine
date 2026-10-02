@@ -329,7 +329,13 @@ def deductive_certificate(model: Callable[..., float], x_range: tuple[float, flo
     included). Returns {"kind": "deductive", "ok": True, "x_range": the box verified, ...} or ok=False with a
     counterexample point. This is a grid proof: `n_points`, the grids and the smallest |dy/dx| seen are in the
     certificate so a reader can judge how near the scan came to a flip. `x_range` in the returned certificate is the
-    largest verified interval from the low end — never the requested one when a counterexample was found."""
+    largest verified interval from the low end — never the requested one when a counterexample was found.
+
+    On failure the certificate separates the two reasons, because they are not the same finding: `n_zero_slope` counts
+    points where the slope is exactly 0 (the mechanism declares no sign there) and `n_opposite_sign` counts points
+    where it runs the other way, with `opposite_sign_witness` the first of those and `failure` naming which dominates.
+    `counterexample` is the first failure in scan order and may be a zero even when a strict reversal exists elsewhere
+    in the same box, so a consumer deciding whether an axis must be declared reads `n_opposite_sign`."""
     import numpy as np
 
     if sign not in (1, -1):
@@ -359,6 +365,13 @@ def deductive_certificate(model: Callable[..., float], x_range: tuple[float, flo
     min_abs = math.inf
     bad = None
     ok_upto = -1
+    # A failure of `slope * sign > 0` has two causes that a consumer must handle differently: a slope of
+    # exactly 0, where the mechanism declares no sign and the quantity is locally uninformative, and a
+    # strictly opposite slope, where the mechanism runs backwards. Only the second forces an axis into a
+    # validity box. The witness recorded in `counterexample` is the FIRST failure in scan order, which on a
+    # box containing both is often the degenerate one, so both are reported separately.
+    n_zero = n_opposite = 0
+    opposite_witness = None
     for i, x in enumerate(xs):
         good_here = True
         for p in pts:
@@ -368,6 +381,12 @@ def deductive_certificate(model: Callable[..., float], x_range: tuple[float, flo
             min_abs = min(min_abs, abs(slope))
             if not (slope * sign > 0):
                 good_here = False
+                if slope == 0.0:
+                    n_zero += 1
+                else:
+                    n_opposite += 1
+                    if opposite_witness is None:
+                        opposite_witness = {"x": float(x), "params": p, "dydx": float(slope)}
                 if bad is None:
                     bad = {"x": float(x), "params": p, "dydx": float(slope)}
         if good_here and ok_upto == i - 1:
@@ -379,7 +398,9 @@ def deductive_certificate(model: Callable[..., float], x_range: tuple[float, flo
     if bad is None:
         return {**base, "ok": True, "x_range": [lo, hi], "requested_x_range": [lo, hi]}
     verified = [lo, float(xs[ok_upto])] if ok_upto >= 1 else None
-    return {**base, "ok": False, "x_range": verified, "requested_x_range": [lo, hi], "counterexample": bad}
+    return {**base, "ok": False, "x_range": verified, "requested_x_range": [lo, hi], "counterexample": bad,
+            "n_zero_slope": n_zero, "n_opposite_sign": n_opposite, "opposite_sign_witness": opposite_witness,
+            "failure": "opposite_sign" if n_opposite else "zero_slope"}
 
 
 def statistical_certificate(alpha: float, delta: float, threshold_record: dict[str, Any],

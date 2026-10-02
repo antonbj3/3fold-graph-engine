@@ -37,6 +37,7 @@ import numpy as np
 from scipy.stats import norm
 
 from .hidden_variable import from_mechanism, candidates
+from .claim_types import deductive_certificate
 from .claim_federation import Federation
 from .margin_net import MarginNet
 from .decision_cert import Decision, certify, flip_attribution
@@ -90,6 +91,27 @@ def coverage_audit(reports, min_side=2, min_known=.7):
                 empty_means_absence=False)
 
 
+def _no_flip_gate(mechanism, joint):
+    """The sign verdict, kept honest about which sweep earned it.
+
+    `from_mechanism` is one-at-a-time, so all-zero scores clear only the midpoint slice. The strong
+    statement needs the joint scan over the parameter product, which `claim_types.deductive_certificate`
+    already performs with the corners always included. A diagonal flip surface is exactly the case the
+    axis-aligned sweep misses and the joint scan catches, so the two verdicts are kept apart.
+    """
+    if any(r['score'] > 0 for r in mechanism):
+        return 'SIGN_REVERSAL_PRESENT'
+    if not joint.get('ok'):
+        # A zero slope and an opposite slope are different findings. The mechanism declaring no sign at a
+        # point leaves the quantity locally uninformative; the mechanism running backwards is what forces
+        # the axis into the validity box. The scan's first witness is often the zero even when a strict
+        # reversal exists elsewhere in the same box, so the count decides the verdict, not the witness.
+        if joint.get('n_opposite_sign'):
+            return 'SIGN_REVERSED_IN_JOINT_BOX'
+        return 'SIGN_DEGENERATE_IN_JOINT_BOX'
+    return 'NO_ADDED_SIGN_INFORMATION'
+
+
 def run_chain(*, name, model, x_range, params, reports, sources, fixed=None,
               n_x=41, n_p=21, n_perm=2000, seed=6101, alpha=.05,
               measured_axes=(), predictive_inputs_external=False):
@@ -103,6 +125,14 @@ def run_chain(*, name, model, x_range, params, reports, sources, fixed=None,
     """
     cpu0, wall0 = time.process_time(), time.perf_counter()
     mechanism = from_mechanism(model, x_range, params, n_x=n_x, n_p=n_p, fixed=fixed)
+    # from_mechanism is one-at-a-time, so all-zero scores mean "free on the midpoint slice" and not
+    # "free on the box": a flip surface diagonal in two parameters is missed by the axis-aligned cross.
+    # The corners are where such a surface is crossed first, so the strong gate is not earned without them.
+    mid = {k: (fixed or {}).get(k, (lo + hi) / 2) for k, (lo, hi) in params.items()}
+    hh = (x_range[1] - x_range[0]) / (n_x * 10)
+    xm = (x_range[0] + x_range[1]) / 2
+    mid_sign = 1 if model(xm + hh, **mid) - model(xm - hh, **mid) >= 0 else -1
+    joint = deductive_certificate(model, x_range, params, sign=mid_sign, n_x=n_x)
     fed = Federation()
     for r in reports:
         if not r.get('sources') or not math.isfinite(r['sigma']) or r['sigma'] <= 0:
@@ -150,7 +180,7 @@ def run_chain(*, name, model, x_range, params, reports, sources, fixed=None,
          margin_estimate=est,raw_gaussian_cert=raw,flip_attribution=attribution,
          certificate_report_subset=[r['id'] for r in selected],
          physical_identification=biological,matched_axes=match,
-         no_flip_gate='NO_ADDED_SIGN_INFORMATION' if all(r['score']==0 for r in mechanism) else 'SIGN_REVERSAL_PRESENT',
+         no_flip_gate=_no_flip_gate(mechanism, joint), joint_box_certificate=joint, midpoint_sign=mid_sign,
          costs=dict(cpu_s=time.process_time()-cpu0,wall_s=time.perf_counter()-wall0)))
 
 

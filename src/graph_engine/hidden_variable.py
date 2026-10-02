@@ -140,9 +140,18 @@ def from_mechanism(model, x_range: tuple[float, float], params: dict[str, tuple[
     """Candidates from FIRST PRINCIPLES, before any report: `model(x, **params) -> y`. For each parameter θ, scan its range with
     the other parameters at their midpoints (or `fixed`) and record over what share of (x, θ) the sign of dy/dx differs from
     the sign at the parameter's midpoint. A parameter that can flip the relation inside the declared ranges is a hidden
-    axis the boxes must carry; the score is that share (0 = the parameter never changes the sign, so leaving it out of the
-    box costs nothing for the sign). Also returned: the threshold in θ where the flip first appears, if any.
-    This is the mechanism-side counterpart of `candidates` (data side); a variable that both nominate is the throw."""
+    axis the boxes must carry; the score is that share. Also returned: the threshold in θ where the flip first appears, if any.
+    This is the mechanism-side counterpart of `candidates` (data side); a variable that both nominate is the throw.
+
+    SCOPE, and it is narrower than it reads: this is a one-at-a-time sweep, so a score of 0 means the parameter never
+    changes the sign ON THE MIDPOINT SLICE. It does NOT entitle a caller to leave the parameter out of the box. When the
+    flip surface is diagonal in two parameters, the axis-aligned cross through the midpoint can miss it entirely while
+    corners of the same box cross it: `model = lambda x, a, b: (a*b - 1.38) * x` over a, b in [1, 1.2] scores 0.0 on both
+    axes, while 19 of 441 points of the joint grid have the opposite sign and the corner a = b = 1.2 gives +0.06 against
+    the midpoint's -0.17. One-at-a-time versus joint is a known limitation of sensitivity analysis; stating the stronger
+    conclusion was the defect. Before omitting any axis, use `claim_types.deductive_certificate`, which scans the
+    parameter PRODUCT with the corners always included and returns a counterexample point: on the model above it
+    refuses the midpoint's sign and names (a, b) = (1.15, 1.2). That is the joint counterpart of this sweep."""
     fixed = fixed or {}
     xs = np.linspace(*x_range, n_x); h = (x_range[1] - x_range[0]) / (n_x * 10)
     mid = {k: fixed.get(k, (lo + hi) / 2) for k, (lo, hi) in params.items()}

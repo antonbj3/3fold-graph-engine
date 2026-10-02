@@ -301,3 +301,51 @@ def test_a_derived_sigma_is_reported_as_derived():
 def test_malformed_support_or_band_raises(support, band):
     with pytest.raises(ValueError):
         instrument_can_decide(est_m=0.5, est_s=2.0, sigma_new=1.0, support=support, decision_band=band)
+
+
+# ---- the sign gate must say which sweep earned it ----
+
+def _chain_model(model, params):
+    return run_chain(name="observable", model=model, x_range=(1.0, 2.0), params=params,
+                     reports=_four_reports(), sources=[dict(id=f"s{i}") for i in range(4)],
+                     n_x=11, n_p=5, n_perm=20)
+
+
+def test_a_diagonal_flip_is_not_reported_as_no_information():
+    """The axis sweep sees nothing; the joint scan over the product does, and the verdict says which."""
+    out = _chain_model(lambda x, a, b: (a * b - 1.38) * x, {"a": (1.0, 1.2), "b": (1.0, 1.2)})
+    assert [r["score"] for r in out["mechanism_sweep"]] == [0.0, 0.0]
+    assert out["no_flip_gate"] == "SIGN_REVERSED_IN_JOINT_BOX"
+    assert out["joint_box_certificate"]["ok"] is False
+    assert out["midpoint_sign"] == -1
+
+
+def test_the_strong_verdict_survives_for_a_genuinely_sign_free_box():
+    out = _chain_model(lambda x, a: a * x + 1.0, {"a": (1.0, 2.0)})
+    assert out["no_flip_gate"] == "NO_ADDED_SIGN_INFORMATION"
+    assert out["joint_box_certificate"]["ok"] is True
+
+
+def test_an_axis_sweep_that_finds_the_flip_itself_still_reports_it():
+    out = _chain_model(lambda x, a: (a - 1.5) * x, {"a": (1.0, 2.0)})
+    assert any(r["score"] > 0 for r in out["mechanism_sweep"])
+    assert out["no_flip_gate"] == "SIGN_REVERSAL_PRESENT"
+
+
+def test_a_flat_box_is_degenerate_not_reversed():
+    """Slope a - 1.0 over a in [1, 2] is zero only at the lower endpoint: no sign runs backwards."""
+    out = _chain_model(lambda x, a: (a - 1.0) * x, {"a": (1.0, 2.0)})
+    cert = out["joint_box_certificate"]
+    assert cert["ok"] is False
+    assert cert["n_opposite_sign"] == 0 and cert["n_zero_slope"] > 0
+    assert out["no_flip_gate"] == "SIGN_DEGENERATE_IN_JOINT_BOX"
+
+
+def test_the_diagonal_box_is_reversed_and_the_counts_say_so():
+    """The first witness is a zero, so the verdict must come from the counts and not from the witness."""
+    out = _chain_model(lambda x, a, b: (a * b - 1.38) * x, {"a": (1.0, 1.2), "b": (1.0, 1.2)})
+    cert = out["joint_box_certificate"]
+    assert cert["counterexample"]["dydx"] == 0.0            # the witness alone looks merely degenerate
+    assert cert["n_opposite_sign"] > 0                      # but a strict reversal does exist
+    assert cert["failure"] == "opposite_sign"
+    assert out["no_flip_gate"] == "SIGN_REVERSED_IN_JOINT_BOX"

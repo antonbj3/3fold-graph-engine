@@ -3,6 +3,7 @@
 import sys
 from pathlib import Path
 import numpy as np
+import pytest
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 from graph_engine.hidden_variable import candidates, from_mechanism  # noqa: E402
@@ -94,3 +95,48 @@ def test_a_single_attribute_is_never_aliased_with_itself():
     reports = [dict(margin=m, sigma=0.1, attributes=dict(only=v))
                for m, v in zip((1.0, 1.1, 5.0, 5.2), (0, 0, 1, 1))]
     assert candidates(reports, n_perm=50, seed=1)[0].aliased_with == ()
+
+
+# E: from_mechanism is one-at-a-time, so a zero score clears the midpoint slice and not the box.
+
+def _diagonal():
+    """The slope is a*b - 1.38: negative at the midpoint (1.1, 1.1), positive at the corner (1.2, 1.2)."""
+    return (lambda x, a, b: (a * b - 1.38) * x), (1.0, 2.0), {"a": (1.0, 1.2), "b": (1.0, 1.2)}
+
+
+def test_a_diagonal_flip_surface_scores_zero_on_every_axis():
+    model, xr, params = _diagonal()
+    rows = from_mechanism(model, xr, params)
+    assert [r["score"] for r in rows] == [0.0, 0.0]
+    assert all(r["flip_threshold"] is None for r in rows)
+
+
+def test_the_midpoint_and_the_corner_really_have_opposite_signs():
+    """The arithmetic the whole case rests on, pinned rather than taken on trust."""
+    assert 1.1 * 1.1 - 1.38 == pytest.approx(-0.17)
+    assert 1.2 * 1.2 - 1.38 == pytest.approx(0.06)
+
+
+def test_the_joint_product_scan_finds_what_the_axes_miss():
+    """deductive_certificate scans the parameter product with corners always included."""
+    from graph_engine.claim_types import deductive_certificate
+    model, xr, params = _diagonal()
+    cert = deductive_certificate(model, xr, params, sign=-1)
+    assert cert["ok"] is False
+    assert cert["counterexample"]["params"] == {"a": 1.15, "b": 1.2}
+
+
+def test_the_joint_scan_still_certifies_a_genuinely_sign_free_box():
+    from graph_engine.claim_types import deductive_certificate
+    assert deductive_certificate(lambda x, a: a * x + 1.0, (1.0, 2.0), {"a": (1.0, 2.0)}, sign=+1)["ok"] is True
+
+
+def test_the_joint_scan_separates_a_flat_point_from_a_reversed_one():
+    """1.15 * 1.2 = 1.38 exactly, so that witness is flat; the reversal is elsewhere in the same box."""
+    from graph_engine.claim_types import deductive_certificate
+    model, xr, params = _diagonal()
+    cert = deductive_certificate(model, xr, params, sign=-1)
+    assert 1.15 * 1.2 - 1.38 == 0.0
+    assert cert["counterexample"]["dydx"] == 0.0
+    assert cert["n_zero_slope"] > 0 and cert["n_opposite_sign"] > 0
+    assert cert["opposite_sign_witness"]["dydx"] > 0
