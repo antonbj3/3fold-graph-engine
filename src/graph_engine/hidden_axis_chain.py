@@ -202,3 +202,88 @@ def finite_delivery_certificate(*, content_ratio_bounds, flow_ratio_bounds,
                 guarantee='every joint input distribution supported in the declared intervals',
                 assumptions=dict(same_deficit=same_deficit,same_capacity=same_capacity,positive_saturation=positive_saturation),
                 empirical_scope='requires actual tissue/protocol input validity; no endpoint fitting')
+
+
+def instrument_can_decide(*, est_m, est_s, sigma_new, support, decision_band, alpha=.05,
+                          declared_domain=None, sampled_domain=None, sigma_source='declared'):
+    """Can ANY reading of this instrument certify the decision, before the search is run?
+
+    Two refusals, and they are different failures that must not be collapsed:
+
+    PRECISION. `required_new_measurement` gives the observation that would have to be seen for
+    certify() to hold. If that observation lies outside the quantity's declared support, no reading
+    of this instrument can produce it, and repeating the measurement does not help -- the limit is
+    the instrument, not the sample size. Threshold-free: the verdict is inside-or-outside a declared
+    interval, never a ratio compared to a cutoff. `resolution_ratio` is reported as a number for the
+    reader, and nothing is decided by it.
+
+    COVERAGE. An instrument that reads only part of the domain the decision is declared over cannot
+    certify the declared domain however precise each reading is. This is the quantifier gap -- the
+    evaluated set is a proper subset of the declared one -- and it is not a precision problem. Pass
+    `declared_domain` and `sampled_domain` as comparable sets to have it checked; omit them and the
+    coverage question is reported as UNCHECKED rather than passed, because an unasked question is
+    not an answered one.
+
+    `sigma_required` names the instrument that WOULD decide it: the sigma at which the required
+    observation re-enters the support, found by bisection. That is what makes the refusal actionable
+    instead of a verdict of impossibility.
+
+    With no prior information the required observation reduces to exactly sigma * z_(1-alpha): the
+    bisection is only needed when a prior narrows it. So the precision refusal fires precisely when
+    sigma * z_(1-alpha) exceeds the support's upper bound, which is a criterion a reader can apply by
+    hand. A wide support therefore makes this condition non-binding, and that is a property of the
+    declaration rather than of the instrument -- measured on a case with sigma 3.96 and support
+    [0, 20], the precision test does not fire while the coverage test does.
+
+    `sigma_source` is carried through and reported. A sigma derived from a published R-squared is not
+    a reported residual, and a test built on one should say so rather than present it as measured.
+    """
+    lo, hi = map(float, support)
+    if hi < lo:
+        raise ValueError('support must be ordered')
+    band_lo, band_hi = map(float, decision_band)
+    if band_hi < band_lo or band_lo <= 0:
+        raise ValueError('decision_band must be positive and ordered')
+
+    def required(sigma):
+        return required_new_measurement(est_m, est_s, sigma, alpha=alpha)['observed_margin_threshold']
+
+    req = required(sigma_new)
+    in_support = lo <= req <= hi
+    reasons = []
+    if not in_support:
+        reasons.append('REQUIRED_OBSERVATION_OUTSIDE_SUPPORT')
+
+    # The sigma that would bring the requirement back inside the support. The requirement tends to 0
+    # as sigma does, so a bracket exists whenever the support contains 0 or a value below req.
+    sigma_required = None
+    if not in_support:
+        a, b = sigma_new * 1e-9, float(sigma_new)
+        if lo <= required(a) <= hi:
+            for _ in range(200):
+                mid = math.sqrt(a * b)
+                if lo <= required(mid) <= hi:
+                    a = mid
+                else:
+                    b = mid
+            sigma_required = a
+
+    if declared_domain is None or sampled_domain is None:
+        coverage = 'UNCHECKED'
+    else:
+        declared, sampled = set(declared_domain), set(sampled_domain)
+        if not sampled <= declared:
+            raise ValueError('sampled_domain must be a subset of declared_domain')
+        coverage = 'FULL' if sampled == declared else 'SUBSET_OF_DECLARED_DOMAIN'
+        if coverage != 'FULL':
+            reasons.append('INSTRUMENT_SAMPLES_A_SUBSET_OF_THE_DECLARED_DOMAIN')
+
+    return dict(required_observation=float(req), support=[lo, hi],
+                required_observation_in_support=bool(in_support),
+                resolution_ratio=float(sigma_new) / band_lo,
+                decision_band=[band_lo, band_hi], sigma_new=float(sigma_new),
+                sigma_required=sigma_required, sigma_source=sigma_source,
+                coverage=coverage, refusal_reasons=reasons,
+                verdict='CAN_DECIDE' if not reasons else 'CANNOT_DECIDE',
+                scope='necessary conditions on the instrument alone; says nothing about whether the '
+                      'quantity is what the decision needs, nor about any biology or mechanism')

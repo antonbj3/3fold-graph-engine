@@ -11,6 +11,7 @@ from graph_engine.hidden_axis_chain import (  # noqa: E402
     coverage_audit,
     finite_delivery_certificate,
     moment_feasibility,
+    instrument_can_decide,
     required_new_measurement,
     run_chain,
 )
@@ -211,3 +212,92 @@ def test_the_result_is_json_ready():
     out = _chain(_four_reports(), [dict(id=f"s{i}") for i in range(4)])
     json.dumps(out)                                     # raises if any numpy or dataclass leaked
     assert math.isfinite(out["costs"]["wall_s"])
+
+
+# ---- instrument_can_decide: two refusals that are different failures ----
+
+Z95 = norm.ppf(0.95)
+
+
+def test_with_no_prior_the_required_observation_is_exactly_sigma_times_z():
+    """The closed form the whole precision test rests on, so it is pinned rather than assumed."""
+    out = instrument_can_decide(est_m=0.5, est_s=1e9, sigma_new=3.96,
+                                support=(0.0, 20.0), decision_band=(1.0, 5.0))
+    assert out["required_observation"] == pytest.approx(3.96 * Z95, rel=1e-9)
+
+
+def test_a_wide_support_makes_the_precision_test_non_binding():
+    """Measured negative: sigma 3.96 needs an observation of 6.51, which [0, 20] contains."""
+    out = instrument_can_decide(est_m=0.5, est_s=2.0, sigma_new=3.96,
+                                support=(0.0, 20.0), decision_band=(1.0, 5.0))
+    assert out["required_observation_in_support"] is True
+    assert "REQUIRED_OBSERVATION_OUTSIDE_SUPPORT" not in out["refusal_reasons"]
+
+
+def test_a_large_resolution_ratio_alone_does_not_refuse():
+    """The ratio is reported for the reader and decides nothing: no new threshold is introduced."""
+    out = instrument_can_decide(est_m=0.5, est_s=2.0, sigma_new=3.96,
+                                support=(0.0, 20.0), decision_band=(1.0, 5.0))
+    assert out["resolution_ratio"] == pytest.approx(3.96)
+    assert out["verdict"] == "CAN_DECIDE"
+
+
+def test_the_precision_refusal_fires_when_sigma_times_z_leaves_the_support():
+    out = instrument_can_decide(est_m=0.5, est_s=2.0, sigma_new=3.96,
+                                support=(0.0, 6.0), decision_band=(1.0, 5.0))
+    assert 3.96 * Z95 > 6.0
+    assert out["required_observation_in_support"] is False
+    assert out["verdict"] == "CANNOT_DECIDE"
+
+
+def test_the_refusal_names_a_sigma_that_would_decide_it():
+    out = instrument_can_decide(est_m=0.5, est_s=2.0, sigma_new=3.96,
+                                support=(0.0, 6.0), decision_band=(1.0, 5.0))
+    better = out["sigma_required"]
+    assert better is not None and better < 3.96
+    again = instrument_can_decide(est_m=0.5, est_s=2.0, sigma_new=better,
+                                  support=(0.0, 6.0), decision_band=(1.0, 5.0))
+    assert again["required_observation_in_support"] is True
+
+
+def test_sampling_part_of_the_declared_domain_refuses_however_precise_the_reading():
+    """Coverage is not precision: the instrument reads only where the probe touched."""
+    out = instrument_can_decide(est_m=0.5, est_s=2.0, sigma_new=1e-9,
+                                support=(0.0, 20.0), decision_band=(1.0, 5.0),
+                                declared_domain=range(40), sampled_domain=range(6))
+    assert out["required_observation_in_support"] is True        # precision is fine ...
+    assert out["coverage"] == "SUBSET_OF_DECLARED_DOMAIN"        # ... and it still cannot decide
+    assert out["refusal_reasons"] == ["INSTRUMENT_SAMPLES_A_SUBSET_OF_THE_DECLARED_DOMAIN"]
+    assert out["verdict"] == "CANNOT_DECIDE"
+
+
+def test_full_coverage_passes():
+    out = instrument_can_decide(est_m=0.5, est_s=2.0, sigma_new=1e-9,
+                                support=(0.0, 20.0), decision_band=(1.0, 5.0),
+                                declared_domain=range(6), sampled_domain=range(6))
+    assert out["coverage"] == "FULL" and out["verdict"] == "CAN_DECIDE"
+
+
+def test_an_unasked_coverage_question_is_unchecked_not_passed():
+    out = instrument_can_decide(est_m=0.5, est_s=2.0, sigma_new=3.96,
+                                support=(0.0, 20.0), decision_band=(1.0, 5.0))
+    assert out["coverage"] == "UNCHECKED"
+
+
+def test_a_sampled_point_outside_the_declared_domain_raises():
+    with pytest.raises(ValueError):
+        instrument_can_decide(est_m=0.5, est_s=2.0, sigma_new=1.0, support=(0.0, 20.0),
+                              decision_band=(1.0, 5.0), declared_domain=range(3), sampled_domain=range(5))
+
+
+def test_a_derived_sigma_is_reported_as_derived():
+    out = instrument_can_decide(est_m=0.5, est_s=2.0, sigma_new=3.96, support=(0.0, 20.0),
+                                decision_band=(1.0, 5.0), sigma_source="derived_from_R2")
+    assert out["sigma_source"] == "derived_from_R2"
+
+
+@pytest.mark.parametrize("support,band", [((20.0, 0.0), (1.0, 5.0)), ((0.0, 20.0), (5.0, 1.0)),
+                                          ((0.0, 20.0), (0.0, 5.0))])
+def test_malformed_support_or_band_raises(support, band):
+    with pytest.raises(ValueError):
+        instrument_can_decide(est_m=0.5, est_s=2.0, sigma_new=1.0, support=support, decision_band=band)

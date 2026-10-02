@@ -463,7 +463,8 @@ standard NaN idiom and `unit / unit` is a dimensional cancellation. Reporting on
 target or dict key on the same line **promises** something — reproduces, matches, invariant, verified,
 passed, identical, agrees — is what separates a vacuous check from an idiom.
 
-Run over this repository, that instrument returns **two hits in 108 modules and zero in 3341 tests**, and
+Run over this repository, that instrument returns **two hits in 153 source files and zero in 3341 tests**
+(109 modules directly under `graph_engine/` plus five subpackages; the pass globs every `.py` under `src/`), and
 both hits are the NaN idiom: `rg["p_value"] != rg["p_value"]` asserting that a guarded path *does* return
 NaN, and `r["sync_score"] == r["sync_score"]` guarding a format string. So the mechanism that accounts for
 four of the six instances found elsewhere does not occur here, measured by a tool that does not share the
@@ -472,6 +473,55 @@ assumptions of the pass that first looked.
 Two cautions that the scan itself recorded. These are diagnoses of the **checks**, not refutations of the
 models they sit in, and two of the ten are in files already marked superseded, with corrections
 downstream. The count is ten checks that cannot fail, not ten live errors.
+
+## Gate 9: ask whether the instrument can decide the question before searching for the answer
+
+Two of the refusals above are about what a test or a certificate does with evidence it has. This one is
+prior to both: given a declared instrument and a declared decision, is a certificate reachable at all?
+It is answerable from numbers that are already written down, before any search is run, and it has two
+conditions that are different failures and must not be collapsed.
+
+**Precision.** `required_new_measurement` gives the observation that would have to be seen for the
+certificate to hold. If that observation lies outside the quantity's declared support, no reading of the
+instrument can produce it, and repeating the measurement does not help, because the limit is the
+instrument rather than the sample size. With no prior information the requirement reduces to exactly
+`sigma * z_(1-alpha)`, so the condition is one comparison a reader can make by hand: the refusal fires
+precisely when `sigma * z_(1-alpha)` exceeds the support's upper bound.
+
+**Coverage.** An instrument that reads only part of the domain the decision is declared over cannot
+certify that domain however precise each reading is. This is gate 6's gap in a different place -- the
+evaluated set is a proper subset of the declared one -- and no improvement in sigma addresses it. When
+the two sets are not supplied the coverage question is reported as `UNCHECKED`, never as passed, because
+an unasked question is not an answered one.
+
+Both verdicts are set-membership: inside or outside an interval, equal or a proper subset. A resolution
+**ratio** is reported for the reader and decides nothing, so the gate introduces no threshold of its own
+while removing the temptation to invent one.
+
+Measured on a published clinical localisation case, where it produced the opposite of the expected
+result. The quantity is the distance from a resection cavity wall to a tract in mm, support [0, 20] --
+the upper bound being where the published current-to-distance series ends, so beyond it the instrument
+is uncalibrated rather than imprecise. Four mapped points (20/15/10/5 mA to about 16/13.2/9.6/4.8 mm,
+PMID 19199462) have SD 4.8374, and a fitted relation explaining 33 % of variance (slope 0.63 mm/mA,
+R-squared 0.33, PMID 36247400) leaves a residual SD of `4.8374 * sqrt(0.67) = 3.9595` mm against a
+decision argued over 1 to 5 mm. The ratio to the tightest decision distance is 3.96.
+
+**The precision test does not fire.** The required observation is `3.9595 * 1.6449 = 6.5136` mm, and the
+declared support contains it with room to spare; sweeping the prior from s = 2 to s = 50 moves it only
+from 12.49 to 6.53, converging on the closed form. **The coverage test does.** The instrument reads only
+where the probe touched the wall, so the unprobed wall is unmeasured, and that refusal stands at any
+sigma -- it fires in the test suite with sigma set to 1e-9.
+
+So the case that motivated the gate is refused for the other reason, and a ratio of 3.96 between
+instrument scatter and decision distance turns out not to be the binding constraint. The wide support is
+what makes precision non-binding, and that is a property of the declaration rather than of the
+instrument: narrowing the support to [0, 6] makes the same instrument fail the precision test. Reporting
+the ratio without letting it decide is what keeps those two statements separable.
+
+One scope line the case carries: the 3.9595 is arithmetic over four published points and a published
+R-squared, not a reported residual, so it enters as `sigma_source = derived_from_R2` and the suite pins
+that it is reported as derived. Verification of the sources is abstract-level; the locators resolve and
+the numbers are unread at source.
 
 ## What is not claimed
 
