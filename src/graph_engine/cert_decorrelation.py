@@ -134,7 +134,12 @@ def abstain_propagation(items, upstream_grounded, downstream_fn, naive_downstrea
     abstained = [it for it, ok in zip(items, flags) if not ok]
     honest = downstream_fn(grounded)
     naive = (naive_downstream_fn or downstream_fn)(items)
-    model_abstains = bool(len(abstained) > 0 or not honest.get("pass", True))
+    # A downstream result that does not state pass/fail is UNKNOWN, and for an abstain decision unknown
+    # must abstain: defaulting it to True suppressed the abstain on exactly the input that says least,
+    # which is the fail-open this function raises a ValueError two lines above to avoid. The two defaults
+    # are deliberately opposite and both fail CLOSED: a missing honest verdict abstains, while a missing
+    # naive verdict does not manufacture a FALSE_CERTIFY accusation out of silence.
+    model_abstains = bool(len(abstained) > 0 or not honest.get("pass", False))
     false_certify = bool(naive.get("pass", False) and model_abstains)
     return {"grounded": grounded, "abstained": abstained, "downstream_honest": honest, "downstream_naive": naive,
             "false_certify": false_certify, "model_abstains": model_abstains,
