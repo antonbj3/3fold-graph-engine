@@ -305,6 +305,7 @@ def multi_anchor_scale_gate(anchors, tol_frac=0.05, provenances=None, min_proven
         return dict(verdict="CERTIFY" if each_matches_known else "REJECT",
                     single_anchor_uniformity_unobservable=True, implied_scales=implied,
                     scale_nonuniformity=np.nan, provenance_neff=prov_neff,
+                    provenance_unverified=(provenances is None),
                     reason="single anchor: scale certified only LOCALLY (uniformity unobservable)")
     if nonuniformity > tol_frac:
         verdict = "ABSTAIN"                          # scale drifts across the scene -> no single metric scale
@@ -313,11 +314,20 @@ def multi_anchor_scale_gate(anchors, tol_frac=0.05, provenances=None, min_proven
     elif prov_neff is not None and prov_neff < min_provenance_neff:
         verdict = "ABSTAIN"                          # ★L441: uniform+matches-known but anchors share a ruler -> agreement
                                                      # is uninformative (shared-ruler common-mode); cannot certify scale
+    elif provenances is None:
+        # The docstring promised this and the code did the opposite: it declared provenance_unverified in
+        # the SAME result as CERTIFY. Declaring a doubt is not acting on it. With no provenances supplied a
+        # shared ruler cannot be ruled out, which is the very common-mode this gate exists for, so absent
+        # provenance abstains rather than certifying. Only KNOWN-too-weak provenance abstained before, while
+        # UNKNOWN provenance certified -- the fail-open this function was already once hardened against.
+        verdict = "ABSTAIN"
     else:
-        verdict = "CERTIFY"                          # uniform, correct, AND (if known) provenance-decorrelated
+        verdict = "CERTIFY"                          # uniform, correct, AND provenance-decorrelated
     return dict(verdict=verdict, implied_scales=implied, scale_nonuniformity=nonuniformity,
                 each_matches_known=each_matches_known, n_anchors=len(valid), provenance_neff=prov_neff,
-                provenance_unverified=(provenances is None))
+                provenance_unverified=(provenances is None),
+                reason=("no provenances supplied: a shared ruler cannot be ruled out" if provenances is None
+                        else None))
 
 
 def selftest():
