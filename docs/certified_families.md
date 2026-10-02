@@ -400,6 +400,60 @@ A caution on the inference: a ceiling of one row bounds what a selector can win 
 that criterion**. It is not evidence that the question is unanswerable, and three instances in one
 corpus do not make it a general rate.
 
+## Gate 8: a test can remove the thing it measures
+
+The seven gates above are about claims. This one is about the checks that are supposed to catch them.
+Scanning one corpus for checks whose own text promises generality turned up 89 adjudicated candidates, of
+which **10 are vacuous and 73 are not** — the rejection rate matters, because a list that flags everything
+says nothing. Five distinct mechanisms appeared, and naming them is what makes the pattern searchable.
+
+**1. The perturbation is undone before the measurement.** A test documented as showing that a quantity "is
+invariant under a nonsingular per-coordinate rescale" computes a reference value, then rescales by
+`P = diag(sc)` and calls a helper — whose first line is `diag(1/sc) @ SigmaP @ diag(1/sc)`. The helper
+whitens with the unscaled factors, so the argument is the original matrix to the last bit. Measured over
+four random scalings, the round trip returns the input to `4.4e-16`. The test computes the same value
+twice and cannot fail.
+
+**2. The variable the dependence concerns is never varied.** An invariance check perturbs every state
+variable except one, and the claim is about dependence on that one. Any function of the unperturbed
+component passes: `x` and `x + z` are indistinguishable when `z` is held fixed.
+
+**3. A parameter that must vary is held constant.** A pre-registration states that "a permutation of
+channels is not a free symmetry", but the coupling vector is constant, and `R P I Pᵀ Rᵀ = R Rᵀ` for any
+permutation `P`. Right and wrong channel-to-effect coupling become indistinguishable.
+
+**4. The fixture is set where the two candidate statements coincide.** A generalisation check exists to
+show that an `n = 1` result "cannot hide a special case", and sets `A = I`. But `A C⁻¹ Aᵀ` and `Aᵀ C⁻¹ A`
+agree exactly at `A = I`, and those are the two candidates the check was meant to separate. Away from the
+fixture they differ: with `E = [[1,0],[0,1],[1,0]]`, `A = [[0,1],[2,0]]`, `C = diag(8,5)` the pinv route
+gives `4/5`, `A C⁻¹ Aᵀ` gives `1/2`, and `Aᵀ C⁻¹ A` gives `4/5` — a gap of exactly `3/10`. A later sweep
+of 800 symbolic cases inherited the degenerate fixture and returned zero every time, which established
+nothing.
+
+**5. The comparison has the same value on both sides.** The sharpest instance is one line:
+
+```python
+"reproduces_reported": bool(
+    abs(q168["information_gain_nats"] - q168["information_gain_nats"]) < 1e-12
+),
+```
+
+The field is named for reproducing an independently reported value and subtracts a number from itself, so
+it is unconditionally `True`. The value it claims to reproduce is copied from the same dictionary four
+lines above, and no independently computed quantity exists in the file to compare against. Four of the six
+newly found vacuous checks are this mechanism — it is the most common and the easiest to miss, because the
+line reads like a comparison.
+
+So the gate reads: for every check, name the perturbation and follow it to the measurement. If the
+perturbation is cancelled, never applied, held constant, placed where the alternatives coincide, or
+compared against itself, the check cannot fail — and a check that cannot fail is worse than no check,
+because a reader takes it as evidence. A simple fixture is not a defect; a fixture that collapses the
+distinction the check exists to probe is.
+
+Two cautions that the scan itself recorded. These are diagnoses of the **checks**, not refutations of the
+models they sit in, and two of the ten are in files already marked superseded, with corrections
+downstream. The count is ten checks that cannot fail, not ten live errors.
+
 ## What is not claimed
 
 No speed claim for a single certified answer: 7.7× for the field lane's single answer has 66 % of its
