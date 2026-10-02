@@ -44,6 +44,8 @@ class HiddenVariableCandidate:
     left: dict = field(default_factory=dict)    # {"mean": m̂, "s": s} or {"sign_share": …}
     right: dict = field(default_factory=dict)
     boxes: dict = field(default_factory=dict)   # the validity axis the declaration would add: {attribute: [lo, hi]} per side
+    aliased_with: tuple = ()       # attributes whose best split cuts the SAME reports the same way: the data cannot say
+                                   # which of them is the axis, so taking candidates()[0] silently names one of several
 
 
 def _gls(m, s):
@@ -65,7 +67,10 @@ def _score_split(mask, m, s, signs):
 def candidates(reports: list[dict], min_side: int = 2, min_known: float = 0.7, n_perm: int = 200, seed: int = 0,
                default_sigma: float = 0.1) -> list[HiddenVariableCandidate]:
     """reports: [{"margin": float, "sigma": float, "attributes": {name: value}}] or with "sign": ±1 instead of margin.
-    Returns candidates sorted by score, each with a permutation p-value; empty when no attribute is known on enough reports."""
+    Returns candidates sorted by score, each with a permutation p-value; empty when no attribute is known on enough reports.
+    `aliased_with` names attributes that cut the same reports the same way. Two real axes carried by the same reports can
+    produce the IDENTICAL score, and the permutation p-value does not separate them because it tests against chance, not
+    against each other. A caller that takes candidates()[0] on an aliased candidate names one axis out of several."""
     n = len(reports)
     if n < 2 * min_side:
         return []
@@ -78,6 +83,7 @@ def candidates(reports: list[dict], min_side: int = 2, min_known: float = 0.7, n
     names = sorted({k for r in reports for k in (r.get("attributes") or {})})
     rng = np.random.default_rng(seed)
     out = []
+    parts = []
     for name in names:
         vals = [(r.get("attributes") or {}).get(name) for r in reports]
         known = np.array([v is not None for v in vals])
@@ -113,6 +119,19 @@ def candidates(reports: list[dict], min_side: int = 2, min_known: float = 0.7, n
         else:
             boxes = {name: {"left": [thr], "right": sorted({str(x) for x in np.array(v, object)[~mask]})}}
         out.append(HiddenVariableCandidate(name, thr, kind, float(score), p, int(mask.sum()), int((~mask).sum()), side(mask), side(~mask), boxes))
+        # Canonical form of the partition this attribute induces, so that a mask and its complement
+        # are the same cut. Two attributes with the same canonical cut over the same reports are
+        # indistinguishable in this data: the permutation p-value rules out chance, not aliasing.
+        side_a = tuple(int(i) for i in idx[mask])
+        side_b = tuple(int(i) for i in idx[~mask])
+        parts.append((name, min(side_a, side_b), max(side_a, side_b)))
+    groups = {}
+    for name, a, b in parts:
+        groups.setdefault((a, b), []).append(name)
+    for c in out:
+        for names in groups.values():
+            if c.attribute in names and len(names) > 1:
+                c.aliased_with = tuple(n for n in names if n != c.attribute)
     return sorted(out, key=lambda c: -c.score)
 
 

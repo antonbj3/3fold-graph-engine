@@ -47,3 +47,50 @@ def test_mechanism_side_nominates_the_parameter_that_flips_the_sign():
     c = from_mechanism(Y, (0.2, 0.8), {"r": (0.5, 2.0), "K": (10.0, 100.0)})
     assert c[0]["attribute"] == "r" and c[0]["score"] > 0.1 and c[0]["flip_threshold"] is not None
     assert c[1]["attribute"] == "K" and c[1]["score"] == 0.0
+
+
+# D: two attributes that cut the same reports the same way are aliased, and the ranking cannot separate them.
+
+def _aliased_reports():
+    """axis_a (numeric) and axis_b (categorical) carry the IDENTICAL partition of the same four reports."""
+    return [dict(margin=1.0, sigma=0.1, attributes=dict(axis_a=0, axis_b="low")),
+            dict(margin=1.1, sigma=0.1, attributes=dict(axis_a=0, axis_b="low")),
+            dict(margin=5.0, sigma=0.1, attributes=dict(axis_a=1, axis_b="high")),
+            dict(margin=5.2, sigma=0.1, attributes=dict(axis_a=1, axis_b="high"))]
+
+
+def test_aliased_axes_get_the_identical_score():
+    """The split is real and large, but the data cannot say which axis it is."""
+    cands = candidates(_aliased_reports(), n_perm=50, seed=1)
+    assert len(cands) == 2
+    assert cands[0].score == cands[1].score
+    assert cands[0].score > 0
+
+
+def test_each_aliased_candidate_names_the_other():
+    cands = {c.attribute: c for c in candidates(_aliased_reports(), n_perm=50, seed=1)}
+    assert cands["axis_a"].aliased_with == ("axis_b",)
+    assert cands["axis_b"].aliased_with == ("axis_a",)
+
+
+def test_the_permutation_p_value_does_not_detect_aliasing():
+    """p guards against chance, not against two real axes carrying one cut: both can be small."""
+    cands = candidates(_aliased_reports(), n_perm=200, seed=3)
+    assert all(c.aliased_with for c in cands)          # aliased ...
+    assert all(c.p_value <= 1.0 for c in cands)        # ... while p says nothing about it
+
+
+def test_a_distinguishing_attribute_is_not_marked_aliased():
+    """axis_c cuts the reports differently, so nothing is aliased with it."""
+    reports = _aliased_reports()
+    for i, v in enumerate([0, 1, 0, 1]):
+        reports[i]["attributes"]["axis_c"] = v
+    by = {c.attribute: c for c in candidates(reports, n_perm=50, seed=1)}
+    assert by["axis_c"].aliased_with == ()
+    assert by["axis_a"].aliased_with == ("axis_b",)
+
+
+def test_a_single_attribute_is_never_aliased_with_itself():
+    reports = [dict(margin=m, sigma=0.1, attributes=dict(only=v))
+               for m, v in zip((1.0, 1.1, 5.0, 5.2), (0, 0, 1, 1))]
+    assert candidates(reports, n_perm=50, seed=1)[0].aliased_with == ()

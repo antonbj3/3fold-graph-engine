@@ -163,6 +163,7 @@ def certify(decision: Decision, state) -> dict:
     """The (decision, state)-relative certificate. `p_flip` = P(the predicate is false); `holds` = p_flip ≤ α.
 
     Nothing in the returned dict is a statement about a node, pair or edge on its own (module docstring)."""
+    admissible, inadmissible_reason = True, None
     if decision.kind == "sign":
         post = getattr(state, "regimes", {}).get(decision.pair)
         if post is None:
@@ -179,11 +180,22 @@ def certify(decision: Decision, state) -> dict:
     elif decision.kind == "margin":
         _net, est = _margin_pieces(decision, state)
         p_flip = float(norm.cdf(decision.z_req - est.z))
+        # The GLS estimate exists for any reports, including reports that do not estimate one number.
+        # margin_net already decides that question (`kind`), and a pooled posterior over reports it
+        # rejected is not a belief, however many sigmas it is from the boundary: a contradicted edge
+        # produced z = 500 and p_flip = 0 in exactly this path. Exporting `edge_kind` and leaving
+        # `holds` to the Gaussian tail alone made the flag invisible to every caller reading `holds`.
+        if est.kind in ("CONTRADICTION", "REGIME-BOUNDARY", "NO-DATA"):
+            admissible, inadmissible_reason = False, est.kind
         checked = (f"Gaussian posterior N(m̂ = {est.m:g}, s = {est.s:g}) from margin_net's GLS estimate on edge "
                    f"'{decision.edge}'; p_flip = Φ(−(z − z_req)) with z = {est.z:g}, z_req = {decision.z_req:g} — "
-                   f"exact under that channel's declared error model and under nothing else")
+                   f"exact under that channel's declared error model and under nothing else"
+                   + ("" if admissible else
+                      f"; the pooling is INADMISSIBLE ({est.kind}, p_agree = {est.p_agree:g}), so p_flip describes a "
+                      f"posterior that margin_net's agreement gate rejects and `holds` is false whatever its value"))
         detail = {"edge": decision.edge, "z": float(est.z), "z_req": float(decision.z_req), "m": float(est.m),
-                  "s": float(est.s), "edge_kind": est.kind}
+                  "s": float(est.s), "edge_kind": est.kind, "pooling_admissible": admissible,
+                  "inadmissible_reason": inadmissible_reason, "p_agree": float(est.p_agree)}
         channel = "margin_net"
     else:
         ps = _chain_ps(decision, state)
@@ -197,7 +209,7 @@ def certify(decision: Decision, state) -> dict:
                   "weakest_node": min(ps, key=ps.get) if ps else None}
         channel = "unlock_value"
     return {"kind": "decision-relative", "decision": decision.name, "decision_kind": decision.kind,
-            "holds": bool(p_flip <= decision.alpha), "p_flip": p_flip, "alpha": float(decision.alpha),
+            "holds": bool(p_flip <= decision.alpha and admissible), "p_flip": p_flip, "alpha": float(decision.alpha),
             "credible_set_checked": checked, "channel": channel,
             "scope": (f"binds ({decision.name}, {decision.kind} target {decision.targets}, α = {decision.alpha:g}) "
                       f"only; it says nothing about the target globally, nor about any other decision"),

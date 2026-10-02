@@ -227,3 +227,57 @@ def test_a_flip_action_is_not_applied_through_apply():
     assert act.kind == "flip" and act.meta["apply_as"] == "probe"
     with pytest.raises(ValueError, match="unknown action kind"):
         apply(st, act, {"sign": -1})
+
+
+# D11 a pooled margin certificate cannot hold on reports that margin_net's agreement gate rejects.
+
+def _net_with(reports):
+    from graph_engine.margin_net import MarginNet
+    net = MarginNet()
+    net.add_sources([dict(id=f"s{i}") for i in range(len(reports))])
+    net.add_edge("e", ["a", "b"], reports)
+    return net
+
+
+def _cert_on(reports, alpha=0.05):
+    from types import SimpleNamespace
+    net = _net_with(reports)
+    d = Decision("positive margin", "margin", edge="e", alpha=alpha)
+    return net.estimate("e"), certify(d, SimpleNamespace(margins=net))
+
+
+def test_a_contradicted_edge_cannot_certify_however_many_sigmas_it_is_from_zero():
+    """Four reports far apart with tiny sigmas: z = 500 and p_flip = 0, but they estimate no one number."""
+    reports = [dict(id=f"r{i}", margin=1.0 + i, sigma=0.01, sources=[f"s{i}"]) for i in range(4)]
+    est, cert = _cert_on(reports)
+    assert est.kind == "CONTRADICTION" and est.p_agree == 0.0
+    assert cert["p_flip"] == 0.0                      # the Gaussian tail is still reported ...
+    assert cert["holds"] is False                     # ... and the certificate still does not hold
+    assert cert["pooling_admissible"] is False
+    assert cert["inadmissible_reason"] == "CONTRADICTION"
+
+
+def test_an_agreeing_edge_still_certifies():
+    reports = [dict(id=f"r{i}", margin=1.0 + 0.01 * i, sigma=0.1, sources=[f"s{i}"]) for i in range(4)]
+    est, cert = _cert_on(reports)
+    assert est.kind == "OK"
+    assert cert["holds"] is True and cert["pooling_admissible"] is True
+    assert cert["inadmissible_reason"] is None
+
+
+def test_the_scope_line_names_the_rejected_pooling():
+    reports = [dict(id=f"r{i}", margin=1.0 + i, sigma=0.01, sources=[f"s{i}"]) for i in range(4)]
+    _, cert = _cert_on(reports)
+    assert "INADMISSIBLE" in cert["credible_set_checked"]
+    assert "p_agree" in cert["credible_set_checked"]
+
+
+def test_an_edge_with_no_reports_is_inadmissible_not_merely_uncertain():
+    from types import SimpleNamespace
+    from graph_engine.margin_net import MarginNet
+    net = MarginNet()
+    net.add_edge("e", ["a", "b"], [])
+    est = net.estimate("e")
+    cert = certify(Decision("positive margin", "margin", edge="e", alpha=0.05), SimpleNamespace(margins=net))
+    assert est.kind == "NO-DATA"
+    assert cert["holds"] is False and cert["inadmissible_reason"] == "NO-DATA"
