@@ -59,6 +59,20 @@ def stage_decorrelation_verifier(stage_errors_by_unit, rho_tol=0.15, min_units=2
         verdict, comp, ok = "UNDECIDABLE-LOW-POWER", "SUM", False
         reason = (f"{M} units < min_units {min_units}: not enough power to CERTIFY independence (rho_hat={rho_hat:+.3f}); "
                   f"default to the conservative SUM composition. (Safe: the CI-upper gate never false-certifies a common-mode.)")
+    elif hi <= rho_tol and lo < -rho_tol:
+        # The CI-upper gate is one-sided because a POSITIVE common mode inflates the system variance and is the
+        # margin-unlocking direction. Strong ANTICORRELATION passes that gate while being the opposite of
+        # independence, and the RSS margin stays conservative (the true variance is smaller), so the margin claim
+        # survives -- but `decorrelation_verified` must not, because nothing about independence was shown.
+        # The usual cause is construction, not physics: an additive split of a SINGLE observed total shares a term
+        # between its parts by necessity, so their correlation is an artefact of where the cut was made and carries
+        # no information about the errors. Measured instance: two stages defined as (measured - population) and
+        # (population - outcome) gave rho_hat = -0.80 purely from the shared population term.
+        verdict, comp, ok = "ANTICORRELATED-CHECK-CONSTRUCTION", "RSS", False
+        reason = (f"stage-error correlation CI [{lo:+.3f},{hi:+.3f}] (rho_hat={rho_hat:+.3f}, M={M}) is below the tol "
+                  f"{rho_tol} on the upper side but strongly NEGATIVE: the RSS margin remains conservative, but this is "
+                  f"not independence. Check whether the stages were defined as an additive split of one observed total, "
+                  f"which shares a term by construction; if so the correlation is an artefact of the cut, not a measurement.")
     elif hi <= rho_tol:
         verdict, comp, ok = "DECORRELATED-CERTIFIED", "RSS", True
         reason = (f"stage-error mean off-diagonal correlation CI-UPPER {hi:+.3f} <= tol {rho_tol} (rho_hat={rho_hat:+.3f}, "
@@ -114,8 +128,18 @@ def covariance_aware_margin(stage_errors_by_unit, spec, ci_pctl=99.0, n_boot=300
     boots = boots[np.isfinite(boots) & (boots > 0)]
     q_hi = float(np.percentile(boots, ci_pctl)) if boots.size else q_hat
     margin = spec / float(np.sqrt(max(q_hi, 1e-30)))                   # CI-UPPER of 1'Sigma1 -> conservative, SAFE
+    # RSS and SUM are the rho=0 and rho=1 endpoints, so they bracket the margin only for rho in [0, 1]. Measured
+    # anticorrelation shrinks 1'Sigma1 by cancellation and the margin legitimately exceeds the RSS endpoint -- the
+    # number is right and the DOCUMENTED regime is narrower than the function's domain. A caller reading RSS/SUM as a
+    # sanity range got no warning, so the departure is declared rather than clamped: clamping would hide a valid
+    # result, and silence let a constructed split (shared term between stages) read as a recovered margin.
+    outside = bool(margin > rss_margin * (1 + 1e-12))
     return dict(verdict="COVARIANCE-AWARE", margin=round(margin, 4), plugin_margin=round(plugin_margin, 4),
                 rss_margin=round(rss_margin, 4), sum_margin=round(sum_margin, 4), sysvar_ci_upper=round(q_hi, 6),
+                outside_documented_bracket=outside,
+                bracket_note=("margin exceeds the RSS (rho=0) endpoint, so the MEASURED covariance is net NEGATIVE: "
+                              "check whether the stages are an additive split of one observed total, which shares a "
+                              "term by construction" if outside else None),
                 n_units=int(M), n_stages=int(K),
                 reason=(f"covariance-aware system margin {margin:.3f}x from the CI-UPPER of 1'Sigma1 (RSS endpoint "
                         f"{rss_margin:.3f}, SUM endpoint {sum_margin:.3f}). The PLUG-IN point estimate {plugin_margin:.3f} "
@@ -234,6 +258,22 @@ def selftest():
     cam = covariance_aware_margin(_make(200, 8, 0.3, 1) * (1.0 / 3.9), 1.0)
     checks.append(("covariance-aware margin gated < plug-in (conservative) and > SUM endpoint (recovers margin at moderate rho)",
                    cam["margin"] < cam["plugin_margin"] and cam["margin"] > cam["sum_margin"]))
+    # Anticorrelation passes the one-sided CI-upper gate while being the opposite of independence. The RSS margin
+    # stays conservative (true variance is smaller), so the composition survives and the VERDICT must not.
+    r_anti = stage_decorrelation_verifier(_make(200, 2, -0.8, 1))   # K=2: min rho is -1, so -0.8 is attainable
+    checks.append(("strong anticorrelation -> ANTICORRELATED-CHECK-CONSTRUCTION, RSS kept but NOT verified",
+                   r_anti["verdict"] == "ANTICORRELATED-CHECK-CONSTRUCTION"
+                   and not r_anti["decorrelation_verified"] and r_anti["composition"] == "RSS"))
+    # The bound matters: with K stages the minimum attainable equicorrelation is -1/(K-1), so -0.8 needs
+    # K=2. At K=8 nothing below -0.143 exists and this branch is unreachable by construction.
+    # RSS and SUM bracket the margin only for rho in [0, 1]; measured net-negative covariance leaves that bracket
+    # legitimately, so the departure is DECLARED rather than clamped (clamping would hide a valid result).
+    cam_anti = covariance_aware_margin(_make(200, 2, -0.8, 1) * (1.0 / 3.9), 1.0)
+    checks.append(("net-negative covariance -> margin above the RSS endpoint and outside_documented_bracket set",
+                   cam_anti["margin"] > cam_anti["rss_margin"] and cam_anti["outside_documented_bracket"]
+                   and cam_anti["bracket_note"] is not None))
+    checks.append(("a normal rho in [0,1] is NOT flagged as outside the bracket",
+                   cam["outside_documented_bracket"] is False and cam["bracket_note"] is None))
     print("stage_decorrelation_verifier selftest:")
     for nm, ok in checks:
         print("  [%s] %s" % ("PASS" if ok else "FAIL", nm))
