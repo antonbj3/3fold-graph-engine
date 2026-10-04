@@ -526,6 +526,53 @@ def selftest() -> bool:
 # CLI
 # --------------------------------------------------------------------------- #
 
+def _announce_graph(path: Path, graph: dict[str, Any]) -> None:
+    """Say on stderr WHICH graph answered, because the default is a relative path.
+
+    `--graph` defaults to <repo>/data/ANCHOR_GRAPH.json, so the file that answers depends on where the
+    tool was run. Three sessions in two days ranked the wrong graph without noticing: in a workspace
+    holding an INHERITED copy of another project's graph, the default resolves to that copy and the
+    output is a plausible-looking ranking of someone else's nodes. The path and the headline counts make
+    that visible in one line. stderr, so a caller piping the JSON is unaffected.
+
+    The goal count is called out below two because an unlock graph is goals plus what holds them up: a
+    graph with one goal cannot rank anything toward it, and that is a reading error far more often than
+    it is a real graph.
+    """
+    nodes = graph.get("nodes") or []
+    goals = [n for n in nodes if isinstance(n, dict) and n.get("type") == "GOAL"]
+    edges = sum(len(n.get("depends_on") or []) for n in nodes if isinstance(n, dict))
+    attached = sum(1 for n in nodes if isinstance(n, dict) and (n.get("depends_on") or []))
+    print(f"graph: {path}  nodes={len(nodes)} goals={len(goals)} depends_on_edges={edges} "
+          f"nodes_with_edges={attached}", file=sys.stderr)
+    if len(goals) < 2:
+        print(f"  WARNING: only {len(goals)} GOAL node(s). An unlock graph ranks toward goals, so a "
+              f"priority here is reach into nothing. Check that --graph points at the intended file.",
+              file=sys.stderr)
+    # A ratio of unattached nodes was the first form of this warning and it fired on the GOOD graph (62 of
+    # 97 in the reference one), which teaches a reader to ignore it. The exact question instead: how many
+    # nodes stand under a goal at all? Ranking orders nodes by what they unlock, so a file where nothing
+    # stands under a goal cannot be ranked -- and that is set membership, not a cutoff.
+    # Direction matters and the first version had it backwards: `depends_on` means "stands on", so walking
+    # it from a node goes DOWN to what holds it, not up to goals. Walk from the goals instead. Getting this
+    # wrong reported 2 for the reference graph, a plausible-looking number that was simply the wrong edge.
+    goal_ids = {n["id"] for n in goals if "id" in n}
+    by_id = {n["id"]: n for n in nodes if isinstance(n, dict) and "id" in n}
+    under: set = set()
+    stack = [d for g in goal_ids for d in (by_id.get(g, {}).get("depends_on") or []) if d in by_id]
+    while stack:
+        cur = stack.pop()
+        if cur in under:
+            continue
+        under.add(cur)
+        stack.extend(d for d in (by_id.get(cur, {}).get("depends_on") or []) if d in by_id)
+    under = len(under)
+    print(f"  nodes standing under a goal: {under}", file=sys.stderr)
+    if under == 0:
+        print(f"  WARNING: no node stands under any goal, so a priority here orders facts rather than "
+              f"unlocks. Check that --graph points at the intended file.", file=sys.stderr)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -545,6 +592,7 @@ def main() -> int:
         return 1
 
     graph = load_graph(Path(args.graph))
+    _announce_graph(Path(args.graph), graph)
     if args.command == "validate":
         res = validate(graph, ledger_path=Path(args.ledger))
         print(json.dumps(res, indent=2, ensure_ascii=False))
