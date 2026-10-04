@@ -101,7 +101,7 @@ def main():
     def f1(r): return 2*r['recall']*r['prec']/(r['recall']+r['prec']) if r['recall']+r['prec'] else 0
     print(f"\n  LOCK VERDICT: naive (prec {ur['prec']:.2f} rec {ur['recall']:.2f} F1 {f1(ur):.2f}) → "
           f"calibrated (prec {cr['prec']:.2f} rec {cr['recall']:.2f} F1 {f1(cr):.2f})")
-    # HONEST lock = precision up AND recall held (F1 must not collapse). Precision-up-at-recall≈0 is a hollow PASS.
+    # HONEST lock = precision up AND recall held (F1 must not collapse). Precision-up-at-recall≈0 is a vacuous PASS.
     locked = cr['prec'] > ur['prec'] and cr['fpr'] < alpha and cr['recall'] >= 0.5 * ur['recall']
     if locked:
         print("  ★LOCKED: calibrated fusion recovers precision while HOLDING recall — B/C's law locks it on 4692 claims.")

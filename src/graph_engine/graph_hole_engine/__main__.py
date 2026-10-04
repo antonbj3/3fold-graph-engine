@@ -16,7 +16,7 @@ from .oed_sibling import OEDDesign
 def _print_report(rep) -> None:
     top = rep.verdicts[0]
     print(f"\n[{rep.domain}]")
-    print(f"  STRUCTURE leg — hole-ranking (resolvent-leverage L⁺_ii, most-hollow first): {rep.hole_ranking[:3]} ...")
+    print(f"  STRUCTURE leg — hole-ranking (resolvent-leverage L⁺_ii, emptiest first): {rep.hole_ranking[:3]} ...")
     print(f"  OBSERVATION leg — residual-ranking (|C_obs⊖C_pred|, biggest anomaly first): {rep.residual_ranking[:3]} ...")
     print(f"  two decorrelated legs: ρ(residual, structure)={rep.rho_residual_structure:.2f} "
           f"({'✓ <0.8 = separate legs' if rep.rho_residual_structure < 0.8 else 'HIGH — smells like an OED problem'})")

@@ -13,7 +13,7 @@
       "executed_outcome": "edge count rho .539 holdout; hub share -.361",
       "binding_requirement": "fixed-schedule coverage and terminal dependence",
       "next_brief": "T9C_PORT_ROUTER",
-      "evidence": "/mnt/games-240/research/claude24h_night/T9_INSTANCE_SLACK_GRAPH"
+      "evidence": "$T9_DATA_DIR"
     },
     {
       "id": "G2",
@@ -28,7 +28,7 @@
       "executed_outcome": "CG12 FULL3459 9.294->5.082; two hard cases unchanged",
       "binding_requirement": "single alternative support and dual-side slack",
       "next_brief": "T9B_THRESHOLD_QUOTIENT",
-      "evidence": "/mnt/games-240/research/claude24h_night/T9_INSTANCE_SLACK_GRAPH"
+      "evidence": "$T9_DATA_DIR"
     },
     {
       "id": "G3",
@@ -43,7 +43,7 @@
       "executed_outcome": "holdout mean .216509->.205760; F1 loses to ED",
       "binding_requirement": "size/port distribution transfer",
       "next_brief": "T9C_PORT_ROUTER",
-      "evidence": "/mnt/games-240/research/claude24h_night/T9_INSTANCE_SLACK_GRAPH"
+      "evidence": "$T9_DATA_DIR"
     },
     {
       "id": "leaf",
@@ -58,7 +58,7 @@
       "executed_outcome": "star4096 gap2046.5->0 at 0; small F1 effect",
       "binding_requirement": "F1 has large non-tree core",
       "next_brief": "T9B_THRESHOLD_QUOTIENT",
-      "evidence": "/mnt/games-240/research/claude24h_night/T9_INSTANCE_SLACK_GRAPH"
+      "evidence": "$T9_DATA_DIR"
     },
     {
       "id": "warm_hub",
@@ -73,7 +73,7 @@
       "executed_outcome": "small cycle gains; CG12 unchanged",
       "binding_requirement": "defect spread across chord geometry",
       "next_brief": "T9B_THRESHOLD_QUOTIENT",
-      "evidence": "/mnt/games-240/research/claude24h_night/T9_INSTANCE_SLACK_GRAPH"
+      "evidence": "$T9_DATA_DIR"
     },
     {
       "id": "tree_voltage",
@@ -88,7 +88,7 @@
       "executed_outcome": "F1 cycle gap worsens; CG12 unchanged",
       "binding_requirement": "non-tree chord energy",
       "next_brief": "T9B_THRESHOLD_QUOTIENT",
-      "evidence": "/mnt/games-240/research/claude24h_night/T9_INSTANCE_SLACK_GRAPH"
+      "evidence": "$T9_DATA_DIR"
     },
     {
       "id": "quotient",
@@ -103,7 +103,7 @@
       "executed_outcome": "fullbank cycle128 975.906->1.740",
       "binding_requirement": "boundary grouped with nuisance vertices",
       "next_brief": "T9B_THRESHOLD_QUOTIENT",
-      "evidence": "/mnt/games-240/research/claude24h_night/T9_INSTANCE_SLACK_GRAPH"
+      "evidence": "$T9_DATA_DIR"
     },
     {
       "id": "conditioned",
@@ -118,8 +118,8 @@
       "executed_outcome": "fullbank cycle128 1.131; CG12 .919; no new close signs",
       "binding_requirement": "within-class geometry and theta margins",
       "next_brief": "T9B_THRESHOLD_QUOTIENT",
-      "evidence": "/mnt/games-240/research/claude24h_night/T9_INSTANCE_SLACK_GRAPH"
+      "evidence": "$T9_DATA_DIR"
     }
   ],
-  "next_locator": "/home/anton/research/inference_training_20260921/claude_24h/lanes/T9_INSTANCE_SLACK_GRAPH/NEXT.md"
+  "next_locator": "<local-path>"
 }

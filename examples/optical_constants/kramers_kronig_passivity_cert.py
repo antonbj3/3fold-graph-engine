@@ -2,7 +2,7 @@
 """KRAMERS-KRONIG CAUSALITY/PASSIVITY CERT — a 0-fit MODEL-FREE certificate for a
 frequency-domain material response (complex modulus / damping).
 
-WHAT / WHY (unlock-graph): fills the V_mf "model-FREE cert strength" hollow with a NEW,
+WHAT / WHY (unlock-graph): fills the V_mf "model-FREE cert strength" gap with a NEW,
 DECORRELATED failure mode = CAUSALITY-failure (distinct from the existing model-free legs:
 exchangeability [conformal], conservation-identity [zero-sim loop], criticality [fractal-R]).
 Composes with the existing viscoelasticity_creep node (SAME Zener material) but adds the

@@ -16,7 +16,7 @@ Mått: total uppmätt arbete till tecken vid samma kostnadstak, inte bara gap; f
 setup, små elimineringar, hash, full verifiering och alla theta ingår.
 Facit: T9:s exakta rationella F1-referenser och full-edge KCL; fäll vid ett enda
 inneslutningsbrott eller utebliven teckenvinst mot bästa lika informerade kontroll.
-Stora filer: /mnt/games-240/research/claude24h_night/T9B_THRESHOLD_QUOTIENT.
+Stora filer: $T9_DATA_DIR.
 
 ## T9C_PORT_ROUTER — statiskt kantantal räcker inte på F1
 

@@ -3,7 +3,7 @@
 Research drivers live here; the isolated Graph branch is in `worktree/`.
 Read RESULTS.md and the preregistrations before interpreting results. All data,
 including local python-flint 0.9.0 for independent references, are under the real
-speldisk `/mnt/games-240/research/claude24h_night/T9_INSTANCE_SLACK_GRAPH`.
+en scratch-disk via `$T9_DATA_DIR`.
 Source graphs and T1/T7 are read-only. No remote push or merge.
 
 Drivers' tracked snapshots will be in `worktree/examples/engine_experiments/t9_instance_slack`.

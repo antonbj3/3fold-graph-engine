@@ -94,5 +94,5 @@ block support (known network reduction), charged separately and preregistered
 before its run. Parent objective remains cheap predictive useful certification.
 
 Resource rules: ≤2 threads; one compute job; pilot RSS first; >1min heavy_run;
-large data in /mnt/games-240/research/claude24h_night/T9_INSTANCE_SLACK_GRAPH.
+large data in $T9_DATA_DIR.
 No edits to T1/T7, no pushes/merges/shared graph changes.

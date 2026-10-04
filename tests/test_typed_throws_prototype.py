@@ -1,8 +1,8 @@
 """Small tests: a constructed case with a KNOWN mediator, a constructed KNOWN triple conf (each kind), chain regime
 conf, AND-inputs, exact draw probabilities, and the port signature separating GRAPH-01's deceptive neighbours.
 
-Run:  OMP_NUM_THREADS=2 nice -n 10 /home/anton/projects/CADtoSIMReady/.venv-newton/bin/python -m pytest -q \
-      /home/anton/research/TRIPLE_THROWS_20260930/triple_throws/tests/test_triple_throws.py
+Run:  OMP_NUM_THREADS=2 nice -n 10 python -m pytest -q \
+      tests/test_triple_throws.py
 """
 import math
 import os

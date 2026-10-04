@@ -8,7 +8,7 @@ import numpy as np
 import networkx as nx
 from scipy.stats import spearmanr
 LANE=Path(os.environ.get("T9_LANE",Path(__file__).resolve().parent))
-DATA=Path(os.environ.get('T9_DATA_DIR','/mnt/games-240/research/claude24h_night/T9_INSTANCE_SLACK_GRAPH'));DATA.mkdir(parents=True,exist_ok=True)
+DATA=Path(os.environ.get('T9_DATA_DIR','t9_data'))  # set T9_DATA_DIR to a scratch disk; the default is repo-local;DATA.mkdir(parents=True,exist_ok=True)
 sys.path.insert(0,str(LANE/'worktree/src'));sys.set_int_max_str_digits(0)
 from graph_engine.certified_resistance import ResistanceBudget,ResistanceWitness,certified_cross_resistance,verify_resistance_witness
 from graph_engine.instance_slack import prune_leaves
