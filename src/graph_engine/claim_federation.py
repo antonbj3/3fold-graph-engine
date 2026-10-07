@@ -60,14 +60,15 @@ from typing import Any, Iterable
 
 __all__ = ["Federation", "Probe", "InferredLink", "box_intersection", "box_gap_point", "lineage_information"]
 
-def lineage_information(root_sets) -> float:
+def lineage_information(root_sets, exact_rank: bool = False) -> float:
     """‖M⁺1‖² for reports whose errors are the means of their roots' independent unit errors (M = row-normalized
     report × root incidence). Which N_eff this is (the repository keeps several, by PURPOSE — see neff_form.py and
     the NEFF_BAR note in leg_decorrelation_lineage_gate.py): it belongs to the VARIANCE-REDUCTION family. It is the
     information the reports carry about one common quantity, in units of one single-root report, with optimal (GLS)
     weights; for exchangeable reports it equals Kish × (information of one report), and for one root per report it is
     the number of distinct roots (= paper_graph.pipeline.confidence_from_legs). It is NOT a decorrelation rank
-    (participation ratio, ρ²) and NOT a false-accept exponent (2/(1+ρ)); do not feed it into thresholds defined for those."""
+    (participation ratio, ρ²) and NOT a false-accept exponent (2/(1+ρ)); do not feed it into thresholds defined for those.
+    exact_rank=True computes the minimum-norm solution over Q before returning a float; the default keeps rcond."""
     import numpy as np
     R = [frozenset(r) for r in root_sets]
     if not R:
@@ -75,6 +76,13 @@ def lineage_information(root_sets) -> float:
     allroots = sorted(set().union(*R))
     if all(len(r) == 1 for r in R):
         return float(len(allroots))
+    if exact_rank and all(R):
+        from fractions import Fraction as _S4Fraction
+        from ._exact_rank import _s4_pinv
+        Mq = [[_S4Fraction(int(x in r), len(r)) for x in allroots] for r in R]
+        Mp, _ = _s4_pinv(Mq)
+        wq = Mp @ np.full(len(R), _S4Fraction(1), dtype=object)
+        return float(wq @ wq)
     M = np.array([[1.0 if x in r else 0.0 for x in allroots] for r in R]); M /= M.sum(1, keepdims=True)
     w = np.linalg.pinv(M, rcond=1e-9) @ np.ones(len(R))
     return float(w @ w)
