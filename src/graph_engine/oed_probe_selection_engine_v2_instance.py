@@ -47,8 +47,12 @@ import os
 import random
 from collections import defaultdict
 
-import oed_probe_selection_engine as eng
-from oed_probe_selection_engine import (E, PRIOR_BY_KIND, RHO_CAT, SCENARIOS)
+if __package__:
+    from . import oed_probe_selection_engine as eng
+    from .oed_probe_selection_engine import E, PRIOR_BY_KIND, RHO_CAT, SCENARIOS
+else:
+    import oed_probe_selection_engine as eng
+    from oed_probe_selection_engine import E, PRIOR_BY_KIND, RHO_CAT, SCENARIOS
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "artifacts", "d_oed_engine_v2_refresh_evidence.json")

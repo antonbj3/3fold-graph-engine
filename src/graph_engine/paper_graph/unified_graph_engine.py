@@ -31,10 +31,12 @@ from __future__ import annotations
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))          # put papers/ on the path
+if not __package__:
+    # Direct script execution also needs the src directory containing graph_engine.
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 # re-export the whole new public API so `from unified_graph_engine import *` still resolves ----------
-from graph_hole_engine import (                                        # noqa: E402,F401
+from graph_engine.graph_hole_engine import (                           # noqa: E402,F401
     participation_ratio, resolvent_leverage, spectral_sigma_min, waterfill_reallocate,
     DomainAdapter, GraphHoleEngine, HoleReport, NodeVerdict,
     PhysicsGraphAdapter, PapersAdapter,
@@ -54,5 +56,5 @@ __all__ = [
 ]
 
 if __name__ == "__main__":
-    from graph_hole_engine.__main__ import main
+    from graph_engine.graph_hole_engine.__main__ import main
     main()

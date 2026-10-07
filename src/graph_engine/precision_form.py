@@ -117,13 +117,14 @@ except ModuleNotFoundError:                       # run as a script: src dir rel
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from graph_engine.identifiability_oed import select_with_rank_tiebreak
 
+from graph_engine._exact_rank import _s4_float, _s4_pinv, _s4_rational_matrix
+
 __all__ = ["PrecisionForm", "Candidate", "set_value_bits", "joint_criticality", "mp_floor", "eigen_readout",
            "exact_bernoulli_set_value", "exact_bernoulli_one_belief", "exact_bernoulli_chain",
            "sphere_set_value", "theta_of_p", "p_of_theta", "bernoulli_outcome_table",
            "bernoulli_reliability_of_probe", "sphere_error_grid", "sequential_rank_tiebreak"]
 
 _LOG2 = np.log(2.0)
-
 
 @dataclass
 class Candidate:
@@ -167,12 +168,34 @@ class PrecisionForm:
         self._dirty()
         return self
 
-    def add_measurement(self, A, y, Sigma) -> "PrecisionForm":
-        """(b) reports y = A x + e, Cov(e) = Σ = B Bᵀ (margin_net lineage). Σ may be singular."""
+    def add_measurement(self, A, y, Sigma, exact_rank: bool = False) -> "PrecisionForm":
+        """(b) reports y = A x + e, Cov(e) = Σ = B Bᵀ (margin_net lineage). Σ may be singular.
+
+        exact_rank=True takes rank and the pseudo-inverse over Q for rational Sigma
+        (finite floats mean exact dyadics). Irrational/unsupported entries retain rcond.
+        This option applies to this measurement block; other form reads still use tol.
+        """
         A = np.atleast_2d(np.asarray(A, float)); y = np.asarray(y, float).ravel()
-        Sp = np.linalg.pinv(np.asarray(Sigma, float), rcond=self.tol)
-        self.J += A.T @ Sp @ A
-        self.b += A.T @ Sp @ y
+        exact = _s4_pinv(Sigma) if exact_rank else None
+        if exact is None:
+            Sp = np.linalg.pinv(np.asarray(Sigma, float), rcond=self.tol)
+            self.J += A.T @ Sp @ A
+            self.b += A.T @ Sp @ y
+        else:
+            Aq = _s4_rational_matrix(A)
+            yq = _s4_rational_matrix(y[:, None])
+            Jq = _s4_rational_matrix(self.J)
+            bq = _s4_rational_matrix(self.b[:, None])
+            if any(x is None for x in (Aq, yq, Jq, bq)):
+                raise ValueError("exact measurement requires finite A, y, J, and b")
+            Spq = exact[0]
+            new_J = Jq + Aq.T @ Spq @ Aq
+            new_b = bq + Aq.T @ Spq @ yq
+            # Convert and validate both blocks before changing the form.
+            next_J = np.array([[_s4_float(x, "precision update") for x in row] for row in new_J], float)
+            next_b = np.array([_s4_float(x, "information update") for x in new_b[:, 0]], float)
+            self.J[:] = next_J
+            self.b[:] = next_b
         self._dirty()
         return self
 

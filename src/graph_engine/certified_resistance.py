@@ -130,7 +130,7 @@ def _energies(rows, flow, phi, check=lambda: None):
     return upper, energy
 
 
-def certified_cross_resistance(edges, a, b, budget, *, initial_flow="shortest", checkpoint=None, diagnostics=None, initial_potential="distance", stop=None):
+def certified_cross_resistance(edges, a, b, budget, *, initial_flow="shortest", checkpoint=None, diagnostics=None, initial_potential="distance", stop=None, potential_splits=0, costs=None):
     """Return (lo, hi, local witness) from feasible flow and unit-drop potential.
 
     The default uses no elimination or pseudoinverse. Optional quotient starts
@@ -139,7 +139,9 @@ def certified_cross_resistance(edges, a, b, budget, *, initial_flow="shortest", 
     bind to every original edge. Initial construction is separately charged.
     ``initial_flow`` selects shortest, edge_disjoint, retained_sp, or the frozen
     routed policy. ``initial_potential`` selects distance, hub_harmonic,
-    tree_voltage, distance_quotient, or port_conditioned_quotient. ``checkpoint``
+    tree_voltage, distance_quotient, port_conditioned_quotient, or
+    residual_quotient (with ``potential_splits`` singleton refinements).
+    ``costs`` collects construction receipts without structural statistics. ``checkpoint``
     is a research trace hook called on exact endpoints; diagnostics also cost work.
 
     ``budget=0`` constructs just the start witnesses; larger integer budgets
@@ -149,8 +151,10 @@ def certified_cross_resistance(edges, a, b, budget, *, initial_flow="shortest", 
     """
     if initial_flow not in ("shortest", "edge_disjoint", "retained_sp", "routed"):
         raise ValueError("unknown initial flow")
-    if initial_potential not in ("distance", "hub_harmonic", "tree_voltage", "distance_quotient", "port_conditioned_quotient"):
+    if initial_potential not in ("distance", "hub_harmonic", "tree_voltage", "distance_quotient", "port_conditioned_quotient", "residual_quotient"):
         raise ValueError("unknown initial potential")
+    if isinstance(potential_splits, bool) or not isinstance(potential_splits, Integral) or potential_splits < 0:
+        raise ValueError("potential_splits must be a nonnegative integer")
     started = perf_counter()
     a, b = _node(a), _node(b)
     if isinstance(budget, Integral) and not isinstance(budget, bool):
@@ -213,11 +217,19 @@ def certified_cross_resistance(edges, a, b, budget, *, initial_flow="shortest", 
         for u in adj:
             check()
             phi[u] = min(F(1), dist[u] / dist[a]) if u in dist else F(0)
-        if initial_potential in ("distance_quotient", "port_conditioned_quotient"):
+        potential_started = perf_counter()
+        if initial_potential in ("distance_quotient", "port_conditioned_quotient", "residual_quotient"):
             from .instance_slack import distance_quotient_potential
             quotient_start = perf_counter()
-            proposed_phi, quotient_details = distance_quotient_potential(rows,adj,a,b,dist,check,condition_ports=initial_potential=="port_conditioned_quotient")
+            if initial_potential == "residual_quotient":
+                from .potential_side import residual_quotient_potential
+                proposed_phi, quotient_details = residual_quotient_potential(rows,adj,a,b,dist,check,splits=potential_splits)
+            else:
+                proposed_phi, quotient_details = distance_quotient_potential(rows,adj,a,b,dist,check,condition_ports=initial_potential=="port_conditioned_quotient")
             if proposed_phi is not None:phi = proposed_phi
+            if costs is not None:
+                costs.update(quotient_details)
+                costs["quotient_seconds"] = perf_counter()-quotient_start
             if diagnostics is not None:
                 diagnostics.update(quotient_details)
                 diagnostics["quotient_seconds"] = perf_counter()-quotient_start
@@ -252,6 +264,8 @@ def certified_cross_resistance(edges, a, b, budget, *, initial_flow="shortest", 
             if diagnostics is not None:
                 diagnostics["startup_harmonic_coordinates"] = len(hubs)
                 diagnostics["startup_harmonic_edge_touches"] = touched
+        if costs is not None:
+            costs["potential_build_seconds"] = perf_counter()-potential_started
         flow_choice = initial_flow
         if initial_flow == "routed":
             from .instance_slack import select_initial_flow

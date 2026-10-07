@@ -33,7 +33,7 @@ Disagreement ("conf" for margins), two parts.
      `copy_tolerance`·σ_k means the values contradict the declared lineage.
  (c) Both readings are SCALE-FREE, and that is a requirement, not a property: multiplying every margin and every σ of
      an edge by a constant is a change of units, and z, Q, dof, p_agree and `kind` must come out unchanged. The rank
-     behind (a) is therefore taken relative to Σ's largest singular value, the same cutoff the pseudo-inverse uses.
+     behind (a) uses the pseudo-inverse's relative cutoff by default, or exact rational rank with `exact_rank=True`.
      Found by that probe on a five-channel cross-solver edge whose σ were ~1e-7 in the margin's own units: under an
      absolute 1e-10 rank tolerance Σ read as rank 0, the edge reported Q = 3.77614e6, dof = -1, p_agree = 1, "OK",
      and the same edge in units 1e6 larger reported dof = 4, p_agree = 0, CONTRADICTION.
@@ -57,12 +57,14 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
+from fractions import Fraction as _S4Fraction
 from typing import Any
 
 import numpy as np
 from scipy.stats import chi2, norm
 
 from .claim_federation import lineage_information
+from ._exact_rank import _s4_float, _s4_fraction, _s4_pinv, _s4_rational_matrix, _s4_sqrt_float, _s4_sqrt_fraction
 
 __all__ = ["MarginNet", "EdgeEstimate", "tree_paths", "tree_matrix", "tree_covariance", "tree_gls"]
 
@@ -109,6 +111,8 @@ class MarginNet:
     # -- loading -----------------------------------------------------------------------------------
     _shares: dict = field(default_factory=dict)
     _tree: dict = field(default_factory=dict)          # tree node id -> {"parent", "share"}: the general lineage state
+    _s4_tree_shares: dict = field(default_factory=dict, init=False, repr=False)
+    _s4_source_shares: dict = field(default_factory=dict, init=False, repr=False)
 
     def add_sources(self, sources: list[dict]) -> None:
         """source = {"id", "derives_from": [ids] (copies), "shares": {group: rho} (partially shared error, 0 < rho < 1)}
@@ -117,13 +121,16 @@ class MarginNet:
         A report whose source is a tree node is read through the tree (`tree_gls`); the old records are untouched."""
         for s in sources:
             if "parent" in s or "share" in s or "theta" in s:
-                self._tree[s["id"]] = {"parent": s.get("parent"), "share": float(s.get("share", s.get("theta", 0.0)))}
+                share = s.get("share", s.get("theta", 0.0))
+                self._tree[s["id"]] = {"parent": s.get("parent"), "share": float(share)}
+                self._s4_tree_shares[s["id"]] = share
                 continue
             self._parents[s["id"]] = sorted(set(self._parents.get(s["id"], [])) | set(s.get("derives_from", [])))
             for g, rho in (s.get("shares") or {}).items():
                 if not 0.0 < rho < 1.0:
                     raise ValueError(f"source {s['id']}: shares[{g!r}] = {rho} must be in (0, 1)")
                 self._shares.setdefault(s["id"], {})[g] = float(rho)
+                self._s4_source_shares.setdefault(s["id"], {})[g] = rho
 
     def add_edge(self, id: str, between: list[str], reports: list[dict], weight: float = 1.0, cost: float = 1.0) -> None:
         """report = {"margin": float, "sigma": float (optional), "sources": [ids], "validity": {var: [lo, hi]} (optional)}"""
@@ -142,7 +149,64 @@ class MarginNet:
         return frozenset(out)
 
     # -- one edge ----------------------------------------------------------------------------------
-    def estimate(self, id: str) -> EdgeEstimate:
+    def _s4_covariance(self, reports, root_sets, nodes, tree_mode):
+        """Build the rational model before Gram rounding or square roots; None means fallback."""
+        sig = [_s4_fraction(self.default_sigma if r.get("sigma") is None else r["sigma"]) for r in reports]
+        if any(x is None for x in sig):
+            return None
+        zero = _S4Fraction(0)
+        if tree_mode:
+            tree_path = tree_paths(self._tree, nodes)
+            paths = [set(tree_path[n]) for n in nodes]
+            theta = {v: _s4_fraction(self._s4_tree_shares.get(v, self._tree[v]["share"]))
+                     for v in set().union(*paths)}
+            if any(x is None for x in theta.values()):
+                return None
+            theta = {v: min(max(x, zero), _S4Fraction(1)) for v, x in theta.items()}
+            corr = [[sum((theta[v] for v in a & b), zero) for b in paths] for a in paths]
+        else:
+            if any(not r for r in root_sets):
+                return None
+            shares = []
+            for r in reports:
+                srcs = r.get("sources") or []
+                row = {}
+                for x in srcs:
+                    for g, rho in self._shares.get(x, {}).items():
+                        value = _s4_fraction(self._s4_source_shares.get(x, {}).get(g, rho))
+                        if value is None:
+                            return None
+                        row[g] = row.get(g, zero) + value / len(srcs)
+                shares.append(row)
+            groups = set().union(*(set(row) for row in shares))
+            own = [1 - min(sum(row.values(), zero), _s4_fraction(0.999)) for row in shares]
+            corr = []
+            for i, a in enumerate(root_sets):
+                row = []
+                for j, b in enumerate(root_sets):
+                    value = _S4Fraction(len(a & b), len(a) * len(b))
+                    if groups:
+                        if value:
+                            factor = _s4_sqrt_fraction(own[i] * own[j])
+                            if factor is None:
+                                return None
+                            value *= factor
+                        for g in groups:
+                            factor = _s4_sqrt_fraction(shares[i].get(g, zero) * shares[j].get(g, zero))
+                            if factor is None:
+                                return None
+                            value += factor
+                    row.append(value)
+                corr.append(row)
+        return np.array([[sig[i] * sig[j] * x for j, x in enumerate(row)]
+                         for i, row in enumerate(corr)], dtype=object)
+
+    def estimate(self, id: str, exact_rank: bool = False) -> EdgeEstimate:
+        """Opt in to rank/pinv over Q for rational covariance; retain the float path otherwise.
+
+        Finite floats are exact dyadic inputs. Tree shares are summed directly,
+        and shared-source radicals are used only when their square roots are rational.
+        """
         e = self.edges[id]; R = e["reports"]
         if not R:
             return EdgeEstimate(id, e["between"], float("nan"), float("inf"), 0.0, 0.5, 0, 0.0, 0.0, 0, 1.0, "NO-DATA")
@@ -174,29 +238,63 @@ class MarginNet:
                 M = np.hstack([np.sqrt(1 - tot)[:, None] * M, G]); allr = allr + [f"shared:{g}" for g in groups]
         B = sig[:, None] * M                                   # e = B ε
         Sigma = B @ B.T
-        Sp = np.linalg.pinv(Sigma, rcond=1e-10)
-        one = np.ones(len(m)); info = float(one @ Sp @ one)
-        mhat = float(one @ Sp @ m) / info; s = math.sqrt(1.0 / info)
-        w = (Sp @ one) / info                                  # GLS weights on reports, sum to 1
+        exact = None
+        if exact_rank:
+            Sq = self._s4_covariance(R, rs, tnodes, tree_mode)
+            if Sq is not None:
+                exact = _s4_pinv(Sq)
+        if exact is not None:
+            Spq, rank_certificate = exact
+            mq = _s4_rational_matrix([[r["margin"]] for r in R])
+            if mq is None:
+                mq = _s4_rational_matrix(m[:, None])
+            if mq is None:
+                raise ValueError(f"edge {id}: exact estimate requires finite margins")
+            mq = mq[:, 0]; oneq = np.full(len(m), _S4Fraction(1), dtype=object)
+            infoq = oneq @ Spq @ oneq
+            if infoq <= 0:
+                raise ValueError(f"edge {id}: exact covariance carries no common-mean information")
+            mhatq = (oneq @ Spq @ mq) / infoq
+            mhat = _s4_float(mhatq, "margin estimate")
+            s = _s4_sqrt_float(1 / infoq, "margin uncertainty")
+            w = np.array([_s4_float(x, "GLS weight") for x in (Spq @ oneq) / infoq], float)
+            q = max(_s4_float(mq @ Spq @ mq - mhatq * mhatq * infoq, "disagreement"), 0.0)
+            residual = mq - mhatq
+            off = np.array([_s4_float(x, "copy residual") for x in residual - Sq @ (Spq @ residual)], float)
+        else:
+            Sp = np.linalg.pinv(Sigma, rcond=1e-10)
+            one = np.ones(len(m)); info = float(one @ Sp @ one)
+            mhat = float(one @ Sp @ m) / info
+            w = (Sp @ one) / info                              # GLS weights on reports, sum to 1
+            q = max(float(m @ Sp @ m) - mhat * mhat * info, 0.0)
+            off = (np.eye(len(m)) - Sigma @ Sp) @ (m - mhat)
+            s = math.sqrt(1.0 / info)
         a = B.T @ w                                            # weights on root errors: m̂ − m = aᵀε, ‖a‖ = s
-        q = max(float(m @ Sp @ m) - mhat * mhat * info, 0.0)
-        # The dof is the rank of Sigma AS THE PSEUDO-INVERSE ABOVE SEES IT, so the cutoff is RELATIVE to the
+        # Exact dof and pinv use the same rational rank. In the floating fallback the cutoff is RELATIVE to the
         # largest singular value (`rcond`), never absolute. With an absolute 1e-10 an edge whose sigma are
         # ~1e-7 in the margin's own units has Sigma entries ~1e-14, reads as rank 0, and its chi^2
         # disagreement test cannot fire at all: measured on a five-channel cross-solver edge, the SAME edge
         # in units differing by 1e6 reported Q = 3.77614e6, dof = -1, p_agree = 1, OK at one scale and
         # dof = 4, p_agree = 0, CONTRADICTION at the other. A change of units is not a change of evidence.
-        sv = np.linalg.svd(Sigma, compute_uv=False)
-        dof = int((sv > 1e-10 * float(sv[0])).sum()) - 1 if float(sv[0]) > 0 else -1
+        if exact is not None:
+            dof = rank_certificate.rank - 1
+        else:
+            sv = np.linalg.svd(Sigma, compute_uv=False)
+            dof = int((sv > 1e-10 * float(sv[0])).sum()) - 1 if float(sv[0]) > 0 else -1
         p_agree = float(chi2.sf(q, dof)) if dof > 0 else 1.0
-        off = (np.eye(len(m)) - Sigma @ Sp) @ (m - mhat)       # what the declared lineage cannot explain at all
         if (np.abs(off) > self.copy_tolerance * sig).any():
             p_agree = 0.0
         z = mhat / s; pv = float(norm.cdf(-z))
         kind = "VIOLATED" if z < -self.stressed_below_z else "STRESSED" if z < self.stressed_below_z else "OK"
         if p_agree < self.disagree_p:
             kind = "REGIME-BOUNDARY" if self._disjoint_validity(R) else "CONTRADICTION"
-        neff = lineage_information(rs) if not groups else info * len(sig) / float((1.0 / sig ** 2).sum())  # rs is None in tree mode
+        if not groups:
+            neff = lineage_information(rs, exact_rank=exact_rank)
+        elif exact is not None:
+            sigq = [_s4_fraction(self.default_sigma if r.get("sigma") is None else r["sigma"]) for r in R]
+            neff = _s4_float(infoq * len(sigq) / sum(1 / (x * x) for x in sigq), "effective source count")
+        else:
+            neff = info * len(sig) / float((1.0 / sig ** 2).sum())
         return EdgeEstimate(id, e["between"], mhat, s, z, pv, len(m), neff, q, dof, p_agree, kind,
                             dict(zip(allr, a)), self._validity_relation(R))
 
