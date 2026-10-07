@@ -17,7 +17,10 @@ Beta(1,1) posterior for P(TF-IDF-cosine beats BM25 | this corpus).
 import json
 import os
 
-from context_loader import ContextIndex, DEFAULT_MEMDIR
+if __package__:
+    from .context_loader import ContextIndex, DEFAULT_MEMDIR
+else:
+    from context_loader import ContextIndex, DEFAULT_MEMDIR
 
 PREREG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "context_loader_PREREG.json")
 EVIDENCE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "context_loader_evidence.json")
